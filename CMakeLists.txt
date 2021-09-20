@@ -15,5 +15,9 @@ endif()
 
 add_subdirectory(vendors)
 include_directories(vendors src)
-add_executable(baliksena src/main.cpp)
+
+add_executable(baliksena 
+    src/main.cpp
+)
+
 target_link_libraries(baliksena flecs)
