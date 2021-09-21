@@ -26,9 +26,6 @@ void Renderer::init() {
     sg_desc desc = { .context = sapp_sgcontext() };
     sg_setup(&desc);
 
-    //NOTE: create texture
-    state.bind.fs_images[SLOT_texture1] = sg_alloc_image();
-
     //NOTe: cube positions
     state.cube_positions[0] = { 0.0f,  0.0f,  0.0f};
     state.cube_positions[1] = {2.0f,  5.0f, -15.0f};
@@ -118,9 +115,11 @@ void Renderer::init() {
     
     /* a pass action to clear framebuffer */
     state.pass_action.colors[0] = { SG_ACTION_CLEAR, {0.2f, 0.3f, 0.3f, 1.0f} };
-    sg_image image1 = state.bind.fs_images[SLOT_texture1];
 
     /* load first texture */
+    state.bind.fs_images[SLOT_texture1] = sg_alloc_image();
+    sg_image image1 = state.bind.fs_images[SLOT_texture1];
+
     int w, h;
     uint8_t* pixels = loadBMPEx("shot275.bmp", &w, &h, false);
     if (pixels) {
@@ -143,11 +142,7 @@ void Renderer::init() {
 }
 
 void Renderer::destroy() {
-    auto* renderer = get();
-    if(renderer != nullptr) {
-        delete renderer;
-        sg_shutdown();
-    }
+    sg_shutdown();
 }
 
 void Renderer::render(const RendererCamera& renderCam) {        
@@ -177,10 +172,10 @@ void Renderer::render(const RendererCamera& renderCam) {
     sg_commit();
 }
 
-int Renderer::getWidth() const {
+int Renderer::getWidth() {
     return sapp_width();
 }
 
-int Renderer::getHeight() const {
+int Renderer::getHeight() {
     return sapp_height();
 }

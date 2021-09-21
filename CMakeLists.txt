@@ -21,9 +21,11 @@ include_directories(vendors
 
 add_executable(baliksena 
     src/main.cpp
+    src/app.cpp
+    src/scene.cpp
     src/bmp_loader.cpp
     src/renderer.cpp
-    src/systems/camera.cpp 
-    src/systems/camera.h)
+    src/input.cpp
+    src/camera.cpp)
 
 target_link_libraries(baliksena flecs)

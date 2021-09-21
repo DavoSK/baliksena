@@ -8,17 +8,9 @@ struct RendererCamera {
 
 class Renderer {
 public:
-    static Renderer* get() {
-        static Renderer* gRenderer = nullptr;
-        if(gRenderer == nullptr) 
-            gRenderer = new Renderer();
-        return gRenderer;
-    }
-
     static void destroy();
-    void init();
-    void render(const RendererCamera& renderCam);
-
-    int getWidth() const;
-    int getHeight() const;
+    static void init();
+    static void render(const RendererCamera& renderCam);
+    static int getWidth();
+    static int getHeight();
 };
