@@ -18,6 +18,6 @@ include_directories(vendors src)
 
 add_executable(baliksena 
     src/main.cpp
-)
+        src/systems/camera.cpp src/systems/camera.h)
 
 target_link_libraries(baliksena flecs)
