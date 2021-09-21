@@ -3,33 +3,36 @@
 //
 
 #include "camera.h"
+#include "renderer.hpp"
 
 #include <components/input.hpp>
 #include <components/camera.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 void CameraSystem::add(flecs::world &ecs) {
     //NOTE: camera controller system
-    ecs.system<Camera, Input>().each([&ecs](Camera &camComp, Input &inputComp) {
+    ecs.system<Camera, Input>().each([&ecs](Camera &cam, Input &input) {
         //NOTE: process mouse movement
-        glm::vec2 mouseDelta{inputComp.mouseDeltaX * camComp.MouseSensitivity,
-                             inputComp.mouseDeltaY * camComp.MouseSensitivity};
-        camComp.Yaw -= mouseDelta.x;
-        camComp.Pitch -= mouseDelta.y;
+        glm::vec2 mouseDelta{input.mouseDeltaX * cam.MouseSensitivity,
+                             input.mouseDeltaY * cam.MouseSensitivity};
+        cam.Yaw -= mouseDelta.x;
+        cam.Pitch -= mouseDelta.y;
 
-        if (camComp.Pitch > 89.0f) camComp.Pitch = 89.0f;
-        if (camComp.Pitch < -89.0f) camComp.Pitch = -89.0f;
+        if (cam.Pitch > 89.0f) cam.Pitch = 89.0f;
+        if (cam.Pitch < -89.0f) cam.Pitch = -89.0f;
 
         //NOTE: process keyboard
-        const auto velocity = camComp.MovementSpeed * ecs.delta_time();
-        camComp.Position += camComp.Front * inputComp.movementDir * velocity;
+        const auto velocity = cam.MovementSpeed * ecs.delta_time();
+        cam.Position += cam.Front * input.movementDir * velocity;
 
         //NOTE: calculate vectors & matrices
-        const glm::vec3 front = {cos(glm::radians(camComp.Yaw)) * cos(glm::radians(camComp.Pitch)),
-                                 sin(glm::radians(camComp.Pitch)),
-                                 sin(glm::radians(camComp.Yaw)) * cos(glm::radians(camComp.Pitch))};
+        const glm::vec3 front = {cos(glm::radians(cam.Yaw)) * cos(glm::radians(cam.Pitch)),
+                                 sin(glm::radians(cam.Pitch)),
+                                 sin(glm::radians(cam.Yaw)) * cos(glm::radians(cam.Pitch))};
 
-        camComp.Front = glm::normalize(front);
-        camComp.Right = glm::normalize(glm::cross(camComp.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
-        camComp.Up = glm::normalize(glm::cross(camComp.Right, camComp.Front));
+        cam.Front = glm::normalize(front);
+        cam.Right = glm::normalize(glm::cross(cam.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
+        cam.Up = glm::normalize(glm::cross(cam.Right, cam.Front));
+        cam.ViewMatrix = glm::lookAt(cam.Position, cam.Position + cam.Front, cam.Up);
     });
 }

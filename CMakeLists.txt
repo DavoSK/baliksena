@@ -14,10 +14,16 @@ if(MSVC)
 endif()
 
 add_subdirectory(vendors)
-include_directories(vendors src)
+include_directories(vendors 
+    src
+    shaders/include
+)
 
 add_executable(baliksena 
     src/main.cpp
-        src/systems/camera.cpp src/systems/camera.h)
+    src/bmp_loader.cpp
+    src/renderer.cpp
+    src/systems/camera.cpp 
+    src/systems/camera.h)
 
 target_link_libraries(baliksena flecs)

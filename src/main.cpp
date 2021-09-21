@@ -1,61 +1,57 @@
-#define SOKOL_IMPL
-#define SOKOL_D3D11
-#include <sokol/sokol_gfx.h>
-#include <sokol/sokol_app.h>
-#include <sokol/sokol_glue.h>
-
 #include <flecs/flecs.h>
-
+#include <glm/gtc/matrix_transform.hpp>
 #include <components/input.hpp>
 #include <components/camera.hpp>
 #include <systems/camera.h>
+
+#include <sokol/sokol_app.h>
+
 #include <iostream>
 #include <unordered_map>
 
+#include "renderer.hpp"
+
 flecs::world ecs;
-sg_pass_action pass_action = {};
+flecs::entity cameraEntity;
 
 void sokolInit(void) {
-    setvbuf (stdout, NULL, _IONBF, 0);
-    sg_desc desc = { .context = sapp_sgcontext() };
-    sg_setup(&desc);
-
-    pass_action.colors[0] = { SG_ACTION_CLEAR, {1.0f, 0.0f, 0.0f, 1.0f} };
     CameraSystem::add(ecs);
 
-    AllocConsole();
-    freopen("CONOUT$", "w", stdout);
-
-    auto mainCameraEntity = ecs.entity("Main camera")
-            .set<Camera>({  .MovementSpeed = 10.0f, .MouseSensitivity = 0.1f})
-            .set<Input>({});
-
-    std::cout << mainCameraEntity.id() << std::endl;
+    auto* renderer = Renderer::get();
+    renderer->init();
+    cameraEntity= ecs.entity("Main camera")
+       .set<Camera>({  
+           .MovementSpeed = 10.0f, 
+           .MouseSensitivity = 0.1f, 
+           .ProjMatrix = glm::perspectiveLH(glm::radians(65.0f), (float)renderer->getWidth() / (float)renderer->getHeight(), 0.01f, 2000.0f)})
+       .set<Input>({});
 }
 
 void sokolFrame(void) {
-    /*float g = pass_action.colors[0].value.g + 0.01f;
-    pass_action.colors[0].value.g = (g > 1.0f) ? 0.0f : g;
-    sg_begin_default_pass(&pass_action, sapp_width(), sapp_height());
-    sg_end_pass();
-    sg_commit();*/
+    auto* camComponent = cameraEntity.get<Camera>();
+    RendererCamera rendererCamera = {
+        camComponent->ViewMatrix,
+        camComponent->ProjMatrix
+    };
+
+    Renderer::get()->render(rendererCamera);
     ecs.progress();
 }
 
 void sokolCleanup(void) {
-    sg_shutdown();
+    Renderer::destroy();
 }
 
 void sokolEvent(const sapp_event* event) {
     static std::unordered_map<sapp_keycode, bool> keysState;
 
     ecs.query<Input>().each([event](flecs::entity e, Input& p) {
-
-        const auto getMovementVec = [p, event]() {
-            float x = keysState[SAPP_KEYCODE_W] ? 1.0f : keysState[SAPP_KEYCODE_S] ? -1.0f : 0.0f;
-            float y = keysState[SAPP_KEYCODE_SPACE] ? 1.0f : keysState[SAPP_KEYCODE_LEFT_SHIFT] ? -1.0f : 0.0f;
-            float z = keysState[SAPP_KEYCODE_A] ? 1.0f : keysState[SAPP_KEYCODE_D] ? -1.0f : 0.0f;
-            return glm::vec3(x, y, z);
+        const auto getMovementVec = [p, event]() -> glm::vec3 { 
+            return {
+                keysState[SAPP_KEYCODE_W] ?       1.0f : keysState[SAPP_KEYCODE_S] ?          -1.0f : 0.0f,
+                keysState[SAPP_KEYCODE_SPACE] ?   1.0f : keysState[SAPP_KEYCODE_LEFT_SHIFT] ? -1.0f : 0.0f,
+                keysState[SAPP_KEYCODE_A] ?       1.0f : keysState[SAPP_KEYCODE_D] ?          -1.0f : 0.0f
+            };
         };
 
         switch (event->type) {
@@ -95,6 +91,6 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     desc.height             = 600;
     desc.window_title       = "Senko";
     desc.gl_force_gles2     = true;
-    desc.icon.sokol_default = true;
+    desc.icon.sokol_default = false;
     return desc;
 }
