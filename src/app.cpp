@@ -33,15 +33,17 @@ void App::init() {
 
 void App::render() {
     static auto lastTime = stm_now();
-    const auto deltaTime = stm_ms(stm_diff(stm_now(), lastTime));
+    const auto deltaTime = static_cast<float>(stm_ms(stm_diff(stm_now(), lastTime)));
 
     //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
-        cam->setDirDelta(mInput->getMouseDelta());
-        cam->setPosDelta(mInput->getMoveDir());
-        cam->update(deltaTime);
-        mInput->clearDeltas();
+        if(mInput->isMouseLocked()) {
+            cam->setDirDelta(mInput->getMouseDelta());
+            cam->setPosDelta(mInput->getMoveDir());
+            cam->update(deltaTime);
+        }
 
+        mInput->clearDeltas();
         Renderer::setProjMatrix(cam->getProjMatrix());
         Renderer::setViewMatrix(cam->getViewMatrix());
     }

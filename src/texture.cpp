@@ -4,11 +4,11 @@
 
 #include "texture.hpp"
 #include "renderer.hpp"
+#include "bmp_loader.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <stdint.h>
-
-#include "bmp_loader.hpp"
 
 std::shared_ptr<Texture> Texture::loadFromFile(const std::string& path, bool useTransparencyKey) {
     std::ifstream textureFile(path.c_str(), std::ifstream::binary);

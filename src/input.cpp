@@ -16,11 +16,22 @@ void Input::updateFromSokolEvent(const sapp_event* e) {
         case sapp_event_type::SAPP_EVENTTYPE_KEY_UP: {
             mKeysState[e->key_code] = false;
         } break;
-        case sapp_event_type::SAPP_EVENTTYPE_MOUSE_MOVE: {
-            mMouseDelta = { e->mouse_dx, e->mouse_dy };
-            mMouse = { e->mouse_x, e->mouse_y };
+        case sapp_event_type::SAPP_EVENTTYPE_MOUSE_MOVE: {            
+            mMouseDelta = { e->mouse_dx, e->mouse_dy};
+            mMousePos = { e->mouse_x, e->mouse_y };
         } break;
-
+        case sapp_event_type::SAPP_EVENTTYPE_MOUSE_DOWN: {
+            if (e->mouse_button == SAPP_MOUSEBUTTON_RIGHT) {
+                sapp_lock_mouse(true);
+                mIsMouseLocked = true;
+            }
+        } break;
+        case sapp_event_type::SAPP_EVENTTYPE_MOUSE_UP: {
+            if (e->mouse_button == SAPP_MOUSEBUTTON_RIGHT) {
+                sapp_lock_mouse(false);
+                mIsMouseLocked = false;
+            }
+        }  break;
         default:
             break;
     }

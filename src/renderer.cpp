@@ -27,7 +27,7 @@ static struct {
 } state;
 
 void Renderer::init() {
-    sapp_lock_mouse(true);
+    //sapp_lock_mouse(true);
 
     sg_desc desc = { .context = sapp_sgcontext() };
     sg_setup(&desc);
@@ -194,16 +194,25 @@ BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
         sizeof(Vertex) * vertices.size()
     };
 
-    sg_buffer_desc bufferDesc = {};
-    bufferDesc.size = sizeof(Vertex) * vertices.size();
-    bufferDesc.data = bufferData;
-    bufferDesc.label = "vertex-buffer";
+    sg_buffer_desc bufferDesc  = {};
+    bufferDesc.size            = sizeof(Vertex) * vertices.size();
+    bufferDesc.data            = bufferData;
+    bufferDesc.label           = "vertex-buffer";
     return { sg_make_buffer(&bufferDesc).id };
 }
 
 BufferHandle Renderer::createIndexBuffer(const std::vector<uint16_t>& indices) {
-    assert(1 == 0);
-    return { 999 };
+    sg_range bufferData ={
+        indices.data(), 
+        sizeof(uint16_t) * indices.size()
+    };
+
+    sg_buffer_desc bufferDesc = {};
+    bufferDesc.size     = sizeof(uint16_t) * indices.size();
+    bufferDesc.data     = bufferData;
+    bufferDesc.type     = sg_buffer_type::SG_BUFFERTYPE_INDEXBUFFER;
+    bufferDesc.label    = "index-buffer";
+    return { sg_make_buffer(&bufferDesc).id };
 }
 
 void Renderer::destroyBuffer(BufferHandle bufferHandle) {
