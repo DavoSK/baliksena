@@ -3,6 +3,7 @@
 #include "renderer.hpp"
 #include "camera.h"
 #include "scene.hpp"
+#include "texture.hpp"
 
 #define SOKOL_TIME_IMPL
 #include <sokol/sokol_time.h>
@@ -16,6 +17,8 @@ App::~App() {
 
 }
 
+std::shared_ptr<Texture> texture = nullptr;
+
 void App::init() {
     Renderer::init();
     stm_setup();
@@ -23,21 +26,30 @@ void App::init() {
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
+
+    texture = Texture::loadFromFile("C:\\Mafia\\MAPS\\shot275.bmp");
+    texture->bind(0);
 }
 
 void App::render() {
     static auto lastTime = stm_now();
-    const auto dt = stm_ms(stm_diff(stm_now(), lastTime));
-    
+    const auto deltaTime = stm_ms(stm_diff(stm_now(), lastTime));
+
+    //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
         cam->setDirDelta(mInput->getMouseDelta());
         cam->setPosDelta(mInput->getMoveDir());
+        cam->update(deltaTime);
         mInput->clearDeltas();
-        cam->update(dt);
-        
-        RendererCamera renderCamera = { cam->getViewMatrix(), cam->getProjMatrix()};
-        Renderer::render(renderCamera);
+
+        Renderer::setProjMatrix(cam->getProjMatrix());
+        Renderer::setViewMatrix(cam->getViewMatrix());
     }
+
+    Renderer::begin(RenderPass::NORMAL);
+    Renderer::render();
+    Renderer::end();
+    Renderer::commit();
 
     lastTime = stm_now();
 }

@@ -15,11 +15,15 @@
 #include "shader_basic.h"
 
 static struct {
+    //NOTE: sokol stuff
     sg_pipeline pip;
     sg_bindings bind;
     sg_pass_action pass_action;
-    uint8_t file_buffer[256 * 1024];
     glm::vec3 cube_positions[10];
+
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    RenderPass currentRenderPass;
 } state;
 
 void Renderer::init() {
@@ -96,65 +100,56 @@ void Renderer::init() {
     /* create shader from code-generated sg_shader_desc */
     sg_shader shd = sg_make_shader(simple_shader_desc(sg_query_backend()));
 
-    /* create a pipeline object (default render states are fine for triangle) */
+    /* create layoout for pipeline */
     sg_layout_desc layoutDesc {};
     layoutDesc.attrs[ATTR_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
     layoutDesc.attrs[ATTR_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
 
-    sg_depth_state depthState{
-        .compare = SG_COMPAREFUNC_LESS_EQUAL,
-        .write_enabled = true,
-    };
+    /* depth buffer stuff */
+    sg_depth_state depthState{};
+    depthState.compare = SG_COMPAREFUNC_LESS_EQUAL;
+    depthState.write_enabled = true;
 
-    sg_pipeline_desc pipelineDesc = {
-        .shader = shd,
-        .layout = layoutDesc, 
-        .depth = depthState, 
-        .label = "triangle-pipeline"
-    };
-
+    /* create pipeline */
+    sg_pipeline_desc pipelineDesc = {};
+    pipelineDesc.shader     = shd;
+    pipelineDesc.layout     = layoutDesc;
+    pipelineDesc.depth      = depthState;
+    pipelineDesc.label      = "ffp-pipeline";
     state.pip = sg_make_pipeline(&pipelineDesc);
     
     /* a pass action to clear framebuffer */
-    state.pass_action.colors[0] = { SG_ACTION_CLEAR, {0.2f, 0.3f, 0.3f, 1.0f} };
-
-    /* load first texture */
-    state.bind.fs_images[SLOT_texture1] = sg_alloc_image();
-    sg_image image1 = state.bind.fs_images[SLOT_texture1];
-
-    int w, h;
-    uint8_t* pixels = loadBMPEx("C:\\Mafia\\MAPS\\shot275.bmp", &w, &h, false);
-    if (pixels) {
-        sg_image_desc imageDesc {};
-        imageDesc.width         = w;
-        imageDesc.height        = h;
-        imageDesc.pixel_format  = SG_PIXELFORMAT_RGBA8;
-        imageDesc.wrap_u        = SG_WRAP_REPEAT;
-        imageDesc.wrap_v        = SG_WRAP_REPEAT;
-        imageDesc.min_filter    = SG_FILTER_LINEAR;
-        imageDesc.mag_filter    = SG_FILTER_LINEAR;
-        imageDesc.data = {
-            pixels, 
-            static_cast<size_t>(w * h * 4)
-        };
-
-        sg_init_image(image1, imageDesc);
-        free(pixels);
-    }
+    sg_color_attachment_action& color = state.pass_action.colors[0];
+    color.action = SG_ACTION_CLEAR;
+    color.value= { 0.2f, 0.3f, 0.3f, 1.0f };
 }
 
 void Renderer::destroy() {
     sg_shutdown();
 }
 
-void Renderer::render(const RendererCamera& renderCam) {        
-    sg_begin_default_pass(&state.pass_action, sapp_width(), sapp_height());
-    sg_apply_pipeline(state.pip);
-    sg_apply_bindings(&state.bind);
+void Renderer::begin(RenderPass pass) {
+    state.currentRenderPass = pass;
 
+    switch(pass) {
+        case RenderPass::NORMAL: {
+            sg_begin_default_pass(&state.pass_action, sapp_width(), sapp_height());
+            sg_apply_pipeline(state.pip);
+            sg_apply_bindings(&state.bind);
+        } break;
+
+        default:
+            break;
+    }
+}
+
+void Renderer::end()  { sg_end_pass(); }
+void Renderer::commit() { sg_commit(); }
+
+void Renderer::render() {
     vs_params_t vs_params = {
-        .view = renderCam.view,
-        .projection = renderCam.proj
+        .view           = state.viewMatrix,
+        .projection     = state.projMatrix
     };
 
     for(size_t i = 0; i < 10; i++) {
@@ -169,15 +164,60 @@ void Renderer::render(const RendererCamera& renderCam) {
         sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_vs_params, &uniformsRange);
         sg_draw(0, 36, 1);
     }
-
-    sg_end_pass();
-    sg_commit();
 }
 
-int Renderer::getWidth() {
-    return sapp_width();
+TextureHandle Renderer::createTexture(uint8_t* data, int width, int height) {
+    sg_image_desc imageDesc {};
+    imageDesc.width         = width;
+    imageDesc.height        = height;
+    imageDesc.pixel_format  = SG_PIXELFORMAT_RGBA8;
+    imageDesc.wrap_u        = SG_WRAP_REPEAT;
+    imageDesc.wrap_v        = SG_WRAP_REPEAT;
+    imageDesc.min_filter    = SG_FILTER_LINEAR;
+    imageDesc.mag_filter    = SG_FILTER_LINEAR;
+    imageDesc.data = { data, static_cast<size_t>(width * height * 4) };
+    return { sg_make_image(imageDesc).id };
 }
 
-int Renderer::getHeight() {
-    return sapp_height();
+void Renderer::destroyTexture(TextureHandle textureHandle) {
+    sg_destroy_image({ textureHandle.id });
 }
+
+void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
+    sg_image textureToBind = { textureHandle.id };
+    state.bind.fs_images[slot] = textureToBind;
+}
+
+BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
+    sg_range bufferData {
+        vertices.data(),
+        sizeof(Vertex) * vertices.size()
+    };
+
+    sg_buffer_desc bufferDesc = {};
+    bufferDesc.size = sizeof(Vertex) * vertices.size();
+    bufferDesc.data = bufferData;
+    bufferDesc.label = "vertex-buffer";
+    return { sg_make_buffer(&bufferDesc).id };
+}
+
+BufferHandle Renderer::createIndexBuffer(const std::vector<uint16_t>& indices) {
+    assert(1 == 0);
+    return { 999 };
+}
+
+void Renderer::destroyBuffer(BufferHandle bufferHandle) {
+    sg_buffer bufferToDestroy = { bufferHandle.id };
+    sg_destroy_buffer(bufferToDestroy);
+}
+
+void Renderer::setViewMatrix(const glm::mat4 &view) {
+    state.viewMatrix = view;
+}
+
+void Renderer::setProjMatrix(const glm::mat4 &proj) {
+    state.projMatrix = proj;
+}
+
+int Renderer::getWidth() { return sapp_width(); }
+int Renderer::getHeight() { return sapp_height(); }

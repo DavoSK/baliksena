@@ -13,7 +13,6 @@ if(MSVC)
     add_compile_options(/W4 /nologo)
 endif()
 
-add_subdirectory(vendors)
 include_directories(vendors 
     src
     shaders/include
@@ -26,6 +25,7 @@ add_executable(baliksena
     src/bmp_loader.cpp
     src/renderer.cpp
     src/input.cpp
-    src/camera.cpp)
+    src/camera.cpp
+    src/texture.cpp)
 
-target_link_libraries(baliksena flecs)
+target_link_libraries(baliksena)
