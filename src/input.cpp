@@ -27,3 +27,7 @@ void Input::updateFromSokolEvent(const sapp_event* e) {
 
     mMoveDir = getMovementVec();
 }
+
+void Input::clearDeltas() {
+    mMouseDelta = {0.0f, 0.0f};
+}

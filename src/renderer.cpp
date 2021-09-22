@@ -23,6 +23,8 @@ static struct {
 } state;
 
 void Renderer::init() {
+    sapp_lock_mouse(true);
+
     sg_desc desc = { .context = sapp_sgcontext() };
     sg_setup(&desc);
 
@@ -92,7 +94,7 @@ void Renderer::init() {
     state.bind.vertex_buffers[0] = sg_make_buffer(&bufferDesc);
 
     /* create shader from code-generated sg_shader_desc */
-    sg_shader shd = sg_make_shader(simple_shader_desc(SG_BACKEND_D3D11));
+    sg_shader shd = sg_make_shader(simple_shader_desc(sg_query_backend()));
 
     /* create a pipeline object (default render states are fine for triangle) */
     sg_layout_desc layoutDesc {};
@@ -121,7 +123,7 @@ void Renderer::init() {
     sg_image image1 = state.bind.fs_images[SLOT_texture1];
 
     int w, h;
-    uint8_t* pixels = loadBMPEx("shot275.bmp", &w, &h, false);
+    uint8_t* pixels = loadBMPEx("C:\\Mafia\\MAPS\\shot275.bmp", &w, &h, false);
     if (pixels) {
         sg_image_desc imageDesc {};
         imageDesc.width         = w;

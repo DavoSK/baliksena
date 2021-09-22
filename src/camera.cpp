@@ -3,11 +3,10 @@
 //
 
 #include "camera.h"
-#include "app.hpp"
 #include "input.hpp"
 
 glm::mat4 Camera::createProjMatrix(int width, int height) {
-    mProjMatrix = glm::perspectiveLH(glm::radians(getFOV()), (float)width / (float)height, 0.01f, 2000.0f);
+    mProjMatrix = glm::perspectiveLH(glm::radians(getFOV()), (float)width / (float)height, 0.1f, 900.0f);
     return mProjMatrix;
 }
 
@@ -18,11 +17,12 @@ glm::mat4 Camera::getViewMatrix() {
 
 void Camera::update(float deltaTime) {
     const auto velocity = MovementSpeed * deltaTime;
-    Position += Front * (mPosDelta * velocity);
+    Position -= mPosDelta.x * (Front * velocity);
+    Position += mPosDelta.y * (Up * velocity);
+    Position -= mPosDelta.z * (Right * velocity);
 
     Yaw -= mDirDelta.x * MouseSensitivity;
-    Pitch -= mDirDelta.y * MouseSensitivity;
-    printf("%f %f, %f %f %f\n", mDirDelta.x, mDirDelta.y, Position.x, Position.y, Position.z);
+    Pitch += mDirDelta.y * MouseSensitivity;
 
     if (Pitch > 89.0f) Pitch = 89.0f;
     if (Pitch < -89.0f) Pitch = -89.0f;

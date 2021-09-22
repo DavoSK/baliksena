@@ -11,8 +11,8 @@
 constexpr float SPEED_FAST = 80.0f;
 constexpr float YAW = -90.0f;
 constexpr float PITCH = 0.0f;
-constexpr float SPEED = 0.5f;
-constexpr float SENSITIVITY = 0.05f;
+constexpr float SPEED = 0.05f;
+constexpr float SENSITIVITY = 0.2f;
 constexpr float ZOOM = 65.0f;
 
 class Camera {
@@ -20,9 +20,9 @@ public:
     // NOTE: camera attributes
     glm::vec3 Position = {0.0f, 0.0f, 0.0f};
     glm::vec3 Front = {0.0f, 0.0f, 0.0f};
-    glm::vec3 Up = {0.0f, 1.0f, 0.0f};
+    glm::vec3 Up = {0.0f, 0.0f, 0.0f};
     glm::vec3 Right = {0.0f, 0.0f, 0.0f};
-    glm::vec3 WorldUp = {0.0f, 0.0f, 0.0f};
+    glm::vec3 WorldUp = {0.0f, 1.0f, 0.0f};
 
     // NOTE: euler angles
     float Yaw = YAW;

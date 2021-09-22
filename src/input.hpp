@@ -12,6 +12,7 @@ public:
     bool isKeyDown(sapp_keycode keyCode) { return mKeysState[keyCode]; }
     const glm::vec2& getMouseDelta() const { return mMouseDelta; }
     const glm::vec3& getMoveDir() const { return mMoveDir; }
+    void clearDeltas();
 private:
     glm::vec2 mMouse = {0.0f, 0.0f};
     glm::vec2 mMouseDelta = {0.0f, 0.0f};

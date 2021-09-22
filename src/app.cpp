@@ -32,6 +32,7 @@ void App::render() {
     if(auto cam = mScene->getActiveCamera().lock()) {
         cam->setDirDelta(mInput->getMouseDelta());
         cam->setPosDelta(mInput->getMoveDir());
+        mInput->clearDeltas();
         cam->update(dt);
         
         RendererCamera renderCamera = { cam->getViewMatrix(), cam->getProjMatrix()};
@@ -42,6 +43,14 @@ void App::render() {
 }
 
 void App::event(const sapp_event* e) {
+
+    //NOTE: update camera proj matrix
+    if(e->type == SAPP_EVENTTYPE_RESIZED) {
+        if(auto cam = mScene->getActiveCamera().lock()) {
+            cam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
+        }
+    }
+
     mInput->updateFromSokolEvent(e);
 }
 
