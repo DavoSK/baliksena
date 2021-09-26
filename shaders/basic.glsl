@@ -2,8 +2,10 @@
 
 @vs vs
 in vec3 aPos;
+in vec3 aNorm;
 in vec2 aTexCoord;
-  
+
+out vec3 Norm;  
 out vec2 TexCoord;
 
 uniform vs_params {
@@ -15,6 +17,7 @@ uniform vs_params {
 void main() {
     // note that we read the multiplication from right to left
     gl_Position = projection * view * model * vec4(aPos, 1.0);
+    Norm = aNorm;
     TexCoord = aTexCoord;
 }
 @end
@@ -22,6 +25,7 @@ void main() {
 @fs fs
 out vec4 FragColor;
 
+in vec3 Norm;
 in vec2 TexCoord;
 
 uniform sampler2D texture1;

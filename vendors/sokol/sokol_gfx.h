@@ -13697,12 +13697,14 @@ _SOKOL_PRIVATE void _sg_validate_begin(void) {
 _SOKOL_PRIVATE void _sg_validate(bool cond, _sg_validate_error_t err) {
     if (!cond) {
         _sg.validate_error = err;
-        SOKOL_LOG(_sg_validate_string(err));
+        const char* test = _sg_validate_string(err);
+        SOKOL_LOG(test);
     }
 }
 
 _SOKOL_PRIVATE bool _sg_validate_end(void) {
     if (_sg.validate_error != _SG_VALIDATE_SUCCESS) {
+        _sg_validate(false, _sg.validate_error);
         #if !defined(SOKOL_VALIDATE_NON_FATAL)
             SOKOL_LOG("^^^^  VALIDATION FAILED, TERMINATING ^^^^");
             SOKOL_ASSERT(false);

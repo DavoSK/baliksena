@@ -16,9 +16,22 @@ public:
     [[nodiscard]] TextureHandle getTextureHandle() const { return mTextureHandle; }
 private:
     void release();
-    uint8_t* mBuffer{nullptr };
+    uint8_t* mBuffer{nullptr};
     std::string mTextureName;
-    TextureHandle mTextureHandle;
+    TextureHandle mTextureHandle{0};
     int mWidth = 0;
     int mHeight = 0;
+};
+
+class TextureCache {
+public:
+    static void clear() { mCache.clear(); }
+    static std::shared_ptr<Texture> get(const std::string& path) {
+        return mCache[path];
+    }
+    static std::shared_ptr<Texture> add(std::shared_ptr<Texture> texture, const std::string& path) {
+        return mCache[path] = std::move(texture); 
+    }
+private:
+    static std::unordered_map<std::string, std::shared_ptr<Texture>> mCache;
 };

@@ -7,6 +7,8 @@
 
 #define SOKOL_TIME_IMPL
 #include <sokol/sokol_time.h>
+#include "frame.hpp"
+#include "model_loader.hpp"
 
 App::App() {
     mInput = std::make_unique<Input>();
@@ -17,7 +19,7 @@ App::~App() {
 
 }
 
-std::shared_ptr<Texture> texture = nullptr;
+std::shared_ptr<Frame> testModel = nullptr;
 
 void App::init() {
     Renderer::init();
@@ -27,13 +29,27 @@ void App::init() {
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
 
-    texture = Texture::loadFromFile("C:\\Mafia\\MAPS\\shot275.bmp");
-    texture->bind(0);
+    testModel = ModelLoader::loadModel("C:\\Mafia\\MODELS\\taxi00.4ds");
 }
 
+static int fpsCounter = 0;
+
+
 void App::render() {
-    static auto lastTime = stm_now();
-    const auto deltaTime = static_cast<float>(stm_ms(stm_diff(stm_now(), lastTime)));
+    static uint64_t lastTime = stm_now();    
+    const double deltaTime = stm_ms(stm_diff(stm_now(), lastTime));
+    
+    /*static float timeCounter = 0.0f;
+    timeCounter += deltaTime;
+    
+    if(timeCounter >= 1.0f) {
+         printf("fps: %d, %f\n", fpsCounter, timeCounter);
+        fpsCounter = 0;
+        timeCounter = 0.0f;
+    } else {
+        fpsCounter++;
+    }*/
+   
 
     //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
@@ -49,7 +65,8 @@ void App::render() {
     }
 
     Renderer::begin(RenderPass::NORMAL);
-    Renderer::render();
+    
+    testModel->render(glm::mat4(1.0f));
     Renderer::end();
     Renderer::commit();
 

@@ -26,7 +26,6 @@ class Renderer {
 public:
     static void destroy();
     static void init();
-    static void render();
     static void begin(RenderPass pass);
     static void end();
     static void commit();
@@ -38,9 +37,15 @@ public:
     static BufferHandle createVertexBuffer(const std::vector<Vertex>& vertices);
     static BufferHandle createIndexBuffer(const std::vector<uint16_t>& indices);
     static void destroyBuffer(BufferHandle bufferHandle);
+    static void bindVertexBuffer(BufferHandle handle);
+    static void bindIndexBuffer(BufferHandle handle);
 
+    static void setModel(const glm::mat4& model);
     static void setViewMatrix(const glm::mat4& view);
     static void setProjMatrix(const glm::mat4& proj);
+
+    static void draw(int baseElement, int numElements, int numInstances);
+
     static int getWidth();
     static int getHeight();
 };

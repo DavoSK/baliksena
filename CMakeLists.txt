@@ -19,10 +19,17 @@ include_directories(vendors
 )
 
 add_executable(baliksena 
+    src/mafia/parser_4ds.cpp
+    src/mafia/parser_cachebin.cpp
+    src/mafia/parser_scene2bin.cpp
+
     src/main.cpp
     src/app.cpp
     src/scene.cpp
+    src/frame.cpp
+    src/mesh.cpp
     src/bmp_loader.cpp
+    src/model_loader.cpp
     src/renderer.cpp
     src/input.cpp
     src/camera.cpp
