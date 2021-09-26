@@ -4,31 +4,15 @@
 #include <vector>
 #include <memory>
 
-extern int gFrameCount;
-
 class Frame {
 public:
-    Frame(const glm::mat4& transform, const std::string& frameName) :
-        mTransform(transform),
-        mCachedTransform(transform),
-        mName(frameName),
-        mOn(true),
-        mIsTransformDirty(true),
-        mOwner(nullptr) {
-            gFrameCount++;
-    }
-
-    Frame(const glm::mat4& transform = glm::mat4(1.0f)) :
-        mTransform(transform),
-        mCachedTransform(transform),
+    Frame() :
+        mTransform(glm::mat4(1.0f)),
+        mCachedTransform(mTransform),
         mName("empty"),
         mOn(true),
         mIsTransformDirty(true),
         mOwner(nullptr) {
-            gFrameCount++;
-    }
-    ~Frame() {
-        gFrameCount--;
     }
 
     virtual void render();
@@ -43,6 +27,7 @@ public:
     const std::vector<std::shared_ptr<Frame>>& getChilds() { return mChilds; };
 
     const glm::mat4& getWorldMatrix();
+    
     const glm::mat4& getMatrix() { return mTransform; }
     void setMatrix(const glm::mat4& mat) {
         mTransform = mat;

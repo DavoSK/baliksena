@@ -107,7 +107,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
             indices.push_back(face.mC);
         }
 
-        auto faceGroup = std::make_unique<FaceGroup>(indices, newMesh.get());
+        auto faceGroup = std::make_unique<FaceGroup>(indices, newMesh);
         if (mafiaFaceGroup.mMaterialID > 0) {
             faceGroup->setMaterial(loadMaterial(materials[mafiaFaceGroup.mMaterialID - 1]));
         }
@@ -155,19 +155,20 @@ std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::
 std::shared_ptr<Frame> ModelLoader::loadModel(const std::string& path) {
     std::ifstream modelFile(path, std::ifstream::binary);
     if (!modelFile.good()) {
-        printf("[!] unable to load model: %s\n", path);
+        printf("[!] unable to load model: %s\n", path.c_str());
         return nullptr;
     }
 
     MFFormat::DataFormat4DS modelParser;
     if (!modelParser.load(modelFile)) {
-        printf("[!] unable to load model: %s\n", path);
+        printf("[!] unable to load model: %s\n", path.c_str());
         return nullptr;
     }
 
     auto parserModel = modelParser.getModel();
     auto modelName = std::filesystem::path(path).filename().string();
-    auto rootNode = std::make_shared<Frame>(glm::mat4(1.0f), modelName);
+    auto rootNode = std::make_shared<Frame>();
+    rootNode->setName(modelName);
 
     // NOTE: linear loading of meshes
     std::vector<std::shared_ptr<Frame>> loadedMeshes;

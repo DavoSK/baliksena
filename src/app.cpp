@@ -32,8 +32,7 @@ void App::init() {
 
 void App::render() {
     static uint64_t lastTime = stm_now();    
-    const double deltaTime = stm_ms(stm_diff(stm_now(), lastTime));
-    //printf("dt: %f\n", deltaTime);
+    const auto deltaTime = static_cast<float>(stm_ms(stm_diff(stm_now(), lastTime)));
 
     //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
@@ -52,7 +51,6 @@ void App::render() {
     testModel->render();
     Renderer::end();
     Renderer::commit();
-
     lastTime = stm_now();
 }
 
@@ -71,9 +69,7 @@ void App::event(const sapp_event* e) {
 int gFrameCount;
 
 void App::destroy() {
-    printf("frame count: %d\n", gFrameCount);
     delete this;
     TextureCache::clear();
     Renderer::destroy();
-    printf("frame count: %d\n", gFrameCount);
 }

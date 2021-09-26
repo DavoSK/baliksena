@@ -16,7 +16,7 @@ namespace MFFormat {
 class DataFormat {
 public:
     virtual bool load(std::ifstream& srcFile) = 0;
-    virtual bool save(std::ofstream& dstFile) { return false; /* optional */ };
+    //virtual bool save(std::ofstream& dstFile) { return false; /* optional */ };
     virtual std::string getErrorStr() { return "Unknown error"; };
 protected:
     template <typename T>

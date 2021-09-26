@@ -11,7 +11,7 @@ class Texture;
 class FaceGroup {
 public:
     ~FaceGroup();
-    explicit FaceGroup(std::vector<uint16_t> indices, Mesh* mesh) :
+    explicit FaceGroup(std::vector<uint16_t> indices, std::weak_ptr<Mesh> mesh) :
         mIndices(std::move(indices)),
         mMesh(mesh) {
     }
@@ -23,7 +23,7 @@ public:
     [[nodiscard]] const std::shared_ptr<Texture>& getMaterial() { return mMaterial; }
 
 private:
-    Mesh* mMesh = nullptr;
+    std::weak_ptr<Mesh> mMesh;
     std::vector<uint16_t> mIndices;
     std::shared_ptr<Texture> mMaterial = nullptr;
     BufferHandle mIndexBuffer{0};
