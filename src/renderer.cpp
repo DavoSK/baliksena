@@ -1,21 +1,21 @@
 #include "bmp_loader.hpp"
 
 #define SOKOL_IMPL
-//#define SOKOL_D3D11
-#define SOKOL_GLCORE33
+#define SOKOL_D3D11
+//#define SOKOL_GLCORE33
 
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
 #include <sokol/sokol_glue.h>
 
-#include "renderer.hpp"
-
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
 #include "shader_basic.h"
+#include "renderer.hpp"
 
 static struct {
+    sg_shader shader;
     sg_pipeline pip;
     sg_bindings bind;
     sg_pass_action passAction;
@@ -28,12 +28,12 @@ void Renderer::init() {
     sg_setup(&desc);
   
     /* create shader from code-generated sg_shader_desc */
-    sg_shader shd = sg_make_shader(simple_shader_desc(sg_query_backend()));
+    state.shader = sg_make_shader(simple_shader_desc(sg_query_backend()));
 
     /* create layoout for pipeline */
     sg_layout_desc layoutDesc {};
     layoutDesc.attrs[ATTR_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
-    layoutDesc.attrs[ATTR_vs_aNorm].format = SG_VERTEXFORMAT_FLOAT3;
+    layoutDesc.attrs[ATTR_vs_aNormal].format = SG_VERTEXFORMAT_FLOAT3;
     layoutDesc.attrs[ATTR_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
 
     /* depth buffer stuff */
@@ -43,7 +43,7 @@ void Renderer::init() {
 
     /* create pipeline */
     sg_pipeline_desc pipelineDesc = {};
-    pipelineDesc.shader     = shd;
+    pipelineDesc.shader     = state.shader;
     pipelineDesc.layout     = layoutDesc;
     pipelineDesc.depth      = depthState;
     pipelineDesc.index_type = sg_index_type::SG_INDEXTYPE_UINT16;
@@ -57,6 +57,8 @@ void Renderer::init() {
 }
 
 void Renderer::destroy() {
+    sg_destroy_shader(state.shader);
+    sg_destroy_pipeline(state.pip);
     sg_shutdown();
 }
 

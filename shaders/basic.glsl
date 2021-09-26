@@ -2,7 +2,7 @@
 
 @vs vs
 in vec3 aPos;
-in vec3 aNorm;
+in vec3 aNormal;
 in vec2 aTexCoord;
 
 out vec3 Norm;  
@@ -17,7 +17,7 @@ uniform vs_params {
 void main() {
     // note that we read the multiplication from right to left
     gl_Position = projection * view * model * vec4(aPos, 1.0);
-    Norm = aNorm;
+    Norm = aNormal;
     TexCoord = aTexCoord;
 }
 @end

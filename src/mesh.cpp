@@ -27,12 +27,10 @@ Mesh::~Mesh() {
     Renderer::destroyBuffer(mVertexBuffer);
 }
 
-void Mesh::render(const glm::mat4& wmat) {
-    Frame::render(wmat);
-    auto mat = getOwner() != nullptr ? getOwner()->getWorldMatrix() : wmat;
-
+void Mesh::render() {
+    Frame::render();
     Renderer::bindVertexBuffer(mVertexBuffer);
-    Renderer::setModel(mat);
+    Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
         faceGroup->render();

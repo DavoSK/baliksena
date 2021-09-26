@@ -1,10 +1,10 @@
 #include "frame.hpp"
 
-void Frame::render(const glm::mat4& mat) {
+void Frame::render() {
     if (!mOn) return;
 
     for (auto& child : mChilds) {
-        child->render(mat);
+        child->render();
     }
 }
 
@@ -30,7 +30,6 @@ const glm::mat4& Frame::getWorldMatrix() {
 void Frame::invalidateTransformRecursively() {
     invalidateTransform();
     //updateAABBWorld();
-
     for (const auto& frame : mChilds) {
         frame->invalidateTransformRecursively();
     }

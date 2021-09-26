@@ -41,7 +41,7 @@ public:
 
     [[nodiscard]] const std::vector<std::unique_ptr<FaceGroup>>& getFaceGroups() { return mFaceGroups; }
 
-    void render(const glm::mat4& mat) override;
+    void render() override;
     void init();
 private:
     std::vector<Vertex> mVertices;

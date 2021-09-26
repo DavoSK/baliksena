@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 
+extern int gFrameCount;
+
 class Frame {
 public:
     Frame(const glm::mat4& transform, const std::string& frameName) :
@@ -13,6 +15,7 @@ public:
         mOn(true),
         mIsTransformDirty(true),
         mOwner(nullptr) {
+            gFrameCount++;
     }
 
     Frame(const glm::mat4& transform = glm::mat4(1.0f)) :
@@ -22,9 +25,13 @@ public:
         mOn(true),
         mIsTransformDirty(true),
         mOwner(nullptr) {
+            gFrameCount++;
+    }
+    ~Frame() {
+        gFrameCount--;
     }
 
-    virtual void render(const glm::mat4& mat);
+    virtual void render();
 
     void setOwner(Frame* frame) { mOwner = frame; }
     Frame* getOwner() { return mOwner; }

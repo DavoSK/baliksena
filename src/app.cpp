@@ -19,8 +19,6 @@ App::~App() {
 
 }
 
-std::shared_ptr<Frame> testModel = nullptr;
-
 void App::init() {
     Renderer::init();
     stm_setup();
@@ -32,24 +30,10 @@ void App::init() {
     testModel = ModelLoader::loadModel("C:\\Mafia\\MODELS\\taxi00.4ds");
 }
 
-static int fpsCounter = 0;
-
-
 void App::render() {
     static uint64_t lastTime = stm_now();    
     const double deltaTime = stm_ms(stm_diff(stm_now(), lastTime));
-    
-    /*static float timeCounter = 0.0f;
-    timeCounter += deltaTime;
-    
-    if(timeCounter >= 1.0f) {
-         printf("fps: %d, %f\n", fpsCounter, timeCounter);
-        fpsCounter = 0;
-        timeCounter = 0.0f;
-    } else {
-        fpsCounter++;
-    }*/
-   
+    //printf("dt: %f\n", deltaTime);
 
     //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
@@ -65,8 +49,7 @@ void App::render() {
     }
 
     Renderer::begin(RenderPass::NORMAL);
-    
-    testModel->render(glm::mat4(1.0f));
+    testModel->render();
     Renderer::end();
     Renderer::commit();
 
@@ -85,6 +68,12 @@ void App::event(const sapp_event* e) {
     mInput->updateFromSokolEvent(e);
 }
 
+int gFrameCount;
+
 void App::destroy() {
+    printf("frame count: %d\n", gFrameCount);
     delete this;
+    TextureCache::clear();
+    Renderer::destroy();
+    printf("frame count: %d\n", gFrameCount);
 }

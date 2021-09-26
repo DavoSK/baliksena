@@ -192,5 +192,6 @@ std::shared_ptr<Frame> ModelLoader::loadModel(const std::string& path) {
         }
     }
 
+    rootNode->invalidateTransformRecursively();
     return rootNode;
 }
