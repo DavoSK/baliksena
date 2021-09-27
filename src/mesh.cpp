@@ -11,7 +11,10 @@ FaceGroup::~FaceGroup() {
 
 void FaceGroup::render() const {
     Renderer::bindIndexBuffer(mIndexBuffer);
-    mMaterial->bind();
+    
+    if( mMaterial != nullptr)
+        mMaterial->bind();
+
     Renderer::draw(0, static_cast<int>(mIndices.size()), 1);
 }
 
@@ -24,11 +27,17 @@ void FaceGroup::init() {
 */
 
 Mesh::~Mesh() {
-    Renderer::destroyBuffer(mVertexBuffer);
+    if(!mVertices.empty()) {
+        Renderer::destroyBuffer(mVertexBuffer);
+    }
 }
 
 void Mesh::render() {
     Frame::render();
+
+    if(mVertices.empty())
+        return;
+
     Renderer::bindVertexBuffer(mVertexBuffer);
     Renderer::setModel(getWorldMatrix());
 
@@ -38,6 +47,9 @@ void Mesh::render() {
 }
 
 void Mesh::init() {
+    if(mVertices.empty())
+        return;
+
     mVertexBuffer = Renderer::createVertexBuffer(mVertices);
 
     for (auto& faceGroup : mFaceGroups) {

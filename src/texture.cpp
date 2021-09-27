@@ -9,20 +9,32 @@
 #include <filesystem>
 #include <fstream>
 
-std::shared_ptr<Texture> Texture::loadFromFile(const std::string& path, bool useTransparencyKey) {
-    auto texture = TextureCache::get(path);
-    if (!texture) {
-        std::ifstream textureFile(path.c_str(), std::ifstream::binary);
-        if (textureFile.good()) {
-            auto newTexture = std::make_shared<Texture>();
-            newTexture->mTextureName = std::filesystem::path(path.c_str()).filename().string().c_str();
-            newTexture->mBuffer = loadBMP(textureFile, &newTexture->mWidth, &newTexture->mHeight, useTransparencyKey);
+std::unordered_map<std::string, std::shared_ptr<Texture>> gTextureCache;
+
+void Texture::clearCache() 
+{
+    gTextureCache.clear();
+}
+
+std::weak_ptr<Texture> Texture::loadFromFile(const std::string& fileName, bool useTransparencyKey) 
+{
+    auto texture = gTextureCache[fileName];
+    if (texture == nullptr) 
+    {
+        auto path = "C:\\Mafia\\MAPS\\" + fileName;
+        std::ifstream textureFile(path, std::ifstream::binary);
+        if (textureFile.good()) 
+        {
+            //NOTE: init new texture
+            auto newTexture             = std::make_shared<Texture>();
+            newTexture->mTextureName    = fileName;
+            newTexture->mBuffer         = loadBMP(textureFile, &newTexture->mWidth, &newTexture->mHeight, useTransparencyKey);
             
             if (!newTexture->mBuffer)
-                return nullptr;
+                return {};
 
             newTexture->mTextureHandle = Renderer::createTexture(newTexture->mBuffer, newTexture->mWidth, newTexture->mHeight);
-            return TextureCache::add(std::move(newTexture), path);
+            return gTextureCache[fileName] = std::move(newTexture);
         }
     }
 
@@ -40,5 +52,3 @@ void Texture::release() {
         mBuffer = nullptr;
     }
 }
-
-std::unordered_map<std::string, std::shared_ptr<Texture>> TextureCache::mCache;

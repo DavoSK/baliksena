@@ -1,8 +1,8 @@
 #include "bmp_loader.hpp"
 
 #define SOKOL_IMPL
-#define SOKOL_D3D11
-//#define SOKOL_GLCORE33
+//#define SOKOL_D3D11
+#define SOKOL_GLCORE33
 
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
@@ -103,6 +103,20 @@ void Renderer::destroyTexture(TextureHandle textureHandle) {
 void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
     sg_image textureToBind = { textureHandle.id };
     state.bind.fs_images[slot] = textureToBind;
+}
+
+void Renderer::bindMaterial(const RendererMaterial& material) {
+    if(material.diffuseTexture.has_value()) {
+        bindTexture(material.diffuseTexture.value(), 0);
+    }
+
+   /* if(material.alphaTexture.has_value()) {
+        bindTexture(material.alphaTexture.value(), 1);
+    }   
+
+    if(material.alphaTexture.has_value()) {
+        bindTexture(material.alphaTexture.value(), 2);
+    }*/
 }
 
 BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {

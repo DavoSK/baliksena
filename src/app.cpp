@@ -27,12 +27,12 @@ void App::init() {
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
 
-    testModel = ModelLoader::loadModel("C:\\Mafia\\MODELS\\taxi00.4ds");
+    testModel = ModelLoader::loadModel("C:\\Mafia\\MISSIONS\\EXTREME\\scene.4ds");
 }
 
 void App::render() {
     static uint64_t lastTime = stm_now();    
-    const auto deltaTime = static_cast<float>(stm_ms(stm_diff(stm_now(), lastTime)));
+    const auto deltaTime = 16.0f;//static_cast<float>(stm_ms(stm_diff(stm_now(), lastTime)));
 
     //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
@@ -70,6 +70,6 @@ int gFrameCount;
 
 void App::destroy() {
     delete this;
-    TextureCache::clear();
+    Texture::clearCache();
     Renderer::destroy();
 }

@@ -16,12 +16,16 @@ enum TextureSlots { DIFFUSE = 0, ALPHA, ENV, ANIMATED, USER_END };
 class Texture;
 class Material {
 public:
+    ~Material() {
+        printf("~Material()\n");
+    }
+
     void bind();
     void createTextureForSlot(unsigned int slot, const std::string& path);
     void appendAnimatedTexture(const std::string& path);
 
     [[nodiscard]] bool hasTexture(size_t textureIndex) const {
-        return textureIndex < TextureSlots::USER_END - 1 && !mTextures[textureIndex].expired();
+        return (textureIndex < TextureSlots::USER_END - 1 && !mTextures[textureIndex].expired());
     }
 
     [[nodiscard]] std::weak_ptr<Texture> getTexture(size_t textureIndex) { return mTextures[textureIndex]; }
@@ -65,20 +69,21 @@ public:
 
     [[nodiscard]] bool isAnimated() const { return mIsAnimated; }
 private:
+    RendererMaterial mRenderMaterial{};
     std::array<std::weak_ptr<Texture>, TextureSlots::USER_END> mTextures;
     std::vector<std::weak_ptr<Texture>> mAnimatedTextures;
-    glm::vec3 mAmbient = {0.0f, 0.0f, 0.0f};
-    glm::vec3 mDiffuse = {0.0f, 0.0f, 0.0f};
-    glm::vec3 mEmission = {0.0f, 0.0f, 0.0f};
-    float mEnvRatio = 0.0f;
-    float mTransparency = 1.0f;
-    uint32_t mAnimationPeriod = 0;
-    size_t mCurrentAnimatedDiffuseIdx = 0;
-    double mLastUpdated = 0.0f;
-    bool mAditiveMixing = false;
-    bool mIsAnimated = false;
-    bool mIsDoubleSided = false;
-    bool mIsColored = false;
-    bool mHasTransparencyKey = false;
-    TextureBlending mBlending;
+    glm::vec3 mAmbient                  = {0.0f, 0.0f, 0.0f};
+    glm::vec3 mDiffuse                  = {0.0f, 0.0f, 0.0f};
+    glm::vec3 mEmission                 = {0.0f, 0.0f, 0.0f};
+    float mEnvRatio                     = 0.0f;
+    float mTransparency                 = 1.0f;
+    uint32_t mAnimationPeriod           = 0;
+    size_t mCurrentAnimatedDiffuseIdx   = 0;
+    double mLastUpdated                 = 0.0f;
+    bool mAditiveMixing                 = false;
+    bool mIsAnimated                    = false;
+    bool mIsDoubleSided                 = false;
+    bool mIsColored                     = false;
+    bool mHasTransparencyKey            = false;
+    TextureBlending mBlending           = TextureBlending::NORMAL;
 };

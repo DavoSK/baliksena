@@ -17,15 +17,34 @@ void Material::bind() {
         }        mAnimatedTextures.push_back(texture);
     }*/
 
-    //Renderer::bindMaterial(this);
+    Renderer::bindMaterial(mRenderMaterial);
 }
 
 void Material::createTextureForSlot(unsigned int slot, const std::string& path) {
-    mTextures[slot] = Texture::loadFromFile(path, mHasTransparencyKey);
+    std::weak_ptr<Texture> texturePtr = Texture::loadFromFile(path, mHasTransparencyKey);
+        if(auto texture = texturePtr.lock()) {
+        
+        switch(static_cast<TextureSlots>(slot)) {
+            case TextureSlots::DIFFUSE: {
+                mRenderMaterial.diffuseTexture = texture->getTextureHandle();
+            } break;
+
+            // case TextureSlots::ALPHA: {
+            //     mRenderMaterial.alphaTexture = texture->getTextureHandle();
+            // } break;
+
+            // case TextureSlots::ENV: {
+            //     mRenderMaterial.envTexture = texture->getTextureHandle();
+            // } break;
+
+            default: 
+                break;
+        }
+    }
+
+    mTextures[slot] = texturePtr;
 }
 
 void Material::appendAnimatedTexture(const std::string& path) {
-    auto texture = Texture::loadFromFile(path, mHasTransparencyKey);
-    if (texture) {
-    }
+    mAnimatedTextures.push_back(Texture::loadFromFile(path, mHasTransparencyKey));
 }

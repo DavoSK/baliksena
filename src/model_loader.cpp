@@ -50,8 +50,8 @@
     return result;
 }
 
-[[nodiscard]] std::shared_ptr<Material> loadMaterial(const MFFormat::DataFormat4DS::Material& mafiaMaterial) {
-    auto material = std::make_shared<Material>();
+[[nodiscard]] std::unique_ptr<Material> loadMaterial(const MFFormat::DataFormat4DS::Material& mafiaMaterial) {
+    auto material = std::make_unique<Material>();
 
     bool hasDiffuse = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_TEXTUREDIFFUSE;
     bool isDiffuseAnimated = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ANIMATEDTEXTUREDIFFUSE;
@@ -146,48 +146,57 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;
     } break;
     default: {
-        //printf("[!] unable to load visual mesh type: %d\n", mesh.mVisualMeshType);
+        printf("[!] unable to load visual mesh type: %d\n", mesh.mVisualMeshType);
     } break;
     }
 
-    if (!lods || lods->size() <= 0) return nullptr;
-    auto& lod = lods->at(0);
-
-    // NOTE: get vertices from lod
-    std::vector<Vertex> vertices;
-    for (const auto& mafiaVertex : lod.mVertices) {
-        Vertex vertex{};
-        vertex.p = { mafiaVertex.mPos.x, mafiaVertex.mPos.y, mafiaVertex.mPos.z };
-        vertex.n = { mafiaVertex.mNormal.x, mafiaVertex.mNormal.y, mafiaVertex.mNormal.z };
-        vertex.uv = { mafiaVertex.mUV.x, mafiaVertex.mUV.y * -1.0f };
-        vertices.push_back(vertex);
-    }
-
-    auto newMesh = std::make_shared<Mesh>(vertices);;
+    auto newMesh = std::make_shared<Mesh>();;
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
 
-    for (const auto& mafiaFaceGroup : lod.mFaceGroups) {
-        std::vector<uint16_t> indices;
-        for (const auto& face : mafiaFaceGroup.mFaces) {
-            indices.push_back(face.mA);
-            indices.push_back(face.mB);
-            indices.push_back(face.mC);
+    if (!lods || lods->size() <= 0) {
+        return std::move(newMesh);
+    }
+
+    auto& lod = lods->at(0);
+
+    // NOTE: get vertices from lod
+    {
+        std::vector<Vertex> vertices;
+        for (const auto& mafiaVertex : lod.mVertices) {
+            Vertex vertex{};
+            vertex.p = { mafiaVertex.mPos.x, mafiaVertex.mPos.y, mafiaVertex.mPos.z };
+            vertex.n = { mafiaVertex.mNormal.x, mafiaVertex.mNormal.y, mafiaVertex.mNormal.z };
+            vertex.uv = { mafiaVertex.mUV.x, mafiaVertex.mUV.y * -1.0f };
+            vertices.push_back(vertex);
         }
 
-        auto faceGroup = std::make_unique<FaceGroup>(indices, newMesh);
-        if (mafiaFaceGroup.mMaterialID > 0) {
-            faceGroup->setMaterial(loadMaterial(materials[mafiaFaceGroup.mMaterialID - 1]));
-        }
+        newMesh->setVertices(vertices);
+    }
 
-        newMesh->addFaceGroup(std::move(faceGroup));
+    //NOTE: load face groups
+    {
+        for (const auto& mafiaFaceGroup : lod.mFaceGroups) {
+            std::vector<uint16_t> indices;
+            for (const auto& face : mafiaFaceGroup.mFaces) {
+                indices.push_back(face.mA);
+                indices.push_back(face.mB);
+                indices.push_back(face.mC);
+            }
+
+            auto faceGroup = std::make_unique<FaceGroup>(indices, newMesh);
+            if (mafiaFaceGroup.mMaterialID > 0) {
+                faceGroup->setMaterial(loadMaterial(materials[mafiaFaceGroup.mMaterialID - 1]));
+            }
+            newMesh->addFaceGroup(std::move(faceGroup));
+        }
     }
 
     newMesh->init();
     return std::move(newMesh);
 }
 
-[[nodiscard]] std::shared_ptr<Frame> loadSector(MFFormat::DataFormat4DS::Mesh& mesh) {
+[[nodiscard]] std::shared_ptr<Frame> loadDummy(MFFormat::DataFormat4DS::Mesh& mesh) {
     auto newMesh = std::make_shared<Frame>();
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
@@ -200,20 +209,14 @@ std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::
             return loadStandard(mesh, materials);
         } break;
 
-        case MFFormat::DataFormat4DS::MeshType::MESHTYPE_SECTOR: {
-            return loadSector(mesh);
-        } break;
-
+        case MFFormat::DataFormat4DS::MeshType::MESHTYPE_SECTOR:
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_COLLISION:
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_DUMMY: {
-            /*auto bbox = eastl::make_pair<glm::vec3, glm::vec3>({ mesh.mDummy.mMinBox.x, mesh.mDummy.mMinBox.y, mesh.mDummy.mMinBox.z },
-                { mesh.mDummy.mMaxBox.x, mesh.mDummy.mMaxBox.y, mesh.mDummy.mMaxBox.z });
-
-            newNode->setBBOX(bbox);*/
-            return loadSector(mesh);
+            return loadDummy(mesh);
         } break;
+
         default: {
-            //NOTE: unimplmented
+            printf("unable to load mesh type %d\n", mesh.mMeshName);
         } break;
     }
 
@@ -261,6 +264,6 @@ std::shared_ptr<Frame> ModelLoader::loadModel(const std::string& path) {
         }
     }
 
-    rootNode->invalidateTransformRecursively();
+    //rootNode->invalidateTransformRecursively();
     return rootNode;
 }
