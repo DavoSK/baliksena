@@ -1,6 +1,19 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vector>
+#include <optional>
+
+enum class RenderPass {
+    NORMAL,
+    TRANSPARENCY,
+    CAMERA_RELATIVE,
+};
+
+enum class TextureBlending {
+    NORMAL,
+    MUL,
+    ADD
+};
 
 struct Vertex {
     glm::vec3 p;
@@ -12,14 +25,22 @@ struct TextureHandle {
     uint32_t id;
 };
 
-struct BufferHandle {
-    uint32_t id;
+struct RendererMaterial {
+    std::optional<TextureHandle> diffuseTexture;
+    std::optional<TextureHandle> alphaTexture;
+    std::optional<TextureHandle> envTexture;
+    TextureBlending envTextureBlending;
+    float envTextureBlendingRatio;
+    bool isDoubleSided;
+    bool hasTransparencyKey;
+    float transparency;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 emission;
 };
 
-enum class RenderPass {
-    NORMAL,
-    TRANSPARENCY,
-    CAMERA_RELATIVE,
+struct BufferHandle {
+    uint32_t id;
 };
 
 class Renderer {
@@ -33,6 +54,7 @@ public:
     static TextureHandle createTexture(uint8_t* data, int width, int height);
     static void destroyTexture(TextureHandle textureHandle);
     static void bindTexture(TextureHandle textureHandle, unsigned int slot);
+    static void bindMaterial(const RendererMaterial& material);
 
     static BufferHandle createVertexBuffer(const std::vector<Vertex>& vertices);
     static BufferHandle createIndexBuffer(const std::vector<uint16_t>& indices);

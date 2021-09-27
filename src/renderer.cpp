@@ -43,11 +43,13 @@ void Renderer::init() {
 
     /* create pipeline */
     sg_pipeline_desc pipelineDesc = {};
-    pipelineDesc.shader     = state.shader;
-    pipelineDesc.layout     = layoutDesc;
-    pipelineDesc.depth      = depthState;
-    pipelineDesc.index_type = sg_index_type::SG_INDEXTYPE_UINT16;
-    pipelineDesc.label      = "ffp-pipeline";
+    pipelineDesc.shader         = state.shader;
+    pipelineDesc.layout         = layoutDesc;
+    pipelineDesc.depth          = depthState;
+    pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT16;
+    pipelineDesc.face_winding   = sg_face_winding::SG_FACEWINDING_CW;
+    pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_BACK;
+    pipelineDesc.label          = "ffp-pipeline";
     state.pip = sg_make_pipeline(&pipelineDesc);
     
     /* a pass action to clear framebuffer */

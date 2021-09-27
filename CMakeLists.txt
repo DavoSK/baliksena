@@ -32,6 +32,6 @@ add_executable(baliksena
     src/renderer.cpp
     src/input.cpp
     src/camera.cpp
-    src/texture.cpp)
+    src/texture.cpp src/material.cpp src/material.hpp)
 
 target_link_libraries(baliksena)

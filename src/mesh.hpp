@@ -6,7 +6,7 @@
 #include <memory>
 
 class Mesh;
-class Texture;
+class Material;
 
 class FaceGroup {
 public:
@@ -19,13 +19,13 @@ public:
     void render() const;
     void init();
 
-    void setMaterial(std::shared_ptr<Texture> mat) { mMaterial = std::move(mat); }
-    [[nodiscard]] const std::shared_ptr<Texture>& getMaterial() { return mMaterial; }
+    void setMaterial(std::shared_ptr<Material> mat) { mMaterial = std::move(mat); }
+    [[nodiscard]] const std::shared_ptr<Material>& getMaterial() { return mMaterial; }
 
 private:
     std::weak_ptr<Mesh> mMesh;
     std::vector<uint16_t> mIndices;
-    std::shared_ptr<Texture> mMaterial = nullptr;
+    std::shared_ptr<Material> mMaterial;
     BufferHandle mIndexBuffer{0};
 };
 

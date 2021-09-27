@@ -6,6 +6,7 @@
 
 #include "renderer.hpp"
 #include "mesh.hpp"
+#include "material.hpp"
 #include "texture.hpp"
 
 #include <filesystem>
@@ -49,15 +50,82 @@
     return result;
 }
 
-[[nodiscard]] std::shared_ptr<Texture> loadMaterial(const MFFormat::DataFormat4DS::Material& mafiaMaterial) {
-       
+[[nodiscard]] std::shared_ptr<Material> loadMaterial(const MFFormat::DataFormat4DS::Material& mafiaMaterial) {
+    auto material = std::make_shared<Material>();
+
     bool hasDiffuse = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_TEXTUREDIFFUSE;
+    bool isDiffuseAnimated = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ANIMATEDTEXTUREDIFFUSE;
+
+    bool hasAlpha = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ALPHATEXTURE;
+    bool isAlphaAnimated = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ANIMATEXTEXTUREALPHA;
+
+    bool isColored = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_COLORED;
+    bool hasEnvMap = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ENVIRONMENTMAP;
+    bool isDoubleSided = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_DOUBLESIDEDMATERIAL;
+    bool normalBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_NORMALTEXTUREBLEND;
+    bool mulBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_MULTIPLYTEXTUREBLEND;
+    bool addBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVETEXTUREBLEND;
+    bool hasTransparencyKey = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_COLORKEY;
+    bool hasAditiveMixing = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVEMIXING;
+
     if (hasDiffuse) {
-        std::string path = "C:\\Mafia\\MAPS\\" + std::string(mafiaMaterial.mDiffuseMapName);
-        return std::move(Texture::loadFromFile(path));
+        material->setHasTransparencyKey(hasTransparencyKey);
+        material->createTextureForSlot(TextureSlots::DIFFUSE, mafiaMaterial.mDiffuseMapName);
     }
-    
-    return nullptr;
+
+    if (hasAlpha) {
+        material->createTextureForSlot(TextureSlots::ALPHA, mafiaMaterial.mAlphaMapName);
+    }
+
+    if (isDiffuseAnimated) {
+        material->setHasTransparencyKey(hasTransparencyKey);
+        if (isAlphaAnimated) {
+            auto diffuseAnimationNames = makeAnimationNames(mafiaMaterial.mDiffuseMapName, mafiaMaterial.mAnimSequenceLength);
+            auto alphaAnimationNames = makeAnimationNames(mafiaMaterial.mAlphaMapName, mafiaMaterial.mAnimSequenceLength);
+
+            for (size_t i = 0; i < diffuseAnimationNames.size(); ++i) {
+                material->appendAnimatedTexture(diffuseAnimationNames[i].c_str());
+            }
+        } else {
+            auto diffuseAnimationNames = makeAnimationNames(mafiaMaterial.mDiffuseMapName, mafiaMaterial.mAnimSequenceLength);
+            for (size_t i = 0; i < diffuseAnimationNames.size(); ++i) {
+                material->appendAnimatedTexture(diffuseAnimationNames[i].c_str());
+            }
+        }
+
+        material->setAnimated(true, mafiaMaterial.mFramePeriod);
+    }
+
+    if (hasEnvMap) {
+        material->createTextureForSlot(TextureSlots::ENV, mafiaMaterial.mEnvMapName);
+    }
+
+    if (normalBlending) {
+        material->setTextureBlending(TextureBlending::NORMAL);
+        if (hasEnvMap) {
+            material->setEnvRatio(mafiaMaterial.mEnvRatio);
+        }
+    }
+
+    if (mulBlending) {
+        material->setTextureBlending(TextureBlending::MUL);
+    }
+
+    if (addBlending) {
+        material->setTextureBlending(TextureBlending::ADD);
+    }
+
+    material->setTransparency(mafiaMaterial.mTransparency);
+    material->setDoubleSided(isDoubleSided);
+    material->setAditiveMixing(hasAditiveMixing);
+    material->setAmbient({mafiaMaterial.mAmbient.x, mafiaMaterial.mAmbient.y, mafiaMaterial.mAmbient.z});
+    material->setEmission({mafiaMaterial.mEmission.x, mafiaMaterial.mEmission.y, mafiaMaterial.mEmission.z});
+
+    if (!hasDiffuse || isColored) {
+        material->setDiffuse({mafiaMaterial.mDiffuse.x, mafiaMaterial.mDiffuse.y, mafiaMaterial.mDiffuse.z});
+    }
+
+    return material;
 }
 
 std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,

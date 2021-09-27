@@ -1,5 +1,5 @@
 #include "mesh.hpp"
-#include "texture.hpp"
+#include "material.hpp"
 
 /*
     FaceGroup
@@ -11,7 +11,7 @@ FaceGroup::~FaceGroup() {
 
 void FaceGroup::render() const {
     Renderer::bindIndexBuffer(mIndexBuffer);
-    mMaterial->bind(0);
+    mMaterial->bind();
     Renderer::draw(0, static_cast<int>(mIndices.size()), 1);
 }
 
