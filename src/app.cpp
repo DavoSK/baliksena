@@ -7,7 +7,7 @@
 
 #define SOKOL_TIME_IMPL
 #include <sokol/sokol_time.h>
-#include "frame.hpp"
+#include "model.hpp"
 #include "model_loader.hpp"
 
 App::App() {

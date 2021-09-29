@@ -5,32 +5,26 @@
     FaceGroup
 */
 
-FaceGroup::~FaceGroup() {
-    Renderer::destroyBuffer(mIndexBuffer);
-}
+// FaceGroup::~FaceGroup() {
+//     Renderer::destroyBuffer(mIndexBuffer);
+// }
 
 void FaceGroup::render() const {
-    Renderer::bindIndexBuffer(mIndexBuffer);
+    //Renderer::bindIndexBuffer(mIndexBuffer);
     
-    if( mMaterial != nullptr)
+    if(mMaterial != nullptr)
         mMaterial->bind();
 
-    Renderer::draw(0, static_cast<int>(mIndices.size()), 1);
+    Renderer::draw(mOffset, static_cast<int>(mIndices.size()), 1);
 }
 
-void FaceGroup::init() {
-    mIndexBuffer = Renderer::createIndexBuffer(mIndices);
-}
+// void FaceGroup::init() {
+//     mIndexBuffer = Renderer::createIndexBuffer(mIndices);
+// }
 
 /*
     Mesh
 */
-
-Mesh::~Mesh() {
-    if(!mVertices.empty()) {
-        Renderer::destroyBuffer(mVertexBuffer);
-    }
-}
 
 void Mesh::render() {
     Frame::render();
@@ -38,7 +32,7 @@ void Mesh::render() {
     if(mVertices.empty())
         return;
 
-    Renderer::bindVertexBuffer(mVertexBuffer);
+    //Renderer::bindVertexBuffer(mVertexBuffer);
     Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
@@ -46,13 +40,13 @@ void Mesh::render() {
     }
 }
 
-void Mesh::init() {
-    if(mVertices.empty())
-        return;
+// void Mesh::init() {
+//     if(mVertices.empty())
+//         return;
 
-    mVertexBuffer = Renderer::createVertexBuffer(mVertices);
+//     mVertexBuffer = Renderer::createVertexBuffer(mVertices);
 
-    for (auto& faceGroup : mFaceGroups) {
-        faceGroup->init();
-    }
-}
+//     for (auto& faceGroup : mFaceGroups) {
+//         faceGroup->init();
+//     }
+// }

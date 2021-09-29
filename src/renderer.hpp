@@ -57,7 +57,7 @@ public:
     static void bindMaterial(const RendererMaterial& material);
 
     static BufferHandle createVertexBuffer(const std::vector<Vertex>& vertices);
-    static BufferHandle createIndexBuffer(const std::vector<uint16_t>& indices);
+    static BufferHandle createIndexBuffer(const std::vector<uint32_t>& indices);
     static void destroyBuffer(BufferHandle bufferHandle);
     static void bindVertexBuffer(BufferHandle handle);
     static void bindIndexBuffer(BufferHandle handle);

@@ -46,7 +46,7 @@ void Renderer::init() {
     pipelineDesc.shader         = state.shader;
     pipelineDesc.layout         = layoutDesc;
     pipelineDesc.depth          = depthState;
-    pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT16;
+    pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
     pipelineDesc.face_winding   = sg_face_winding::SG_FACEWINDING_CW;
     pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_BACK;
     pipelineDesc.label          = "ffp-pipeline";
@@ -135,14 +135,14 @@ BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
     return { buffer.id };
 }
 
-BufferHandle Renderer::createIndexBuffer(const std::vector<uint16_t>& indices) {
+BufferHandle Renderer::createIndexBuffer(const std::vector<uint32_t>& indices) {
     sg_range bufferData = {
         indices.data(), 
-        sizeof(uint16_t) * indices.size()
+        sizeof(uint32_t) * indices.size()
     };
 
     sg_buffer_desc bufferDesc = {};
-    bufferDesc.size     = sizeof(uint16_t) * indices.size();
+    bufferDesc.size     = sizeof(uint32_t) * indices.size();
     bufferDesc.data     = bufferData;
     bufferDesc.type     = sg_buffer_type::SG_BUFFERTYPE_INDEXBUFFER;
     bufferDesc.label    = "index-buffer";

@@ -8,6 +8,7 @@
 #include "mesh.hpp"
 #include "material.hpp"
 #include "texture.hpp"
+#include "model.hpp"
 
 #include <filesystem>
 
@@ -192,7 +193,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         }
     }
 
-    newMesh->init();
+    //newMesh->init();
     return std::move(newMesh);
 }
 
@@ -223,7 +224,7 @@ std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::
     return nullptr;
 }
 
-std::shared_ptr<Frame> ModelLoader::loadModel(const std::string& path) {
+std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     std::ifstream modelFile(path, std::ifstream::binary);
     if (!modelFile.good()) {
         printf("[!] unable to load model: %s\n", path.c_str());
@@ -238,8 +239,8 @@ std::shared_ptr<Frame> ModelLoader::loadModel(const std::string& path) {
 
     auto parserModel = modelParser.getModel();
     auto modelName = std::filesystem::path(path).filename().string();
-    auto rootNode = std::make_shared<Frame>();
-    rootNode->setName(modelName);
+    auto model = std::make_shared<Model>();
+    model->setName(modelName);
 
     // NOTE: linear loading of meshes
     std::vector<std::shared_ptr<Frame>> loadedMeshes;
@@ -260,10 +261,11 @@ std::shared_ptr<Frame> ModelLoader::loadModel(const std::string& path) {
             parentNode->addChild(std::move(currentMesh));
         }
         else {
-            rootNode->addChild(std::move(currentMesh));
+            model->addChild(std::move(currentMesh));
         }
     }
 
+    model->init();
     //rootNode->invalidateTransformRecursively();
-    return rootNode;
+    return model;
 }

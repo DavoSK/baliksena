@@ -2,8 +2,8 @@
 #include <memory>
 #include <string>
 
-class Frame;
+class Model;
 class ModelLoader {
 public: 
-	static std::shared_ptr<Frame> loadModel(const std::string& path);
+	static std::shared_ptr<Model> loadModel(const std::string& path);
 };

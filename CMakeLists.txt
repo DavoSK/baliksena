@@ -27,6 +27,7 @@ add_executable(baliksena
     src/scene.cpp
     src/frame.cpp
     src/mesh.cpp
+    src/model.cpp
     src/bmp_loader.cpp
     src/model_loader.cpp
     src/renderer.cpp
