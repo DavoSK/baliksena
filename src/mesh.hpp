@@ -10,20 +10,18 @@ class Material;
 
 class FaceGroup {
 public:
-    //~FaceGroup();
     explicit FaceGroup(std::vector<uint16_t> indices, std::weak_ptr<Mesh> mesh) :
         mIndices(std::move(indices)),
         mMesh(mesh) {
     }
-
-    void render() const;
-    //void init();
 
     void setMaterial(std::unique_ptr<Material> mat) { mMaterial = std::move(mat); }
     [[nodiscard]] const std::unique_ptr<Material>& getMaterial() { return mMaterial; }
 
     const std::vector<uint16_t>& getIndices() { return mIndices; }
     void setOffset(size_t offset) { mOffset = offset; }
+
+    void render() const;
 private:
     size_t mOffset = 0;
     std::weak_ptr<Mesh> mMesh;
@@ -40,9 +38,7 @@ public:
     [[nodiscard]] const std::vector<std::unique_ptr<FaceGroup>>& getFaceGroups() { return mFaceGroups; }
 
     void render() override;
-    //void init();
 private:
     std::vector<Vertex> mVertices;
     std::vector<std::unique_ptr<FaceGroup>> mFaceGroups;
-    //BufferHandle mVertexBuffer{ 0 };
 };

@@ -5,22 +5,12 @@
     FaceGroup
 */
 
-// FaceGroup::~FaceGroup() {
-//     Renderer::destroyBuffer(mIndexBuffer);
-// }
-
-void FaceGroup::render() const {
-    //Renderer::bindIndexBuffer(mIndexBuffer);
-    
+void FaceGroup::render() const {    
     if(mMaterial != nullptr)
         mMaterial->bind();
 
     Renderer::draw(mOffset, static_cast<int>(mIndices.size()), 1);
 }
-
-// void FaceGroup::init() {
-//     mIndexBuffer = Renderer::createIndexBuffer(mIndices);
-// }
 
 /*
     Mesh
@@ -32,21 +22,9 @@ void Mesh::render() {
     if(mVertices.empty())
         return;
 
-    //Renderer::bindVertexBuffer(mVertexBuffer);
     Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
         faceGroup->render();
     }
 }
-
-// void Mesh::init() {
-//     if(mVertices.empty())
-//         return;
-
-//     mVertexBuffer = Renderer::createVertexBuffer(mVertices);
-
-//     for (auto& faceGroup : mFaceGroups) {
-//         faceGroup->init();
-//     }
-// }
