@@ -7,8 +7,6 @@
 
 #define SOKOL_TIME_IMPL
 #include <sokol/sokol_time.h>
-#include "model.hpp"
-#include "model_loader.hpp"
 
 App::App() {
     mInput = std::make_unique<Input>();
@@ -26,8 +24,7 @@ void App::init() {
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
-
-    testModel = ModelLoader::loadModel("C:\\Mafia\\MISSIONS\\FREERIDE\\scene.4ds");
+    mScene->load("FREERIDE");
 }
 
 void App::render() {
@@ -48,7 +45,7 @@ void App::render() {
     }
 
     Renderer::begin(RenderPass::NORMAL);
-    testModel->render();
+    mScene->render();
     Renderer::end();
     Renderer::commit();
     lastTime = stm_now();
@@ -65,8 +62,6 @@ void App::event(const sapp_event* e) {
 
     mInput->updateFromSokolEvent(e);
 }
-
-int gFrameCount;
 
 void App::destroy() {
     delete this;

@@ -45,8 +45,8 @@ void Renderer::init() {
     pipelineDesc.layout         = layoutDesc;
     pipelineDesc.depth          = depthState;
     pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
-    pipelineDesc.face_winding   = sg_face_winding::SG_FACEWINDING_CW;
-    pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_BACK;
+    //pipelineDesc.face_winding   = sg_face_winding::SG_FACEWINDING_CCW;
+    pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_NONE;
     pipelineDesc.label          = "ffp-pipeline";
     state.pip = sg_make_pipeline(&pipelineDesc);
     

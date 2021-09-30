@@ -7,14 +7,15 @@
 class Material;
 
 struct RenderHelper {
-    uint32_t vertexBufferOffset;
-    uint32_t verticesCount;
+    size_t vertexBufferOffset;
+    size_t verticesCount;
 };
 
 class Model : public Frame {
 public:
+    ~Model() { printf("~Model()\n"); }
     void render() override;
-    void init();
+    void staticBatch();
 private:
     Material* mMat = nullptr;
     std::unordered_map<Material*, RenderHelper> mRenderHelper;

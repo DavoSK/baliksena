@@ -4,7 +4,6 @@
 struct sapp_event;
 class Input;
 class Scene;
-class Model;
 
 class App {
 public: 
@@ -25,5 +24,4 @@ public:
 private: 
     std::unique_ptr<Input> mInput;
     std::unique_ptr<Scene> mScene;
-    std::shared_ptr<Model> testModel;
 };

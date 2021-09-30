@@ -263,7 +263,6 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
             model->addChild(std::move(currentMesh));
         }
     }
-
-    model->init();
+    
     return model;
 }
