@@ -15,8 +15,8 @@ public:
         mMesh(mesh) {
     }
 
-    void setMaterial(std::unique_ptr<Material> mat) { mMaterial = std::move(mat); }
-    [[nodiscard]] const std::unique_ptr<Material>& getMaterial() { return mMaterial; }
+    void setMaterial(std::shared_ptr<Material> mat) { mMaterial = std::move(mat); }
+    [[nodiscard]] const std::shared_ptr<Material>& getMaterial() { return mMaterial; }
 
     const std::vector<uint16_t>& getIndices() { return mIndices; }
     void setOffset(size_t offset) { mOffset = offset; }
@@ -26,7 +26,7 @@ private:
     size_t mOffset = 0;
     std::weak_ptr<Mesh> mMesh;
     std::vector<uint16_t> mIndices;
-    std::unique_ptr<Material> mMaterial;
+    std::shared_ptr<Material> mMaterial;
 };
 
 class Mesh : public Frame {

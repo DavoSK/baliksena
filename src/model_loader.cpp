@@ -51,8 +51,8 @@
     return result;
 }
 
-[[nodiscard]] std::unique_ptr<Material> loadMaterial(const MFFormat::DataFormat4DS::Material& mafiaMaterial) {
-    auto material = std::make_unique<Material>();
+[[nodiscard]] std::shared_ptr<Material> loadMaterial(const MFFormat::DataFormat4DS::Material& mafiaMaterial) {
+    auto material = std::make_shared<Material>();
 
     bool hasDiffuse = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_TEXTUREDIFFUSE;
     bool isDiffuseAnimated = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ANIMATEDTEXTUREDIFFUSE;
@@ -193,7 +193,6 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         }
     }
 
-    //newMesh->init();
     return std::move(newMesh);
 }
 
@@ -266,6 +265,5 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     }
 
     model->init();
-    //rootNode->invalidateTransformRecursively();
     return model;
 }

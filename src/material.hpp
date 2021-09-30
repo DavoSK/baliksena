@@ -16,9 +16,7 @@ enum TextureSlots { DIFFUSE = 0, ALPHA, ENV, ANIMATED, USER_END };
 class Texture;
 class Material {
 public:
-    ~Material() {
-        printf("~Material()\n");
-    }
+    ~Material() { printf("~Material()\n"); }
 
     void bind();
     void createTextureForSlot(unsigned int slot, const std::string& path);

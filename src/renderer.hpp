@@ -59,12 +59,16 @@ public:
     static BufferHandle createVertexBuffer(const std::vector<Vertex>& vertices);
     static BufferHandle createIndexBuffer(const std::vector<uint32_t>& indices);
     static void destroyBuffer(BufferHandle bufferHandle);
-    static void bindVertexBuffer(BufferHandle handle);
-    static void bindIndexBuffer(BufferHandle handle);
+    static void setVertexBuffer(BufferHandle handle);
+    static void setIndexBuffer(BufferHandle handle);
+    static void bindBuffers();
 
     static void setModel(const glm::mat4& model);
+    static void applyUniforms();
+
     static void setViewMatrix(const glm::mat4& view);
     static void setProjMatrix(const glm::mat4& proj);
+    
 
     static void draw(int baseElement, int numElements, int numInstances);
 

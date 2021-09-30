@@ -1,9 +1,7 @@
 #include "bmp_loader.hpp"
 
 #define SOKOL_IMPL
-//#define SOKOL_D3D11
-#define SOKOL_GLCORE33
-
+#define SOKOL_D3D11
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
 #include <sokol/sokol_glue.h>
@@ -158,20 +156,37 @@ void Renderer::destroyBuffer(BufferHandle bufferHandle) {
     sg_destroy_buffer(bufferToDestroy);
 }
 
-void Renderer::bindVertexBuffer(BufferHandle handle) {
+void Renderer::setVertexBuffer(BufferHandle handle) {
     assert(handle.id != SG_INVALID_ID);
     sg_buffer bufferToBind = { handle.id };
     state.bind.vertex_buffers[0] = bufferToBind;
 }
 
-void Renderer::bindIndexBuffer(BufferHandle handle) {
+void Renderer::setIndexBuffer(BufferHandle handle) {
     assert(handle.id != SG_INVALID_ID);
     sg_buffer bufferToBind = { handle.id };
-    state.bind.index_buffer = bufferToBind;
+    state.bind.index_buffer = bufferToBind;    
+}
+
+void Renderer::bindBuffers() {
+    if (state.bind.vertex_buffers[0].id != SG_INVALID_ID &&
+        state.bind.index_buffer.id != SG_INVALID_ID) {
+        sg_apply_pipeline(state.pip);
+        sg_apply_bindings(&state.bind);
+    }
 }
 
 void Renderer::setModel(const glm::mat4& model) {
     state.vsParams.model = model;
+}
+
+void Renderer::applyUniforms() {
+    sg_range uniformsRange{
+          &state.vsParams,
+          sizeof(vs_params_t)
+    };
+
+    sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_vs_params, &uniformsRange);
 }
 
 void Renderer::setViewMatrix(const glm::mat4 &view) {
@@ -183,14 +198,6 @@ void Renderer::setProjMatrix(const glm::mat4 &proj) {
 }
 
 void Renderer::draw(int baseElement, int numElements, int numInstances) {
-    sg_range uniformsRange{
-           &state.vsParams,
-           sizeof(vs_params_t)
-    };
-
-    sg_apply_pipeline(state.pip);
-    sg_apply_bindings(&state.bind);
-    sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_vs_params, &uniformsRange);
     sg_draw(baseElement, numElements, numInstances);
 }
 

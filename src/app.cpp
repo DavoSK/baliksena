@@ -27,7 +27,7 @@ void App::init() {
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
 
-    testModel = ModelLoader::loadModel("C:\\Mafia\\MISSIONS\\EXTREME\\scene.4ds");
+    testModel = ModelLoader::loadModel("C:\\Mafia\\MISSIONS\\FREERIDE\\scene.4ds");
 }
 
 void App::render() {
