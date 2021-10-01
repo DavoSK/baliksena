@@ -5,7 +5,7 @@ in vec3 aPos;
 in vec3 aNormal;
 in vec2 aTexCoord;
 
-out vec3 Norm;  
+out vec3 Norm;
 out vec2 TexCoord;
 
 uniform vs_params {
@@ -30,8 +30,12 @@ in vec2 TexCoord;
 uniform sampler2D texture1;
 
 void main() {
-    FragColor = texture(texture1, TexCoord);
+    vec4 diffuseTexture = texture(texture1, TexCoord);
+    if(diffuseTexture.a != 1.0)
+        discard;
+
+    FragColor = diffuseTexture;
 }
 @end
 
-@program simple vs fs
+@program cutout vs fs

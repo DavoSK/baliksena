@@ -10,23 +10,31 @@
 #include <glm/gtx/transform.hpp>
 
 #include "shader_basic.h"
+namespace cutout {
+
+#include "shader_cutout.h"
+
+};
 #include "renderer.hpp"
 
 static struct {
     sg_shader shader;
     sg_pipeline pip;
+
+    sg_shader cutoutShader;
+    sg_pipeline cutoutPip;
+
     sg_bindings bind;
     sg_pass_action passAction;
     vs_params_t vsParams;
     RenderPass currentRenderPass;
+
+    RendererMaterial material;
 } state;
 
 void Renderer::init() {
     sg_desc desc = { .context = sapp_sgcontext() };
     sg_setup(&desc);
-  
-    /* create shader from code-generated sg_shader_desc */
-    state.shader = sg_make_shader(simple_shader_desc(sg_query_backend()));
 
     /* create layoout for pipeline */
     sg_layout_desc layoutDesc {};
@@ -39,17 +47,38 @@ void Renderer::init() {
     depthState.compare = SG_COMPAREFUNC_LESS_EQUAL;
     depthState.write_enabled = true;
 
-    /* create pipeline */
-    sg_pipeline_desc pipelineDesc = {};
-    pipelineDesc.shader         = state.shader;
-    pipelineDesc.layout         = layoutDesc;
-    pipelineDesc.depth          = depthState;
-    pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
-    //pipelineDesc.face_winding   = sg_face_winding::SG_FACEWINDING_CCW;
-    pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_NONE;
-    pipelineDesc.label          = "ffp-pipeline";
-    state.pip = sg_make_pipeline(&pipelineDesc);
-    
+    //NOTE: basic shader
+    {
+        /* create shader from code-generated sg_shader_desc */
+        state.shader = sg_make_shader(simple_shader_desc(sg_query_backend()));
+
+        /* create pipeline */
+        sg_pipeline_desc pipelineDesc = {};
+        pipelineDesc.shader         = state.shader;
+        pipelineDesc.layout         = layoutDesc;
+        pipelineDesc.depth          = depthState;
+        pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_NONE;
+        pipelineDesc.label          = "diffuse-pipeline";
+        state.pip = sg_make_pipeline(&pipelineDesc);
+    }
+
+    //NOTE: cutout shader
+    {
+        /* create shader from code-generated sg_shader_desc */
+        state.cutoutShader = sg_make_shader(cutout::cutout_shader_desc(sg_query_backend()));
+
+        /* create pipeline */
+        sg_pipeline_desc pipelineDesc = {};
+        pipelineDesc.shader         = state.cutoutShader;
+        pipelineDesc.layout         = layoutDesc;
+        pipelineDesc.depth          = depthState;
+        pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_NONE;
+        pipelineDesc.label          = "cutout-pipeline";
+        state.pip = sg_make_pipeline(&pipelineDesc);
+    }
+
     /* a pass action to clear framebuffer */
     sg_color_attachment_action& color = state.passAction.colors[0];
     color.action = SG_ACTION_CLEAR;
@@ -57,8 +86,12 @@ void Renderer::init() {
 }
 
 void Renderer::destroy() {
-    sg_destroy_shader(state.shader);
     sg_destroy_pipeline(state.pip);
+    sg_destroy_shader(state.shader);
+
+    sg_destroy_pipeline(state.cutoutPip);
+    sg_destroy_shader(state.cutoutShader);
+
     sg_shutdown();
 }
 
@@ -108,6 +141,7 @@ void Renderer::bindMaterial(const RendererMaterial& material) {
         bindTexture(material.diffuseTexture.value(), 0);
     }
 
+    state.material = material;
    /* if(material.alphaTexture.has_value()) {
         bindTexture(material.alphaTexture.value(), 1);
     }   
@@ -169,11 +203,13 @@ void Renderer::setIndexBuffer(BufferHandle handle) {
 }
 
 void Renderer::bindBuffers() {
-    if (state.bind.vertex_buffers[0].id != SG_INVALID_ID &&
-        state.bind.index_buffer.id != SG_INVALID_ID) {
+    if(state.material.hasTransparencyKey) {
+        sg_apply_pipeline(state.cutoutPip);
+    } else {
         sg_apply_pipeline(state.pip);
-        sg_apply_bindings(&state.bind);
     }
+
+    sg_apply_bindings(&state.bind);
 }
 
 void Renderer::setModel(const glm::mat4& model) {
