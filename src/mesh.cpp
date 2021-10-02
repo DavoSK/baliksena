@@ -11,7 +11,7 @@ void FaceGroup::render() const {
 
     Renderer::bindBuffers();
     Renderer::applyUniforms();
-    Renderer::draw(mOffset, static_cast<int>(mIndices.size()), 1);
+    Renderer::draw(mOffset, mIndicesCount, 1);
 }
 
 /*
@@ -20,9 +20,9 @@ void FaceGroup::render() const {
 
 void Mesh::render() {
     Frame::render();
+    if(mStatic || mVertices.empty()) return;
 
-    if(mVertices.empty())
-        return;
+    Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
         faceGroup->render();

@@ -38,7 +38,6 @@ void Scene::load(const std::string& missionName) {
 
     // //NOTE: load cachus binus
     std::string sceneCacheBin = missionDir + missionName + "\\cache.bin";
-
     std::string modelPath = "C:\\Mafia\\MODELS\\";
 
     MFFormat::DataFormatCacheBIN cacheBin;
@@ -56,7 +55,7 @@ void Scene::load(const std::string& missionName) {
         }
     }
 
-    staticBatch();
+    init();
 }
 
 void Scene::render() {

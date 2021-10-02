@@ -6,6 +6,7 @@
 
 #include "renderer.hpp"
 #include "mesh.hpp"
+#include "billboard.hpp"
 #include "material.hpp"
 #include "texture.hpp"
 #include "model.hpp"
@@ -132,13 +133,18 @@
 std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     std::vector<MFFormat::DataFormat4DS::Lod>* lods = nullptr;
-    
+    bool isStaticMesh = true;
+
+    std::shared_ptr<Mesh> newMesh = nullptr;
+
     switch (mesh.mVisualMeshType) {
     case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_STANDARD: {
         lods = &mesh.mStandard.mLODs;
     } break;
     case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_BILLBOARD: {
         lods = &mesh.mBillboard.mStandard.mLODs;
+        isStaticMesh = false;
+        newMesh = std::make_shared<Billboard>();
     } break;
     case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMESH: {
         lods = &mesh.mSingleMesh.mStandard.mLODs;
@@ -151,9 +157,13 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     } break;
     }
 
-    auto newMesh = std::make_shared<Mesh>();;
+    if(newMesh == nullptr) {
+        newMesh = std::make_shared<Mesh>();
+    }
+
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
+    newMesh->setStatic(isStaticMesh);
 
     if (!lods || lods->size() <= 0) {
         return std::move(newMesh);

@@ -8,10 +8,14 @@
 #include <unordered_map>
 
 void Model::render() {
-    Renderer::setVertexBuffer(mVertexBuffer);
-    Renderer::setIndexBuffer(mIndexBuffer);
-    Renderer::setModel(getMatrix());
+    if(mVertexBuffer.id != 0 && mIndexBuffer.id != 0) {
+        Renderer::setVertexBuffer(mVertexBuffer);
+        Renderer::setIndexBuffer(mIndexBuffer);
+    }
 
+    //NOTE: if this model have static geometry
+    //render that first
+    Renderer::setModel(getMatrix());
     for (auto& [material, renderHelper] : mRenderHelper) {
         if (material != nullptr)
             material->bind();
@@ -20,7 +24,10 @@ void Model::render() {
         Renderer::applyUniforms();
         Renderer::draw(renderHelper.vertexBufferOffset, renderHelper.verticesCount, 1);
     }
-    //Frame::render();
+    
+    //NOTE: recursively go trough all childs
+    //may potentionaly include dynamic geometry
+    Frame::render();
 }
 
 void forEachMesh(std::function<void(Mesh*)> callback, Frame* owner) {
@@ -39,16 +46,22 @@ void forEachMesh(std::function<void(Mesh*)> callback, Frame* owner) {
     }
 }
 
-void Model::staticBatch() {
-       struct GeometryBufer {
+void Model::init() {
+    struct GeometryBufer {
         std::vector<Vertex> vertices;
         std::vector<uint16_t> indices;
         Material* material;
     };
 
-    std::unordered_map<std::string, std::vector<GeometryBufer>> groupByMaterial;
+    std::unordered_map<std::string, std::vector<GeometryBufer>> staticBatchingGroup;
+    std::vector<Mesh*> dynamicMeshes;
+    forEachMesh([this, &staticBatchingGroup, &dynamicMeshes](Mesh* mesh) {
+        //NOTE: if mesh is not static we dont care into batching this one
+        if (!mesh->isStatic()) {
+            dynamicMeshes.push_back(mesh);
+            return;
+        }
 
-    forEachMesh([this, &groupByMaterial](Mesh* mesh) {
         for (const auto& faceGroup : mesh->getFaceGroups()) {
             auto material = faceGroup->getMaterial();
             if(!material) continue;
@@ -66,18 +79,17 @@ void Model::staticBatch() {
                 translatedVertices.push_back(vertex);
             }
 
-            groupByMaterial[diffuse->getName()].push_back({
+            staticBatchingGroup[diffuse->getName()].push_back({
                 translatedVertices,
                 faceGroup->getIndices(),
                 material.get()
             });
         }
-
     }, this);
   
     //NOTE: join geometry by same material
     //save offset in vertex buffer into render helper
-    for (const auto& [diffuseName, geometry] : groupByMaterial) {
+    for (const auto& [diffuseName, geometry] : staticBatchingGroup) {
         if (geometry.empty()) continue;
 
         Material* sharedMaterial = geometry[0].material;
@@ -92,6 +104,21 @@ void Model::staticBatch() {
             }
         }
         mRenderHelper[sharedMaterial].verticesCount = mIndices.size() - indicesCountBefore;
+    }
+
+    //NOTE: insert dynamic meshes vertices after static geometry 
+    for (Mesh* dynamicMesh : dynamicMeshes) {
+        const auto& vertices = dynamicMesh->getVertices();
+        const auto currentVerticesCount = static_cast<uint32_t>(mVertices.size());
+        mVertices.insert(mVertices.end(), vertices.begin(), vertices.end());
+
+        for (const auto& faceGroup : dynamicMesh->getFaceGroups()) {
+            const auto currentIndicesCount = mIndices.size();
+            for (auto i : faceGroup->getIndices()) {
+                mIndices.push_back(i + currentVerticesCount);
+            }
+            faceGroup->setOffset(currentIndicesCount);
+        }
     }
 
     mIndexBuffer = Renderer::createIndexBuffer(mIndices);

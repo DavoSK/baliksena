@@ -15,7 +15,7 @@ class Model : public Frame {
 public:
     ~Model() { printf("~Model()\n"); }
     void render() override;
-    void staticBatch();
+    void init();
 private:
     Material* mMat = nullptr;
     std::unordered_map<Material*, RenderHelper> mRenderHelper;

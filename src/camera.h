@@ -43,6 +43,7 @@ public:
     [[nodiscard]] const glm::mat4& getProjMatrix() const { return mProjMatrix; }
     [[nodiscard]] const glm::vec3& getPos() const { return Position; }
     [[nodiscard]] const glm::vec3& getRight() const { return Right; }
+    [[nodisacrd]] const glm::vec3& getUp() const { return Up; }
     [[nodiscard]] float getFOV() const { return Zoom; }
     [[nodiscard]] float getPitch() const { return Pitch; }
     [[nodiscard]] float getYaw() const { return Yaw; }

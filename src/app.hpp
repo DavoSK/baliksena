@@ -21,6 +21,8 @@ public:
             app = new App();
         return app;
     }
+
+    Scene* getScene() { return mScene.get(); }
 private: 
     std::unique_ptr<Input> mInput;
     std::unique_ptr<Scene> mScene;

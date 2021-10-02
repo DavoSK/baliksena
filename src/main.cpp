@@ -18,6 +18,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     desc.event_cb           = event;
     desc.width              = 800;
     desc.height             = 600;
+    desc.sample_count       = 4;
     desc.window_title       = "Senko";
     desc.gl_force_gles2     = true;
     desc.icon.sokol_default = false;

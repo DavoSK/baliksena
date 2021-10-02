@@ -124,7 +124,7 @@ TextureHandle Renderer::createTexture(uint8_t* data, int width, int height) {
     imageDesc.min_filter    = SG_FILTER_LINEAR;
     imageDesc.mag_filter    = SG_FILTER_LINEAR;
     imageDesc.data = { data, static_cast<size_t>(width * height * 4) };
-    return { sg_make_image(imageDesc).id };
+    return { sg_make_image(&imageDesc).id };
 }
 
 void Renderer::destroyTexture(TextureHandle textureHandle) {
