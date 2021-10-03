@@ -1,6 +1,7 @@
 #include "bmp_loader.hpp"
 
 #define SOKOL_IMPL
+#define SOKOL_TRACE_HOOKS
 //#define SOKOL_D3D11
 #define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
@@ -12,6 +13,10 @@
 
 #define SOKOL_IMGUI_IMPL
 #include <sokol/util/sokol_imgui.h>
+
+#define SOKOL_GFX_IMGUI_IMPL
+#include <sokol/util/sokol_gfx_imgui.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
@@ -49,6 +54,7 @@ static struct {
     }  offscreen;
 
     RendererMaterial material;
+    sg_imgui_t debugGui{};
 } state;
 
 void Renderer::createRenderTarget(int width, int height) {
@@ -108,6 +114,8 @@ void Renderer::init() {
     simgui_desc_t simgui_desc = { };
     simgui_setup(&simgui_desc);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    sg_imgui_init(&state.debugGui);
 
     /* a render pass with one color- and one depth-attachment image */
     createRenderTarget(sapp_width(), sapp_height());
@@ -198,6 +206,7 @@ void Renderer::begin(RenderPass pass) {
 void Renderer::end()  {
     sg_end_pass();
     
+
     const int width = sapp_width();
     const int height = sapp_height();
 
@@ -205,6 +214,21 @@ void Renderer::end()  {
     simgui_new_frame(width, height, deltaTime);
     sg_begin_default_pass(&state.display.passAction, sapp_width(), sapp_height());
     Gui::render();
+
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("sokol-gfx")) {
+            ImGui::MenuItem("Buffers", 0, &state.debugGui.buffers.open);
+            ImGui::MenuItem("Images", 0, &state.debugGui.images.open);
+            ImGui::MenuItem("Shaders", 0, &state.debugGui.shaders.open);
+            ImGui::MenuItem("Pipelines", 0, &state.debugGui.pipelines.open);
+            ImGui::MenuItem("Passes", 0, &state.debugGui.passes.open);
+            ImGui::MenuItem("Calls", 0, &state.debugGui.capture.open);
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
+    sg_imgui_draw(&state.debugGui);
     simgui_render();
     sg_end_pass();
 }
