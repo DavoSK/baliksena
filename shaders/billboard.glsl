@@ -1,3 +1,4 @@
+@module billboard
 @ctype mat4 glm::mat4
 
 @vs vs
@@ -15,7 +16,18 @@ uniform vs_params {
 };
 
 void main() {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    mat4 modelView = view * model;
+    modelView[0][0] = 1.0; 
+    modelView[0][1] = 0.0; 
+    modelView[0][2] = 0.0; 
+
+    modelView[2][0] = 0.0; 
+    modelView[2][1] = 0.0; 
+    modelView[2][2] = 1.0; 
+
+    vec4 P = modelView * vec4(aPos, 1.0);
+    gl_Position = projection * P;
+
     Norm = aNormal;
     TexCoord = aTexCoord;
 }

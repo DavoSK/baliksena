@@ -22,6 +22,7 @@ add_executable(baliksena
     src/mafia/parser_cachebin.cpp
     src/mafia/parser_scene2bin.cpp
 
+    src/gui.cpp
     src/main.cpp
     src/app.cpp
     src/scene.cpp
@@ -34,6 +35,14 @@ add_executable(baliksena
     src/renderer.cpp
     src/input.cpp
     src/camera.cpp
-    src/texture.cpp src/material.cpp src/material.hpp)
+    src/frustum_culling.cpp
+    src/texture.cpp 
+    src/material.cpp
+	
+    vendors/imgui/imgui.cpp
+	vendors/imgui/imgui_draw.cpp
+	vendors/imgui/imgui_tables.cpp
+	vendors/imgui/imgui_widgets.cpp
+)
 
 target_link_libraries(baliksena)

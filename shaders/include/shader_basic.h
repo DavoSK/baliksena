@@ -9,50 +9,50 @@
     Overview:
 
         Shader program 'simple':
-            Get shader desc: simple_shader_desc(sg_query_backend());
+            Get shader desc: basic_simple_shader_desc(sg_query_backend());
             Vertex shader: vs
                 Attribute slots:
-                    ATTR_vs_aPos = 0
-                    ATTR_vs_aNormal = 1
-                    ATTR_vs_aTexCoord = 2
+                    ATTR_basic_vs_aPos = 0
+                    ATTR_basic_vs_aNormal = 1
+                    ATTR_basic_vs_aTexCoord = 2
                 Uniform block 'vs_params':
-                    C struct: vs_params_t
-                    Bind slot: SLOT_vs_params = 0
+                    C struct: basic_vs_params_t
+                    Bind slot: SLOT_basic_vs_params = 0
             Fragment shader: fs
                 Image 'texture1':
                     Type: SG_IMAGETYPE_2D
                     Component Type: SG_SAMPLERTYPE_FLOAT
-                    Bind slot: SLOT_texture1 = 0
+                    Bind slot: SLOT_basic_texture1 = 0
 
 
     Shader descriptor structs:
 
-        sg_shader simple = sg_make_shader(simple_shader_desc(sg_query_backend()));
+        sg_shader simple = sg_make_shader(basic_simple_shader_desc(sg_query_backend()));
 
     Vertex attribute locations for vertex shader 'vs':
 
         sg_pipeline pip = sg_make_pipeline(&(sg_pipeline_desc){
             .layout = {
                 .attrs = {
-                    [ATTR_vs_aPos] = { ... },
-                    [ATTR_vs_aNormal] = { ... },
-                    [ATTR_vs_aTexCoord] = { ... },
+                    [ATTR_basic_vs_aPos] = { ... },
+                    [ATTR_basic_vs_aNormal] = { ... },
+                    [ATTR_basic_vs_aTexCoord] = { ... },
                 },
             },
             ...});
 
     Image bind slots, use as index in sg_bindings.vs_images[] or .fs_images[]
 
-        SLOT_texture1 = 0;
+        SLOT_basic_texture1 = 0;
 
     Bind slot and C-struct for uniform block 'vs_params':
 
-        vs_params_t vs_params = {
+        basic_vs_params_t vs_params = {
             .model = ...;
             .view = ...;
             .projection = ...;
         };
-        sg_apply_uniforms(SG_SHADERSTAGE_[VS|FS], SLOT_vs_params, &SG_RANGE(vs_params));
+        sg_apply_uniforms(SG_SHADERSTAGE_[VS|FS], SLOT_basic_vs_params, &SG_RANGE(vs_params));
 
 */
 #include <stdint.h>
@@ -66,17 +66,17 @@
     #define SOKOL_SHDC_ALIGN(a) __attribute__((aligned(a)))
   #endif
 #endif
-#define ATTR_vs_aPos (0)
-#define ATTR_vs_aNormal (1)
-#define ATTR_vs_aTexCoord (2)
-#define SLOT_texture1 (0)
-#define SLOT_vs_params (0)
+#define ATTR_basic_vs_aPos (0)
+#define ATTR_basic_vs_aNormal (1)
+#define ATTR_basic_vs_aTexCoord (2)
+#define SLOT_basic_texture1 (0)
+#define SLOT_basic_vs_params (0)
 #pragma pack(push,1)
-SOKOL_SHDC_ALIGN(16) typedef struct vs_params_t {
+SOKOL_SHDC_ALIGN(16) typedef struct basic_vs_params_t {
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
-} vs_params_t;
+} basic_vs_params_t;
 #pragma pack(pop)
 /*
     cbuffer vs_params : register(b0)
@@ -132,7 +132,7 @@ SOKOL_SHDC_ALIGN(16) typedef struct vs_params_t {
         return stage_output;
     }
 */
-static const char vs_source_hlsl4[1195] = {
+static const char basic_vs_source_hlsl4[1195] = {
     0x63,0x62,0x75,0x66,0x66,0x65,0x72,0x20,0x76,0x73,0x5f,0x70,0x61,0x72,0x61,0x6d,
     0x73,0x20,0x3a,0x20,0x72,0x65,0x67,0x69,0x73,0x74,0x65,0x72,0x28,0x62,0x30,0x29,
     0x0a,0x7b,0x0a,0x20,0x20,0x20,0x20,0x72,0x6f,0x77,0x5f,0x6d,0x61,0x6a,0x6f,0x72,
@@ -245,7 +245,7 @@ static const char vs_source_hlsl4[1195] = {
         return stage_output;
     }
 */
-static const char fs_source_hlsl4[694] = {
+static const char basic_fs_source_hlsl4[694] = {
     0x54,0x65,0x78,0x74,0x75,0x72,0x65,0x32,0x44,0x3c,0x66,0x6c,0x6f,0x61,0x74,0x34,
     0x3e,0x20,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x31,0x20,0x3a,0x20,0x72,0x65,0x67,
     0x69,0x73,0x74,0x65,0x72,0x28,0x74,0x30,0x29,0x3b,0x0a,0x53,0x61,0x6d,0x70,0x6c,
@@ -294,7 +294,7 @@ static const char fs_source_hlsl4[694] = {
 #if !defined(SOKOL_GFX_INCLUDED)
   #error "Please include sokol_gfx.h before shader_basic.h"
 #endif
-static inline const sg_shader_desc* simple_shader_desc(sg_backend backend) {
+static inline const sg_shader_desc* basic_simple_shader_desc(sg_backend backend) {
   if (backend == SG_BACKEND_D3D11) {
     static sg_shader_desc desc;
     static bool valid;
@@ -306,17 +306,17 @@ static inline const sg_shader_desc* simple_shader_desc(sg_backend backend) {
       desc.attrs[1].sem_index = 1;
       desc.attrs[2].sem_name = "TEXCOORD";
       desc.attrs[2].sem_index = 2;
-      desc.vs.source = vs_source_hlsl4;
+      desc.vs.source = basic_vs_source_hlsl4;
       desc.vs.d3d11_target = "vs_4_0";
       desc.vs.entry = "main";
       desc.vs.uniform_blocks[0].size = 192;
-      desc.fs.source = fs_source_hlsl4;
+      desc.fs.source = basic_fs_source_hlsl4;
       desc.fs.d3d11_target = "ps_4_0";
       desc.fs.entry = "main";
       desc.fs.images[0].name = "texture1";
       desc.fs.images[0].image_type = SG_IMAGETYPE_2D;
       desc.fs.images[0].sampler_type = SG_SAMPLERTYPE_FLOAT;
-      desc.label = "simple_shader";
+      desc.label = "basic_simple_shader";
     }
     return &desc;
   }

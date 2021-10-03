@@ -1,9 +1,9 @@
 #include <sokol/sokol_app.h>
 #include "app.hpp"
 
-void init(void) { App::get()->init(); }
-void frame(void) { App::get()->render(); }
-void cleanup(void) { App::get()->destroy(); }
+void init(void)                 { App::get()->init(); }
+void frame(void)                { App::get()->render(); }
+void cleanup(void)              { App::get()->destroy(); }
 void event(const sapp_event* e) { App::get()->event(e); }
 
 sapp_desc sokol_main(int argc, char* argv[]) {

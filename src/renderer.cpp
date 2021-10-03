@@ -2,114 +2,210 @@
 
 #define SOKOL_IMPL
 #define SOKOL_D3D11
+#include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
 #include <sokol/sokol_glue.h>
 
+#include "imgui/imgui.h"
+
+#define SOKOL_IMGUI_IMPL
+#include <sokol/util/sokol_imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
+//NOTE: shaders
 #include "shader_basic.h"
-namespace cutout {
+#include "shader_cutout.h" 
+#include "shader_billboard.h" 
 
-#include "shader_cutout.h"
 
-};
 #include "renderer.hpp"
+#include "gui.hpp"
 
 static struct {
-    sg_shader shader;
-    sg_pipeline pip;
+    struct {
+        sg_pass_action passAction;
+    } display;
 
-    sg_shader cutoutShader;
-    sg_pipeline cutoutPip;
+    struct {
+        sg_shader shader;
+        sg_pipeline pip;
 
-    sg_bindings bind;
-    sg_pass_action passAction;
-    vs_params_t vsParams;
-    RenderPass currentRenderPass;
+        sg_shader cutoutShader;
+        sg_pipeline cutoutPip;
+
+        sg_shader billboardShader;
+        sg_pipeline billboardPip;
+
+        sg_bindings bind;
+        sg_pass pass;
+        sg_pass_desc passDesc;
+        sg_pass_action passAction;
+        sg_image colorImg;
+
+        basic_vs_params_t vsParams;
+    }  offscreen;
 
     RendererMaterial material;
 } state;
 
+void Renderer::createRenderTarget(int width, int height) {
+    
+    /* destroy previous resource (can be called for invalid id) */
+    sg_destroy_pass(state.offscreen.pass);
+    sg_destroy_image(state.offscreen.passDesc.color_attachments[0].image);
+    sg_destroy_image(state.offscreen.passDesc.depth_stencil_attachment.image);
+
+    /* create offscreen rendertarget images and pass */
+    sg_image_desc colorImgDesc      = {};
+    colorImgDesc.render_target      = true;
+    colorImgDesc.width              = width;
+    colorImgDesc.height             = height;
+    colorImgDesc.pixel_format       = SG_PIXELFORMAT_RGBA8;
+    colorImgDesc.wrap_u             = SG_WRAP_CLAMP_TO_EDGE;
+    colorImgDesc.wrap_v             = SG_WRAP_CLAMP_TO_EDGE;
+    colorImgDesc.min_filter         = SG_FILTER_LINEAR;
+    colorImgDesc.mag_filter         = SG_FILTER_LINEAR;
+    colorImgDesc.label              = "color-image";
+    state.offscreen.colorImg        = sg_make_image(&colorImgDesc);
+
+    //NOTE: depth
+    sg_image_desc depthImgDesc      = colorImgDesc;
+    depthImgDesc.pixel_format       = SG_PIXELFORMAT_DEPTH;
+    depthImgDesc.label              = "depth-image";
+    sg_image depthImg               = sg_make_image(&depthImgDesc);
+
+    state.offscreen.passDesc = {};
+    state.offscreen.passDesc.color_attachments[0].image = state.offscreen.colorImg;
+    state.offscreen.passDesc.depth_stencil_attachment.image = depthImg;
+    state.offscreen.passDesc.label = "offscreen-pass";
+    state.offscreen.pass = sg_make_pass(&state.offscreen.passDesc);
+}
+
 void Renderer::init() {
+    /* init sokol*/
     sg_desc desc = { .context = sapp_sgcontext() };
     sg_setup(&desc);
+    stm_setup();
 
-    /* create layoout for pipeline */
-    sg_layout_desc layoutDesc {};
-    layoutDesc.attrs[ATTR_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
-    layoutDesc.attrs[ATTR_vs_aNormal].format = SG_VERTEXFORMAT_FLOAT3;
-    layoutDesc.attrs[ATTR_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
+    /* a pass action to clear offscreen framebuffer */
+    state.display.passAction = {};
+    sg_color_attachment_action& colorDisplay = state.display.passAction.colors[0];
+    colorDisplay.action = SG_ACTION_CLEAR;
+    colorDisplay.value = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    state.display.passAction.depth.action       = SG_ACTION_DONTCARE;
+    state.display.passAction.stencil.action     = SG_ACTION_DONTCARE;
+
+    /* a pass action to clear offscreen framebuffer */
+    sg_color_attachment_action& colorOffscreen = state.offscreen.passAction.colors[0];
+    colorOffscreen.action = SG_ACTION_CLEAR;
+    colorOffscreen.value = { 1.0f, 1.0f, 1.0f, 1.0f };
+    
+    /* init gui */
+    simgui_desc_t simgui_desc = { };
+    simgui_setup(&simgui_desc);
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    /* a render pass with one color- and one depth-attachment image */
+    createRenderTarget(sapp_width(), sapp_height());
 
     /* depth buffer stuff */
     sg_depth_state depthState{};
     depthState.compare = SG_COMPAREFUNC_LESS_EQUAL;
     depthState.write_enabled = true;
+    depthState.pixel_format = SG_PIXELFORMAT_DEPTH;
+
+    /* create layout for ofscreen pipelines */
+    sg_layout_desc layoutDesc{};
+    layoutDesc.attrs[ATTR_basic_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
+    layoutDesc.attrs[ATTR_basic_vs_aNormal].format      = SG_VERTEXFORMAT_FLOAT3;
+    layoutDesc.attrs[ATTR_basic_vs_aTexCoord].format    = SG_VERTEXFORMAT_FLOAT2;
+
+    constexpr int OFFSCREEN_SAMPLE_COUNT = 4;
 
     //NOTE: basic shader
     {
-        /* create shader from code-generated sg_shader_desc */
-        state.shader = sg_make_shader(simple_shader_desc(sg_query_backend()));
+        state.offscreen.shader          = sg_make_shader(basic_simple_shader_desc(sg_query_backend()));
 
-        /* create pipeline */
-        sg_pipeline_desc pipelineDesc = {};
-        pipelineDesc.shader         = state.shader;
-        pipelineDesc.layout         = layoutDesc;
-        pipelineDesc.depth          = depthState;
-        pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
-        pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_NONE;
-        pipelineDesc.label          = "diffuse-pipeline";
-        state.pip = sg_make_pipeline(&pipelineDesc);
+        sg_pipeline_desc pipelineDesc   = {};
+        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+        pipelineDesc.shader             = state.offscreen.shader;
+        pipelineDesc.layout             = layoutDesc;
+        pipelineDesc.depth              = depthState;
+        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "diffuse-pipeline";
+        state.offscreen.pip             = sg_make_pipeline(&pipelineDesc);
     }
 
     //NOTE: cutout shader
     {
-        /* create shader from code-generated sg_shader_desc */
-        state.cutoutShader = sg_make_shader(cutout::cutout_shader_desc(sg_query_backend()));
+        state.offscreen.cutoutShader    = sg_make_shader(cutout_cutout_shader_desc(sg_query_backend()));
 
-        /* create pipeline */
-        sg_pipeline_desc pipelineDesc = {};
-        pipelineDesc.shader         = state.cutoutShader;
-        pipelineDesc.layout         = layoutDesc;
-        pipelineDesc.depth          = depthState;
-        pipelineDesc.index_type     = sg_index_type::SG_INDEXTYPE_UINT32;
-        pipelineDesc.cull_mode      = sg_cull_mode::SG_CULLMODE_NONE;
-        pipelineDesc.label          = "cutout-pipeline";
-        state.pip = sg_make_pipeline(&pipelineDesc);
+        sg_pipeline_desc pipelineDesc   = {};
+        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+        pipelineDesc.shader             = state.offscreen.cutoutShader;
+        pipelineDesc.layout             = layoutDesc;
+        pipelineDesc.depth              = depthState;
+        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "cutout-pipeline";
+       
+        state.offscreen.cutoutPip       = sg_make_pipeline(&pipelineDesc);
     }
 
-    /* a pass action to clear framebuffer */
-    sg_color_attachment_action& color = state.passAction.colors[0];
-    color.action = SG_ACTION_CLEAR;
-    color.value= { 0.2f, 0.3f, 0.3f, 1.0f };
+    //NOTE: billboard shader
+    {
+        state.offscreen.billboardShader = sg_make_shader(billboard_billboard_shader_desc(sg_query_backend()));
+
+        sg_pipeline_desc pipelineDesc   = {};
+        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+        pipelineDesc.shader             = state.offscreen.billboardShader;
+        pipelineDesc.layout             = layoutDesc;
+        pipelineDesc.depth              = depthState;
+        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "billboard-pipeline";
+        state.offscreen.billboardPip    = sg_make_pipeline(&pipelineDesc);
+    }
 }
 
 void Renderer::destroy() {
-    sg_destroy_pipeline(state.pip);
-    sg_destroy_shader(state.shader);
+    sg_destroy_pipeline(state.offscreen.pip);
+    sg_destroy_shader(state.offscreen.shader);
 
-    sg_destroy_pipeline(state.cutoutPip);
-    sg_destroy_shader(state.cutoutShader);
+    sg_destroy_pipeline(state.offscreen.cutoutPip);
+    sg_destroy_shader(state.offscreen.cutoutShader);
+
+    sg_destroy_pipeline(state.offscreen.billboardPip);
+    sg_destroy_shader(state.offscreen.billboardShader);
 
     sg_shutdown();
 }
 
+static uint64_t last_time = 0;
+
 void Renderer::begin(RenderPass pass) {
-    state.currentRenderPass = pass;
-
-    switch(pass) {
-        case RenderPass::NORMAL: {
-            sg_begin_default_pass(&state.passAction, sapp_width(), sapp_height());
-        } break;
-
-        default:
-            break;
-    }
+    sg_begin_pass(state.offscreen.pass, &state.offscreen.passAction);
 }
 
 void Renderer::end()  {
-    sg_end_pass(); 
+    sg_end_pass();
+    
+    const int width = sapp_width();
+    const int height = sapp_height();
+
+    const double deltaTime = stm_sec(stm_laptime(&last_time));
+    simgui_new_frame(width, height, deltaTime);
+    sg_begin_default_pass(&state.display.passAction, sapp_width(), sapp_height());
+    Gui::render();
+    simgui_render();
+    sg_end_pass();
 }
 
 void Renderer::commit() { sg_commit(); }
@@ -133,7 +229,7 @@ void Renderer::destroyTexture(TextureHandle textureHandle) {
 
 void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
     sg_image textureToBind = { textureHandle.id };
-    state.bind.fs_images[slot] = textureToBind;
+    state.offscreen.bind.fs_images[slot] = textureToBind;
 }
 
 void Renderer::bindMaterial(const RendererMaterial& material) {
@@ -193,49 +289,74 @@ void Renderer::destroyBuffer(BufferHandle bufferHandle) {
 void Renderer::setVertexBuffer(BufferHandle handle) {
     assert(handle.id != SG_INVALID_ID);
     sg_buffer bufferToBind = { handle.id };
-    state.bind.vertex_buffers[0] = bufferToBind;
+    state.offscreen.bind.vertex_buffers[0] = bufferToBind;
 }
 
 void Renderer::setIndexBuffer(BufferHandle handle) {
     assert(handle.id != SG_INVALID_ID);
     sg_buffer bufferToBind = { handle.id };
-    state.bind.index_buffer = bufferToBind;    
+    state.offscreen.bind.index_buffer = bufferToBind;    
 }
 
 void Renderer::bindBuffers() {
-    if(state.material.hasTransparencyKey) {
-        sg_apply_pipeline(state.cutoutPip);
-    } else {
-        sg_apply_pipeline(state.pip);
+    switch (state.material.kind) {
+        case MaterialKind::BILLBOARD: {
+            sg_apply_pipeline(state.offscreen.billboardPip);
+        } break;
+
+        case MaterialKind::CUTOUT: {
+            sg_apply_pipeline(state.offscreen.cutoutPip);
+        } break;
+
+        default: {
+            sg_apply_pipeline(state.offscreen.pip);
+        } break;
     }
 
-    sg_apply_bindings(&state.bind);
+    sg_apply_bindings(&state.offscreen.bind);
 }
 
 void Renderer::setModel(const glm::mat4& model) {
-    state.vsParams.model = model;
+    state.offscreen.vsParams.model = model;
 }
 
 void Renderer::applyUniforms() {
     sg_range uniformsRange{
-          &state.vsParams,
-          sizeof(vs_params_t)
+          &state.offscreen.vsParams,
+          sizeof(basic_vs_params_t)
     };
 
-    sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_vs_params, &uniformsRange);
+    sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &uniformsRange);
 }
 
 void Renderer::setViewMatrix(const glm::mat4 &view) {
-    state.vsParams.view = view;
+    state.offscreen.vsParams.view = view;
+    updateFrustum();
 }
 
 void Renderer::setProjMatrix(const glm::mat4 &proj) {
-    state.vsParams.projection = proj;
+    state.offscreen.vsParams.projection = proj;
+    updateFrustum();
 }
 
 void Renderer::draw(int baseElement, int numElements, int numInstances) {
     sg_draw(baseElement, numElements, numInstances);
 }
 
+TextureHandle Renderer::getRenderTargetTexture() {
+    assert(state.offscreen.colorImg.id != SG_INVALID_ID);
+    return { state.offscreen.colorImg.id };
+}
+
+void Renderer::guiHandleSokolInput(const sapp_event* e) {
+    simgui_handle_event(e);
+}
+
 int Renderer::getWidth() { return sapp_width(); }
 int Renderer::getHeight() { return sapp_height(); }
+
+void Renderer::updateFrustum() {
+    mFurstum = Frustum(state.offscreen.vsParams.projection * state.offscreen.vsParams.view);
+}
+
+Frustum Renderer::mFurstum;

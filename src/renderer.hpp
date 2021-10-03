@@ -3,10 +3,22 @@
 #include <vector>
 #include <optional>
 
+#include "frustum_culling.h"
+struct sapp_event;
+
 enum class RenderPass {
     NORMAL,
+    BILLBOARD,
     TRANSPARENCY,
     CAMERA_RELATIVE,
+};
+
+enum class MaterialKind {
+    DIFFUSE,
+    CUTOUT,
+    ALPHA,
+    ENV,
+    BILLBOARD
 };
 
 enum class TextureBlending {
@@ -37,6 +49,7 @@ struct RendererMaterial {
     glm::vec3 ambient;
     glm::vec3 diffuse;
     glm::vec3 emission;
+    MaterialKind kind;
 };
 
 struct BufferHandle {
@@ -68,10 +81,18 @@ public:
 
     static void setViewMatrix(const glm::mat4& view);
     static void setProjMatrix(const glm::mat4& proj);
-    
+    static Frustum& getFrustum() { return mFurstum; }
 
     static void draw(int baseElement, int numElements, int numInstances);
 
+    static void createRenderTarget(int width, int height);
+    static TextureHandle getRenderTargetTexture();
+
+    static void guiHandleSokolInput(const sapp_event* e);
     static int getWidth();
     static int getHeight();
+
+private: 
+    static void updateFrustum();
+    static Frustum mFurstum;
 };

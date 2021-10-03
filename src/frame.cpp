@@ -1,4 +1,5 @@
 #include "frame.hpp"
+#include <glm/ext.hpp>
 
 void Frame::render() {
     if (!mOn) return;
@@ -29,8 +30,21 @@ const glm::mat4& Frame::getWorldMatrix() {
 
 void Frame::invalidateTransformRecursively() {
     invalidateTransform();
-    //updateAABBWorld();
+    updateAABBWorld();
+    
     for (const auto& frame : mChilds) {
         frame->invalidateTransformRecursively();
     }
+}
+
+void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
+    mAABB = bbox;
+    updateAABBWorld();
+}
+
+void Frame::updateAABBWorld() {
+    const auto currentWorld = getWorldMatrix();
+    const auto min = glm::translate(currentWorld, mAABB.first);
+    const auto max = glm::translate(currentWorld, mAABB.second);
+    mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
 }

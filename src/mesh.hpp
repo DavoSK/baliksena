@@ -33,8 +33,10 @@ private:
 };
 
 class Mesh : public Frame {
-public:    
-    void setVertices(std::vector<Vertex> vertices) { mVertices = std::move(vertices); }
+public:
+    FrameType getType() const override { return FrameType::MESH; }
+
+    void setVertices(std::vector<Vertex> vertices);
     [[nodiscard]] const std::vector<Vertex>& getVertices () { return mVertices; }
 
     void addFaceGroup(std::unique_ptr<FaceGroup> faceGroup) { mFaceGroups.push_back(std::move(faceGroup)); }

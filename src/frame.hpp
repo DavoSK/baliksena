@@ -1,8 +1,18 @@
 #pragma once
+#include "renderer.hpp"
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
 #include <memory>
+
+enum class FrameType
+{
+    FRAME, 
+    MESH,
+    DUMMY,
+    SECTOR,
+    BILLBOARD,
+};
 
 class Frame {
 public:
@@ -15,6 +25,7 @@ public:
         mOwner(nullptr) {
     }
 
+    virtual constexpr FrameType getType() const { return FrameType::FRAME; }
     virtual void render();
 
     void setOwner(Frame* frame) { mOwner = frame; }
@@ -27,16 +38,22 @@ public:
     const std::vector<std::shared_ptr<Frame>>& getChilds() { return mChilds; };
 
     const glm::mat4& getWorldMatrix();
-    
     const glm::mat4& getMatrix() { return mTransform; }
     void setMatrix(const glm::mat4& mat) {
         mTransform = mat;
         invalidateTransformRecursively();
     }
 
+    const std::pair<glm::vec3, glm::vec3>& getWorldBBOX() const { return mABBBWorld; }
+    void setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox);
+
     void invalidateTransform() { mIsTransformDirty = true; }
     void invalidateTransformRecursively();
 private:
+    void updateAABBWorld();
+    std::pair<glm::vec3, glm::vec3> mAABB;
+    std::pair<glm::vec3, glm::vec3> mABBBWorld;
+
     bool mIsTransformDirty;
     bool mOn;
     std::string mName;

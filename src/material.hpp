@@ -66,6 +66,9 @@ public:
     }
 
     [[nodiscard]] bool isAnimated() const { return mIsAnimated; }
+    
+    void setKind(MaterialKind kind) { mRenderMaterial.kind = kind; }
+    [[nodiscard]] MaterialKind getKind() const { return mRenderMaterial.kind; }
 private:
     RendererMaterial mRenderMaterial{};
     std::array<std::weak_ptr<Texture>, TextureSlots::USER_END> mTextures;

@@ -4,11 +4,13 @@
 #include "texture.hpp"
 
 #include <functional>
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 
 void Model::render() {
-    if(mVertexBuffer.id != 0 && mIndexBuffer.id != 0) {
+
+    if (mVertexBuffer.id != 0 && mIndexBuffer.id != 0) {
         Renderer::setVertexBuffer(mVertexBuffer);
         Renderer::setIndexBuffer(mIndexBuffer);
     }
@@ -86,7 +88,7 @@ void Model::init() {
             });
         }
     }, this);
-  
+
     //NOTE: join geometry by same material
     //save offset in vertex buffer into render helper
     for (const auto& [diffuseName, geometry] : staticBatchingGroup) {

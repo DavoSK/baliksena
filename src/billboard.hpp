@@ -2,6 +2,7 @@
 #include "mesh.hpp"
 
 class Billboard : public Mesh {
-    public:
-        void render() override;
+public:
+    FrameType getType() const override { return FrameType::BILLBOARD; }
+    void render() override;
 };

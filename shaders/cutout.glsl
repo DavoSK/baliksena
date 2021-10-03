@@ -1,3 +1,4 @@
+@module cutout
 @ctype mat4 glm::mat4
 
 @vs vs

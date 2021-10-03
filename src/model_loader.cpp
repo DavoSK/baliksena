@@ -73,10 +73,12 @@
     if (hasDiffuse) {
         material->setHasTransparencyKey(hasTransparencyKey);
         material->createTextureForSlot(TextureSlots::DIFFUSE, mafiaMaterial.mDiffuseMapName);
+        material->setKind(hasTransparencyKey ? MaterialKind::CUTOUT : MaterialKind::DIFFUSE);
     }
 
     if (hasAlpha) {
         material->createTextureForSlot(TextureSlots::ALPHA, mafiaMaterial.mAlphaMapName);
+        material->setKind(MaterialKind::ALPHA);
     }
 
     if (isDiffuseAnimated) {
@@ -100,6 +102,7 @@
 
     if (hasEnvMap) {
         material->createTextureForSlot(TextureSlots::ENV, mafiaMaterial.mEnvMapName);
+        material->setKind(MaterialKind::ENV);
     }
 
     if (normalBlending) {
@@ -166,7 +169,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     newMesh->setStatic(isStaticMesh);
 
     if (!lods || lods->size() <= 0) {
-        return std::move(newMesh);
+        return newMesh;
     }
 
     auto& lod = lods->at(0);
@@ -197,21 +200,49 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
 
             auto faceGroup = std::make_unique<FaceGroup>(indices, newMesh);
             if (mafiaFaceGroup.mMaterialID > 0) {
-                faceGroup->setMaterial(loadMaterial(materials[mafiaFaceGroup.mMaterialID - 1]));
+                auto loadedMat = loadMaterial(materials[mafiaFaceGroup.mMaterialID - 1]);
+                
+                //NOTE: set material kind to billboard
+                if (newMesh->getType() == FrameType::BILLBOARD) {
+                    loadedMat->setKind(MaterialKind::BILLBOARD);
+                }
+
+                faceGroup->setMaterial(std::move(loadedMat));
             }
             newMesh->addFaceGroup(std::move(faceGroup));
         }
     }
 
-    return std::move(newMesh);
+    return newMesh;
 }
 
 [[nodiscard]] std::shared_ptr<Frame> loadDummy(MFFormat::DataFormat4DS::Mesh& mesh) {
     auto newMesh = std::make_shared<Frame>();
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
+
+    auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mDummy.mMinBox.x, mesh.mDummy.mMinBox.y, mesh.mDummy.mMinBox.z},
+                                                               {mesh.mDummy.mMaxBox.x, mesh.mDummy.mMaxBox.y, mesh.mDummy.mMaxBox.z});
+
+    newMesh->setBBOX(bbox);
+
     return std::move(newMesh);
 }
+
+
+[[nodiscard]] std::shared_ptr<Frame> loadSector(MFFormat::DataFormat4DS::Mesh& mesh) {
+    auto newMesh = std::make_shared<Frame>();
+    newMesh->setName(mesh.mMeshName);
+    newMesh->setMatrix(getMatrixFromMesh(mesh));
+
+    auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mSector.mMinBox.x, mesh.mSector.mMinBox.y, mesh.mSector.mMinBox.z},
+                                                               {mesh.mSector.mMaxBox.x, mesh.mSector.mMaxBox.y, mesh.mSector.mMaxBox.z});
+
+    newMesh->setBBOX(bbox);
+
+    return std::move(newMesh);
+}
+
 
 std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     switch (mesh.mMeshType) {
@@ -219,7 +250,10 @@ std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::
             return loadStandard(mesh, materials);
         } break;
 
-        case MFFormat::DataFormat4DS::MeshType::MESHTYPE_SECTOR:
+        case MFFormat::DataFormat4DS::MeshType::MESHTYPE_SECTOR: {
+            return loadSector(mesh);
+        } break;
+        
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_COLLISION:
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_DUMMY: {
             return loadDummy(mesh);

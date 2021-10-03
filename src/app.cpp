@@ -5,9 +5,6 @@
 #include "scene.hpp"
 #include "texture.hpp"
 
-#define SOKOL_TIME_IMPL
-#include <sokol/sokol_time.h>
-
 App::App() {
     mInput = std::make_unique<Input>();
     mScene = std::make_unique<Scene>();
@@ -19,17 +16,15 @@ App::~App() {
 
 void App::init() {
     Renderer::init();
-    stm_setup();
-
+  
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
     mScene->load("FREERIDE");
 }
 
-void App::render() {
-    static uint64_t lastTime = stm_now();    
-    const auto deltaTime = 16.0f;//static_cast<float>(stm_ms(stm_diff(stm_now(), lastTime)));
+void App::render() { 
+    const auto deltaTime = 16.0f;
 
     //NOTE: update camera & render
     if(auto cam = mScene->getActiveCamera().lock()) {
@@ -48,18 +43,18 @@ void App::render() {
     mScene->render();
     Renderer::end();
     Renderer::commit();
-    lastTime = stm_now();
 }
 
 void App::event(const sapp_event* e) {
 
     //NOTE: update camera proj matrix
-    if(e->type == SAPP_EVENTTYPE_RESIZED) {
+    if(e->type == sapp_event_type::SAPP_EVENTTYPE_RESIZED) {
         if(auto cam = mScene->getActiveCamera().lock()) {
             cam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
         }
     }
 
+    Renderer::guiHandleSokolInput(e);
     mInput->updateFromSokolEvent(e);
 }
 
