@@ -1,7 +1,8 @@
 #include "bmp_loader.hpp"
 
 #define SOKOL_IMPL
-#define SOKOL_D3D11
+//#define SOKOL_D3D11
+#define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
@@ -72,7 +73,7 @@ void Renderer::createRenderTarget(int width, int height) {
 
     //NOTE: depth
     sg_image_desc depthImgDesc      = colorImgDesc;
-    depthImgDesc.pixel_format       = SG_PIXELFORMAT_DEPTH;
+    depthImgDesc.pixel_format       = SG_PIXELFORMAT_DEPTH_STENCIL;
     depthImgDesc.label              = "depth-image";
     sg_image depthImg               = sg_make_image(&depthImgDesc);
 
@@ -115,7 +116,7 @@ void Renderer::init() {
     sg_depth_state depthState{};
     depthState.compare = SG_COMPAREFUNC_LESS_EQUAL;
     depthState.write_enabled = true;
-    depthState.pixel_format = SG_PIXELFORMAT_DEPTH;
+    depthState.pixel_format = SG_PIXELFORMAT_DEPTH_STENCIL;
 
     /* create layout for ofscreen pipelines */
     sg_layout_desc layoutDesc{};

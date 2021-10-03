@@ -116,7 +116,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize);
+    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize, ImVec2(0, 1), ImVec2(1, 0));
     ImGui::EndChild();
     ImGui::End();
 
