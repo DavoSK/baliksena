@@ -68,7 +68,7 @@ void Model::init() {
             auto material = faceGroup->getMaterial();
             if(!material) continue;
 
-            auto diffuse = material->getTexture(TextureSlots::DIFFUSE).lock();
+            auto diffuse = material->getTexture(TextureSlots::DIFFUSE);
             if (!diffuse) continue;
 
             std::vector<Vertex> translatedVertices;

@@ -12,9 +12,14 @@ if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
+add_subdirectory(
+    vendors/spdlog
+)
+
 include_directories(vendors 
     src
     shaders/include
+    vendors/spdlog/include
 )
 
 add_executable(baliksena 
@@ -38,7 +43,8 @@ add_executable(baliksena
     src/frustum_culling.cpp
     src/texture.cpp 
     src/material.cpp
-	
+	src/logger.cpp
+
     vendors/imgui/imgui.cpp
 	vendors/imgui/imgui_draw.cpp
 	vendors/imgui/imgui_tables.cpp

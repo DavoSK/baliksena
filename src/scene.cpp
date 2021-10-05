@@ -5,6 +5,7 @@
 #include "model_loader.hpp"
 #include "texture.hpp"
 #include "material.hpp"
+#include "logger.hpp"
 #include "mafia/parser_cachebin.hpp"
 
 #include <glm/gtx/quaternion.hpp>
@@ -30,6 +31,8 @@
 }
 
 void Scene::load(const std::string& missionName) {
+    Logger::get().info("loading mission {}", missionName);
+    
     std::string missionDir = "C:\\Mafia\\MISSIONS\\";
 
     //NOTE: load scene.4ds

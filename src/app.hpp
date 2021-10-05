@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 
 struct sapp_event;
 class Input;
@@ -9,7 +8,6 @@ class App {
 public: 
     App();
     ~App();
-
     void init();
     void render();
     void event(const sapp_event* e);
@@ -22,8 +20,8 @@ public:
         return app;
     }
 
-    Scene* getScene() { return mScene.get(); }
+    Scene* getScene() { return mScene; }
 private: 
-    std::unique_ptr<Input> mInput;
-    std::unique_ptr<Scene> mScene;
+    Input* mInput = nullptr;
+    Scene* mScene = nullptr;
 };

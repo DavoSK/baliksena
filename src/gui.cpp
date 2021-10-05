@@ -3,9 +3,12 @@
 #include "app.hpp"
 #include "scene.hpp"
 #include "camera.h"
+#include "logger.hpp"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
+
+#include <string>
 
 void renderNodeRecursively(Frame* frame) {
 	if (frame != nullptr && ImGui::TreeNode(frame->getName().c_str())) {
@@ -91,7 +94,9 @@ void Gui::render() {
 
     // NOTE: console
     ImGui::Begin("Console");
-    ImGui::Text("Hello, down!");
+    for(auto& line : Logger::getGuiOutputBuffer()) {
+        ImGui::Text("%s", line.c_str());
+    }
     ImGui::End();
 
     // NOTE: inspect
@@ -109,7 +114,7 @@ void Gui::render() {
         const auto height = static_cast<int>(wsize.y);
         Renderer::createRenderTarget(width, height);
 
-        if (auto cam = scene->getActiveCamera().lock()) {
+        if (auto* cam = scene->getActiveCamera()) {
             cam->createProjMatrix(width, height);
         }
 

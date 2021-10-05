@@ -10,11 +10,12 @@ class Model;
 class Camera;
 class Scene : public Model {
 public:
-    std::weak_ptr<Camera> getActiveCamera() { return mActiveCamera; }
-    void setActiveCamera(std::shared_ptr<Camera> cam) { mActiveCamera = std::move(cam); }
+    Camera* getActiveCamera() { return mActiveCamera; }
+    void setActiveCamera(Camera* cam) { mActiveCamera = cam; }
+    
     void load(const std::string& mission);
     void render();
 private: 
-    std::shared_ptr<Camera> mActiveCamera;
-    std::shared_ptr<Model> mSceneModel;
+    Camera* mActiveCamera = nullptr;
+    Model* mSceneModel = nullptr;
 };

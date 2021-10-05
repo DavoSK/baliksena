@@ -21,28 +21,25 @@ void Material::bind() {
 }
 
 void Material::createTextureForSlot(unsigned int slot, const std::string& path) {
-    std::weak_ptr<Texture> texturePtr = Texture::loadFromFile(path, mHasTransparencyKey);
-        if(auto texture = texturePtr.lock()) {
-        
-        switch(static_cast<TextureSlots>(slot)) {
-            case TextureSlots::DIFFUSE: {
-                mRenderMaterial.diffuseTexture = texture->getTextureHandle();
-            } break;
+    auto* texture = Texture::loadFromFile(path, mHasTransparencyKey);
+    switch(static_cast<TextureSlots>(slot)) {
+        case TextureSlots::DIFFUSE: {
+            mRenderMaterial.diffuseTexture = texture->getTextureHandle();
+        } break;
 
-            // case TextureSlots::ALPHA: {
-            //     mRenderMaterial.alphaTexture = texture->getTextureHandle();
-            // } break;
+        // case TextureSlots::ALPHA: {
+        //     mRenderMaterial.alphaTexture = texture->getTextureHandle();
+        // } break;
 
-            // case TextureSlots::ENV: {
-            //     mRenderMaterial.envTexture = texture->getTextureHandle();
-            // } break;
+        // case TextureSlots::ENV: {
+        //     mRenderMaterial.envTexture = texture->getTextureHandle();
+        // } break;
 
-            default: 
-                break;
-        }
+        default: 
+            break;
     }
-
-    mTextures[slot] = texturePtr;
+    
+    mTextures[slot] = texture;
 }
 
 void Material::appendAnimatedTexture(const std::string& path) {

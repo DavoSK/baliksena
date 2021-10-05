@@ -1,20 +1,17 @@
 #pragma once
-#include <unordered_map>
-#include <memory>
 #include <string>
-
 #include "renderer.hpp"
 
 class Texture {
 public:
     ~Texture() { printf(" ~Texture()\n"); release(); }
     static void clearCache();
-    static std::weak_ptr<Texture> loadFromFile(const std::string& path, bool useTransparencyKey = false);
+    static Texture* loadFromFile(const std::string& path, bool useTransparencyKey = false);
     void bind(unsigned int slot) const;
-    [[nodiscard]] const std::string& getName() const { return mTextureName; }
-    [[nodiscard]] int getWidth() const { return mWidth; }
-    [[nodiscard]] int getHeight() const { return mHeight; }
-    [[nodiscard]] TextureHandle getTextureHandle() const { return mTextureHandle; }
+    const std::string& getName() const { return mTextureName; }
+    int getWidth() const { return mWidth; }
+    int getHeight() const { return mHeight; }
+    TextureHandle getTextureHandle() const { return mTextureHandle; }
 private:
     void release();
     uint8_t* mBuffer{nullptr};

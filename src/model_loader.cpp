@@ -10,6 +10,7 @@
 #include "material.hpp"
 #include "texture.hpp"
 #include "model.hpp"
+#include "logger.hpp"
 
 #include <filesystem>
 
@@ -156,7 +157,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;
     } break;
     default: {
-        printf("[!] unable to load visual mesh type: %d\n", mesh.mVisualMeshType);
+        Logger::get().warn("unable to load visual mesh type {}",  mesh.mVisualMeshType);
     } break;
     }
 
@@ -260,7 +261,7 @@ std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::
         } break;
 
         default: {
-            printf("unable to load mesh type %d\n", mesh.mMeshName);
+            Logger::get().warn("unable to load mesh type {}", mesh.mMeshName);
         } break;
     }
 
@@ -270,13 +271,13 @@ std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::
 std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     std::ifstream modelFile(path, std::ifstream::binary);
     if (!modelFile.good()) {
-        printf("[!] unable to load model: %s\n", path.c_str());
+        Logger::get().error("unable to load model {}", path);
         return nullptr;
     }
 
     MFFormat::DataFormat4DS modelParser;
     if (!modelParser.load(modelFile)) {
-        printf("[!] unable to load model: %s\n", path.c_str());
+        Logger::get().error("unable to load model {}", path);
         return nullptr;
     }
 
