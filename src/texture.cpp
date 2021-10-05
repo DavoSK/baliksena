@@ -12,8 +12,7 @@
 
 std::unordered_map<std::string, Texture*> gTextureCache;
 
-void Texture::clearCache() 
-{
+void Texture::clearCache() {
     for(auto& [textureName, texture] : gTextureCache) {
         if(texture != nullptr) {
             delete texture;
@@ -23,11 +22,9 @@ void Texture::clearCache()
     gTextureCache.clear();
 }
 
-Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparencyKey) 
-{
-    Texture* texture = gTextureCache[fileName];
-    if (texture == nullptr) 
-    {
+Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparencyKey) {
+    auto* texture = gTextureCache[fileName];
+    if (texture == nullptr) {
         auto path = "C:\\Mafia\\MAPS\\" + fileName;
         std::ifstream textureFile(path, std::ifstream::binary);
         if (textureFile.good()) 

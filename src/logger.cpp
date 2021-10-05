@@ -30,8 +30,8 @@ namespace spdlog::sinks {
 
 spdlog::logger& Logger::get() {
     if(gLogger == nullptr) {
-        auto gui_sink = std::make_shared<spdlog::sinks::gui_sink_st>();
-        gLogger = std::make_unique<spdlog::logger>("senko", gui_sink);
+        auto guiSink = std::make_shared<spdlog::sinks::gui_sink_st>();
+        gLogger = std::make_unique<spdlog::logger>("senko", guiSink);
     }
 
     return *gLogger.get();

@@ -6,12 +6,13 @@
 */
 
 void FaceGroup::render() const {    
-    if(mMaterial != nullptr)
+    if(mMaterial != nullptr) {
         mMaterial->bind();
+    }
 
     Renderer::bindBuffers();
     Renderer::applyUniforms();
-    Renderer::draw(mOffset, mIndicesCount, 1);
+    Renderer::draw(static_cast<int>(mOffset), static_cast<int>(mIndicesCount), 1);
 }
 
 /*

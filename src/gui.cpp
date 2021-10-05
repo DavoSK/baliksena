@@ -4,6 +4,7 @@
 #include "scene.hpp"
 #include "camera.h"
 #include "logger.hpp"
+#include "stats.hpp"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
@@ -25,6 +26,8 @@ ImVec2 lastWsize;
 
 void Gui::render() {
     auto* scene = App::get()->getScene();
+    auto* cam = scene->getActiveCamera();
+
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
@@ -127,27 +130,30 @@ void Gui::render() {
 
     // NOTE: debug, camera settings
     ImGui::Begin("Debug");
-    //auto cam = scene->getCamera();
-    //ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
-    //ImGui::Separator();
+    ImGui::Text("Frames in use: %d", gStats.framesInUse);
+    ImGui::Text("Models in use: %d", gStats.modelsInUse);
+    ImGui::Text("Billboards in use: %d", gStats.billboardsInUse);
+    ImGui::Text("Textures in use: %d", gStats.texturesInUse);
+    ImGui::Separator();
 
-    //// NOTE: scene section
-    //if (ImGui::Button("Clear Scene")) {
-    //    gSelectedNode = nullptr;
-    //    scene->clear();
-    //}
+    ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
+    ImGui::Separator();
 
-    //static char fileBuff[250] = "assets/MISSIONS/MISE17-VEZENI";
-    //ImGui::InputText("###model", fileBuff, 250);
-    //ImGui::SameLine();
-    //if (ImGui::Button("Load scene")) {
-    //    if (strlen(fileBuff)) {
-    //        scene->loadScene(fileBuff);
-    //    }
-    //    // ImGui::OpenPopup("Texture atlas");
-    //}
+    // NOTE: scene section
+    if (ImGui::Button("Clear Scene")) {
+       //gSelectedNode = nullptr;
+       scene->clear();
+    }
 
-    //renderTextureAtlas();
+    static char fileBuff[250] = "EXTREME";
+    ImGui::InputText("###model", fileBuff, 250);
+    ImGui::SameLine();
+    if (ImGui::Button("Load scene")) {
+       if (strlen(fileBuff)) {
+           scene->load(fileBuff);
+       }
+    }
+
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 }

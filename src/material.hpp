@@ -15,7 +15,11 @@ enum TextureSlots { DIFFUSE = 0, ALPHA, ENV, ANIMATED, USER_END };
 class Texture;
 class Material {
 public:
-    ~Material() { printf("~Material()\n"); }
+    Material() {
+    }
+
+    ~Material() { 
+    }
 
     void bind();
     void createTextureForSlot(unsigned int slot, const std::string& path);
@@ -70,7 +74,7 @@ public:
     MaterialKind getKind() const { return mRenderMaterial.kind; }
 private:
     RendererMaterial mRenderMaterial{};
-    std::array<Texture*, TextureSlots::USER_END> mTextures;
+    std::array<Texture*, TextureSlots::USER_END> mTextures{nullptr, nullptr, nullptr, nullptr};
     std::vector<Texture*> mAnimatedTextures;
     glm::vec3 mAmbient                  = {0.0f, 0.0f, 0.0f};
     glm::vec3 mDiffuse                  = {0.0f, 0.0f, 0.0f};

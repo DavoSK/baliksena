@@ -1,5 +1,7 @@
 #pragma once
 #include "renderer.hpp"
+#include "stats.hpp"
+
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
@@ -23,6 +25,11 @@ public:
         mOn(true),
         mIsTransformDirty(true),
         mOwner(nullptr) {
+        gStats.framesInUse++;
+    }
+
+    ~Frame() {
+        gStats.framesInUse--;
     }
 
     virtual constexpr FrameType getType() const { return FrameType::FRAME; }
@@ -36,7 +43,8 @@ public:
 
     void addChild(std::shared_ptr<Frame> frame);
     const std::vector<std::shared_ptr<Frame>>& getChilds() { return mChilds; };
-
+    void clear() { mChilds.clear(); }
+    
     const glm::mat4& getWorldMatrix();
     const glm::mat4& getMatrix() { return mTransform; }
     void setMatrix(const glm::mat4& mat) {

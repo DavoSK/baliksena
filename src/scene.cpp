@@ -8,10 +8,11 @@
 #include "logger.hpp"
 #include "mafia/parser_cachebin.hpp"
 
-#include <glm/gtx/quaternion.hpp>
 #include <functional>
 #include <memory>
 #include <unordered_map>
+
+#include <glm/gtx/quaternion.hpp>
 
 [[nodiscard]] glm::mat4 getMatrixFromInstance(const MFFormat::DataFormatCacheBIN::Instance& instance) {
     glm::vec3 meshPos = { instance.mPos.x, instance.mPos.y, instance.mPos.z };
@@ -39,30 +40,28 @@ void Scene::load(const std::string& missionName) {
     std::string sceneModelPath = missionDir + missionName + "\\scene.4ds"; 
     addChild(std::move(ModelLoader::loadModel(sceneModelPath)));
 
-    // //NOTE: load cachus binus
-    std::string sceneCacheBin = missionDir + missionName + "\\cache.bin";
-    std::string modelPath = "C:\\Mafia\\MODELS\\";
+    //// //NOTE: load cachus binus
+    //std::string sceneCacheBin = missionDir + missionName + "\\cache.bin";
+    //std::string modelPath = "C:\\Mafia\\MODELS\\";
 
-    MFFormat::DataFormatCacheBIN cacheBin;
-    std::ifstream cacheBinFile(sceneCacheBin, std::ifstream::binary);
-    if(cacheBinFile.good() && cacheBin.load(cacheBinFile)) {
-        for(const auto& obj : cacheBin.getObjects()) {
-            for(const auto& instance : obj.mInstances) {
+    //MFFormat::DataFormatCacheBIN cacheBin;
+    //std::ifstream cacheBinFile(sceneCacheBin, std::ifstream::binary);
+    //if(cacheBinFile.good() && cacheBin.load(cacheBinFile)) {
+    //    for(const auto& obj : cacheBin.getObjects()) {
+    //        for(const auto& instance : obj.mInstances) {
 
-                auto model = ModelLoader::loadModel(modelPath + instance.mModelName);
-                if(model != nullptr) {
-                    model->setMatrix(getMatrixFromInstance(instance));
-                    addChild(std::move(model));
-                }
-            }
-        }
-    }
+    //            auto model = ModelLoader::loadModel(modelPath + instance.mModelName);
+    //            if(model != nullptr) {
+    //                model->setMatrix(getMatrixFromInstance(instance));
+    //                addChild(std::move(model));
+    //            }
+    //        }
+    //    }
+    //}
 
     init();
 }
 
 void Scene::render() {
-    //mSceneModel->render();
-    //Frame::render();
     Model::render();
 }

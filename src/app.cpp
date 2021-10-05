@@ -4,6 +4,9 @@
 #include "camera.h"
 #include "scene.hpp"
 #include "texture.hpp"
+#include "stats.hpp"
+
+Stats gStats{};
 
 App::App() {
     mInput = new Input();
@@ -27,7 +30,7 @@ void App::init() {
     auto* mainCam = new Camera();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
-    mScene->load("FREERIDE");
+    //mScene->load("FREERIDE");
 }
 
 void App::render() { 

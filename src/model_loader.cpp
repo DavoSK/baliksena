@@ -221,13 +221,10 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     auto newMesh = std::make_shared<Frame>();
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
-
     auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mDummy.mMinBox.x, mesh.mDummy.mMinBox.y, mesh.mDummy.mMinBox.z},
                                                                {mesh.mDummy.mMaxBox.x, mesh.mDummy.mMaxBox.y, mesh.mDummy.mMaxBox.z});
-
     newMesh->setBBOX(bbox);
-
-    return std::move(newMesh);
+    return newMesh;
 }
 
 
@@ -235,17 +232,14 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     auto newMesh = std::make_shared<Frame>();
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
-
     auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mSector.mMinBox.x, mesh.mSector.mMinBox.y, mesh.mSector.mMinBox.z},
-                                                               {mesh.mSector.mMaxBox.x, mesh.mSector.mMaxBox.y, mesh.mSector.mMaxBox.z});
-
+                                                    {mesh.mSector.mMaxBox.x, mesh.mSector.mMaxBox.y, mesh.mSector.mMaxBox.z});
     newMesh->setBBOX(bbox);
-
-    return std::move(newMesh);
+    return newMesh;
 }
 
 
-std::shared_ptr<Frame> loadMesh(MFFormat::DataFormat4DS::Mesh& mesh, const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
+std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     switch (mesh.mMeshType) {
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_STANDARD: {
             return loadStandard(mesh, materials);
@@ -289,7 +283,7 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     // NOTE: linear loading of meshes
     std::vector<std::shared_ptr<Frame>> loadedMeshes;
     for (auto& mesh : parserModel.mMeshes) {
-        auto loadedMesh = loadMesh(mesh, parserModel.mMaterials);
+        auto loadedMesh = meshFactory(mesh, parserModel.mMaterials);
         if (loadedMesh) {
             loadedMeshes.push_back(std::move(loadedMesh));
         }

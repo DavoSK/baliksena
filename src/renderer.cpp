@@ -14,9 +14,6 @@
 #define SOKOL_IMGUI_IMPL
 #include <sokol/util/sokol_imgui.h>
 
-#define SOKOL_GFX_IMGUI_IMPL
-#include <sokol/util/sokol_gfx_imgui.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
@@ -24,7 +21,6 @@
 #include "shader_basic.h"
 #include "shader_cutout.h" 
 #include "shader_billboard.h" 
-
 
 #include "renderer.hpp"
 #include "gui.hpp"
@@ -54,7 +50,6 @@ static struct {
     }  offscreen;
 
     RendererMaterial material;
-    sg_imgui_t debugGui{};
 } state;
 
 void Renderer::createRenderTarget(int width, int height) {
@@ -114,8 +109,6 @@ void Renderer::init() {
     simgui_desc_t simgui_desc = { };
     simgui_setup(&simgui_desc);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-    sg_imgui_init(&state.debugGui);
 
     /* a render pass with one color- and one depth-attachment image */
     createRenderTarget(sapp_width(), sapp_height());
@@ -197,8 +190,6 @@ void Renderer::destroy() {
     sg_shutdown();
 }
 
-static uint64_t last_time = 0;
-
 void Renderer::begin(RenderPass pass) {
     sg_begin_pass(state.offscreen.pass, &state.offscreen.passAction);
 }
@@ -206,31 +197,20 @@ void Renderer::begin(RenderPass pass) {
 void Renderer::end()  {
     sg_end_pass();
     
+    //NOTE: begin default pass for GUI
+    {
+        static uint64_t lastTime = 0;
+        const auto width = sapp_width();
+        const auto height = sapp_height();
 
-    const int width = sapp_width();
-    const int height = sapp_height();
-
-    const double deltaTime = stm_sec(stm_laptime(&last_time));
-    simgui_new_frame(width, height, deltaTime);
-    sg_begin_default_pass(&state.display.passAction, sapp_width(), sapp_height());
-    Gui::render();
-
-    if (ImGui::BeginMainMenuBar()) {
-        if (ImGui::BeginMenu("sokol-gfx")) {
-            ImGui::MenuItem("Buffers", 0, &state.debugGui.buffers.open);
-            ImGui::MenuItem("Images", 0, &state.debugGui.images.open);
-            ImGui::MenuItem("Shaders", 0, &state.debugGui.shaders.open);
-            ImGui::MenuItem("Pipelines", 0, &state.debugGui.pipelines.open);
-            ImGui::MenuItem("Passes", 0, &state.debugGui.passes.open);
-            ImGui::MenuItem("Calls", 0, &state.debugGui.capture.open);
-            ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
+        const auto deltaTime = stm_sec(stm_laptime(&lastTime));
+        simgui_new_frame(width, height, deltaTime);
+        sg_begin_default_pass(&state.display.passAction, width, height);
+    
+        Gui::render();
+        simgui_render();
+        sg_end_pass();
     }
-
-    sg_imgui_draw(&state.debugGui);
-    simgui_render();
-    sg_end_pass();
 }
 
 void Renderer::commit() { sg_commit(); }

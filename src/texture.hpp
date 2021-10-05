@@ -1,10 +1,12 @@
 #pragma once
 #include <string>
 #include "renderer.hpp"
+#include "stats.hpp"
 
 class Texture {
 public:
-    ~Texture() { printf(" ~Texture()\n"); release(); }
+    Texture() { gStats.texturesInUse++; }
+    ~Texture() { release(); gStats.texturesInUse--; }
     static void clearCache();
     static Texture* loadFromFile(const std::string& path, bool useTransparencyKey = false);
     void bind(unsigned int slot) const;

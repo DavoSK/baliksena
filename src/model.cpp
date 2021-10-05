@@ -9,7 +9,6 @@
 #include <unordered_map>
 
 void Model::render() {
-
     if (mVertexBuffer.id != 0 && mIndexBuffer.id != 0) {
         Renderer::setVertexBuffer(mVertexBuffer);
         Renderer::setIndexBuffer(mIndexBuffer);

@@ -1,8 +1,9 @@
 #pragma once
 #include "frame.hpp"
 #include "renderer.hpp"
+#include "stats.hpp"
+
 #include <unordered_map>
-#include <map>
 
 struct RenderHelper {
     size_t vertexBufferOffset;
@@ -12,12 +13,13 @@ struct RenderHelper {
 class Material;
 class Model : public Frame {
 public:
-    ~Model() { printf("~Model()\n"); }
+    Model() { gStats.modelsInUse++; }
+    ~Model() { gStats.modelsInUse--; }
     void render() override;
     void init();
 private:
     Material* mMat = nullptr;
-    std::map<Material*, RenderHelper> mRenderHelper;
+    std::unordered_map<Material*, RenderHelper> mRenderHelper;
     std::vector<Vertex> mVertices;
     std::vector<uint32_t> mIndices;
     BufferHandle mVertexBuffer{ 0 };
