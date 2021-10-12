@@ -137,7 +137,7 @@
 std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     std::vector<MFFormat::DataFormat4DS::Lod>* lods = nullptr;
-    bool isStaticMesh = true;
+    bool isStaticMesh = false;
 
     std::shared_ptr<Mesh> newMesh = nullptr;
 

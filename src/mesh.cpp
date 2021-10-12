@@ -38,12 +38,12 @@ void Mesh::setVertices(std::vector<Vertex> vertices) {
 void Mesh::render() {
     Frame::render();
 
-    if (mStatic || mVertices.empty()) return;
-
-    const auto& worldBBOX = getWorldBBOX();
-    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
-        return;
-    }
+    if (mStatic || mVertices.empty() || !isOn()) return;
+    
+    // const auto& worldBBOX = getWorldBBOX();
+    // if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
+    //     return;
+    // }
 
     Renderer::setModel(getWorldMatrix());
 

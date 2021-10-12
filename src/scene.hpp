@@ -8,6 +8,8 @@
 class Material;
 class Model;
 class Camera;
+class Sector;
+
 class Scene : public Model {
 public:
     Camera* getActiveCamera() { return mActiveCamera; }
@@ -16,6 +18,8 @@ public:
     void load(const std::string& mission);
     void render();
 private: 
-    Camera* mActiveCamera = nullptr;
-    Model* mSceneModel = nullptr;
+    std::shared_ptr<Sector> mPrimarySector{ nullptr };
+    std::shared_ptr<Sector> mBackdropSector{ nullptr };
+    Camera* mActiveCamera{ nullptr };
+    Model* mSceneModel{ nullptr };
 };

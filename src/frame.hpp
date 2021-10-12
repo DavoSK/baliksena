@@ -53,10 +53,18 @@ public:
     }
 
     const std::pair<glm::vec3, glm::vec3>& getWorldBBOX() const { return mABBBWorld; }
+
     void setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox);
+    const std::pair<glm::vec3, glm::vec3>& getBBOX() const { return mAABB; }
 
     void invalidateTransform() { mIsTransformDirty = true; }
     void invalidateTransformRecursively();
+
+    void setOn(bool on) { mOn = on; }
+    bool isOn() const { return mOn; }
+
+    Frame* findNode(const std::string& name) const;
+    Frame* findNodeMaf(const std::string& path) const ;
 private:
     void updateAABBWorld();
     std::pair<glm::vec3, glm::vec3> mAABB;

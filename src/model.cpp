@@ -56,6 +56,7 @@ void Model::init() {
 
     std::unordered_map<std::string, std::vector<GeometryBufer>> staticBatchingGroup;
     std::vector<Mesh*> dynamicMeshes;
+
     forEachMesh([this, &staticBatchingGroup, &dynamicMeshes](Mesh* mesh) {
         //NOTE: if mesh is not static we dont care into batching this one
         if (!mesh->isStatic()) {

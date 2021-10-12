@@ -32,6 +32,7 @@ add_executable(baliksena
     src/app.cpp
     src/scene.cpp
     src/frame.cpp
+    src/sector.cpp
     src/mesh.cpp
     src/billboard.cpp
     src/model.cpp
