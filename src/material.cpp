@@ -6,16 +6,17 @@
 #include "renderer.hpp"
 #include "texture.hpp"
 
+#include <sokol/sokol_time.h>
+
 void Material::bind() {
-    // NOTE: update animated texture
-    /*if (isAnimated()) {
-        const auto currentTime = Window::get()->getTime();
-        if (currentTime - mLastUpdated > mAnimationPeriod / 1000.0f) {
+    if (isAnimated()) {
+        if (stm_sec(stm_diff(stm_now(), mLastUpdatedAnimTex)) > mAnimationPeriod / 1000.0f) {
             mCurrentAnimatedDiffuseIdx++;
             if (mCurrentAnimatedDiffuseIdx >= mAnimatedTextures.size()) mCurrentAnimatedDiffuseIdx = 0;
-            mLastUpdated = currentTime;
-        }        mAnimatedTextures.push_back(texture);
-    }*/
+            mRenderMaterial.diffuseTexture = mAnimatedTextures[mCurrentAnimatedDiffuseIdx]->getTextureHandle();
+            mLastUpdatedAnimTex = stm_now();
+        }
+    }
 
     Renderer::bindMaterial(mRenderMaterial);
 }
@@ -31,9 +32,11 @@ void Material::createTextureForSlot(unsigned int slot, const std::string& path) 
         //     mRenderMaterial.alphaTexture = texture->getTextureHandle();
         // } break;
 
-        // case TextureSlots::ENV: {
-        //     mRenderMaterial.envTexture = texture->getTextureHandle();
-        // } break;
+         case TextureSlots::ENV: {
+             mRenderMaterial.envTexture = texture->getTextureHandle();
+             mRenderMaterial.envTextureBlending = this->getTextureBlending();
+             mRenderMaterial.envTextureBlendingRatio = this->getEnvRatio();
+         } break;
 
         default: 
             break;

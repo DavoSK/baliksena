@@ -11,15 +11,28 @@
 
 #include <string>
 
-void renderNodeRecursively(Frame* frame) {
-	if (frame != nullptr && ImGui::TreeNode(frame->getName().c_str())) {
-		for (const auto& child : frame->getChilds()) {
-            renderNodeRecursively(child.get());
-		}
+const char* frameTypes[] = {"FRAME", "MESH", "DUMMY", "SECTOR", "BILLBOARD"};
+static FrameType selectedFrameType = FrameType::ALL;
 
-		ImGui::TreePop();
-		ImGui::Separator();
-	}
+void renderNodeRecursively(Frame* frame) {
+    if (frame == nullptr)
+        return;
+
+    if (selectedFrameType != FrameType::ALL && frame->getType() != selectedFrameType) {
+        for (const auto& child : frame->getChilds()) {
+            renderNodeRecursively(child.get());
+        }
+    }
+    else {
+        if (ImGui::TreeNode(frame->getName().c_str())) {
+            for (const auto& child : frame->getChilds()) {
+                renderNodeRecursively(child.get());
+            }
+
+            ImGui::TreePop();
+            ImGui::Separator();
+        }
+    }
 }
 
 ImVec2 lastWsize;
@@ -92,6 +105,24 @@ void Gui::render() {
 
     // NOTE: scene section
     ImGui::Begin("Scene");
+    
+    static const char* currentFrameType = nullptr;
+
+    if (ImGui::BeginCombo("##custom combo", currentFrameType)) {
+        for (int n = 0; n < IM_ARRAYSIZE(frameTypes); n++) {
+            bool isSelected = (currentFrameType == frameTypes[n]);
+            if (ImGui::Selectable(frameTypes[n], isSelected)) {
+                currentFrameType = frameTypes[n];
+                selectedFrameType = static_cast<FrameType>(n);
+            }
+
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
     renderNodeRecursively(scene);
     ImGui::End();
 
@@ -124,7 +155,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize, ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize/*, ImVec2(0, 1), ImVec2(1, 0)*/);
     ImGui::EndChild();
     ImGui::End();
 
@@ -145,7 +176,7 @@ void Gui::render() {
        scene->clear();
     }
 
-    static char fileBuff[250] = "EXTREME";
+    static char fileBuff[250] = "TUTORIAL";
     ImGui::InputText("###model", fileBuff, 250);
     ImGui::SameLine();
     if (ImGui::Button("Load scene")) {

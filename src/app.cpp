@@ -47,6 +47,7 @@ void App::render() {
         mInput->clearDeltas();
         Renderer::setProjMatrix(cam->getProjMatrix());
         Renderer::setViewMatrix(cam->getViewMatrix());
+        Renderer::setViewPos(cam->Position);
     }
 
     Renderer::begin(RenderPass::NORMAL);

@@ -83,7 +83,7 @@ private:
     float mTransparency                 = 1.0f;
     uint32_t mAnimationPeriod           = 0;
     size_t mCurrentAnimatedDiffuseIdx   = 0;
-    double mLastUpdated                 = 0.0f;
+    uint64_t mLastUpdatedAnimTex        = 0;
     bool mAditiveMixing                 = false;
     bool mIsAnimated                    = false;
     bool mIsDoubleSided                 = false;

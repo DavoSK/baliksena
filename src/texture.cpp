@@ -38,6 +38,7 @@ Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparency
                 return {};
 
             newTexture->mTextureHandle = Renderer::createTexture(newTexture->mBuffer, newTexture->mWidth, newTexture->mHeight);
+            
             return gTextureCache[fileName] = newTexture;
         }
     }

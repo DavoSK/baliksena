@@ -81,6 +81,8 @@ public:
 
     static void setViewMatrix(const glm::mat4& view);
     static void setProjMatrix(const glm::mat4& proj);
+    static void setViewPos(const glm::vec3& pos);
+
     static Frustum& getFrustum() { return mFurstum; }
 
     static void draw(int baseElement, int numElements, int numInstances);

@@ -10,6 +10,8 @@
 #include "material.hpp"
 #include "texture.hpp"
 #include "model.hpp"
+#include "sector.hpp"
+#include "dummy.hpp"
 #include "logger.hpp"
 
 #include <filesystem>
@@ -102,23 +104,23 @@
     }
 
     if (hasEnvMap) {
+        if (normalBlending) {
+            material->setTextureBlending(TextureBlending::NORMAL);
+            if (hasEnvMap) {
+                material->setEnvRatio(mafiaMaterial.mEnvRatio);
+            }
+        }
+
+        if (mulBlending) {
+            material->setTextureBlending(TextureBlending::MUL);
+        }
+
+        if (addBlending) {
+            material->setTextureBlending(TextureBlending::ADD);
+        }
+
         material->createTextureForSlot(TextureSlots::ENV, mafiaMaterial.mEnvMapName);
         material->setKind(MaterialKind::ENV);
-    }
-
-    if (normalBlending) {
-        material->setTextureBlending(TextureBlending::NORMAL);
-        if (hasEnvMap) {
-            material->setEnvRatio(mafiaMaterial.mEnvRatio);
-        }
-    }
-
-    if (mulBlending) {
-        material->setTextureBlending(TextureBlending::MUL);
-    }
-
-    if (addBlending) {
-        material->setTextureBlending(TextureBlending::ADD);
     }
 
     material->setTransparency(mafiaMaterial.mTransparency);
@@ -217,8 +219,8 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     return newMesh;
 }
 
-[[nodiscard]] std::shared_ptr<Frame> loadDummy(MFFormat::DataFormat4DS::Mesh& mesh) {
-    auto newMesh = std::make_shared<Frame>();
+[[nodiscard]] std::shared_ptr<Dummy> loadDummy(MFFormat::DataFormat4DS::Mesh& mesh) {
+    auto newMesh = std::make_shared<Dummy>();
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
     auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mDummy.mMinBox.x, mesh.mDummy.mMinBox.y, mesh.mDummy.mMinBox.z},
@@ -227,9 +229,8 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     return newMesh;
 }
 
-
-[[nodiscard]] std::shared_ptr<Frame> loadSector(MFFormat::DataFormat4DS::Mesh& mesh) {
-    auto newMesh = std::make_shared<Frame>();
+[[nodiscard]] std::shared_ptr<Sector> loadSector(MFFormat::DataFormat4DS::Mesh& mesh) {
+    auto newMesh = std::make_shared<Sector>();
     newMesh->setName(mesh.mMeshName);
     newMesh->setMatrix(getMatrixFromMesh(mesh));
     auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mSector.mMinBox.x, mesh.mSector.mMinBox.y, mesh.mSector.mMinBox.z},
@@ -237,7 +238,6 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     newMesh->setBBOX(bbox);
     return newMesh;
 }
-
 
 std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     switch (mesh.mMeshType) {
@@ -285,7 +285,7 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     for (auto& mesh : parserModel.mMeshes) {
         auto loadedMesh = meshFactory(mesh, parserModel.mMaterials);
         if (loadedMesh) {
-            loadedMeshes.push_back(std::move(loadedMesh));
+            loadedMeshes.push_back(loadedMesh);
         }
     }
 
@@ -296,7 +296,7 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
 
         if (currentMafiaMesh.mParentID > 0) {
             auto parentNode = loadedMeshes[currentMafiaMesh.mParentID - 1];
-            parentNode->addChild(std::move(currentMesh));
+            parentNode->addChild(currentMesh);
         }
         else {
             model->addChild(std::move(currentMesh));

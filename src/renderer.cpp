@@ -1,9 +1,12 @@
 #include "bmp_loader.hpp"
+#include "logger.hpp"
+
+#define SOKOL_LOG(X) Logger::get().warn(X);
 
 #define SOKOL_IMPL
 #define SOKOL_TRACE_HOOKS
-//#define SOKOL_D3D11
-#define SOKOL_GLCORE33
+#define SOKOL_D3D11
+//#define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
@@ -21,6 +24,7 @@
 #include "shader_basic.h"
 #include "shader_cutout.h" 
 #include "shader_billboard.h" 
+#include "shader_env.h"
 
 #include "renderer.hpp"
 #include "gui.hpp"
@@ -37,6 +41,9 @@ static struct {
         sg_shader cutoutShader;
         sg_pipeline cutoutPip;
 
+        sg_shader envShader;
+        sg_pipeline envPip;
+
         sg_shader billboardShader;
         sg_pipeline billboardPip;
 
@@ -45,10 +52,12 @@ static struct {
         sg_pass_desc passDesc;
         sg_pass_action passAction;
         sg_image colorImg;
-
-        basic_vs_params_t vsParams;
     }  offscreen;
 
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::vec3 viewPos;
     RendererMaterial material;
 } state;
 
@@ -160,6 +169,29 @@ void Renderer::init() {
         state.offscreen.cutoutPip       = sg_make_pipeline(&pipelineDesc);
     }
 
+
+     //NOTE: env shader
+    {
+        state.offscreen.envShader       = sg_make_shader(env_env_shader_desc(sg_query_backend()));
+
+        sg_layout_desc envLayoutDesc{};
+        envLayoutDesc.attrs[ATTR_env_vs_aPos].format = SG_VERTEXFORMAT_FLOAT3;
+        envLayoutDesc.attrs[ATTR_env_vs_aNormal].format = SG_VERTEXFORMAT_FLOAT3;
+        envLayoutDesc.attrs[ATTR_env_vs_aTexCoord].format = SG_VERTEXFORMAT_FLOAT2;
+
+        sg_pipeline_desc pipelineDesc   = {};
+        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+        pipelineDesc.shader             = state.offscreen.envShader;
+        pipelineDesc.layout             = envLayoutDesc;
+        pipelineDesc.depth              = depthState;
+        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "env-pipeline";
+        
+        state.offscreen.envPip          = sg_make_pipeline(&pipelineDesc);
+    }
+
     //NOTE: billboard shader
     {
         state.offscreen.billboardShader = sg_make_shader(billboard_billboard_shader_desc(sg_query_backend()));
@@ -183,6 +215,9 @@ void Renderer::destroy() {
 
     sg_destroy_pipeline(state.offscreen.cutoutPip);
     sg_destroy_shader(state.offscreen.cutoutShader);
+
+    sg_destroy_pipeline(state.offscreen.envPip);
+    sg_destroy_shader(state.offscreen.envShader);
 
     sg_destroy_pipeline(state.offscreen.billboardPip);
     sg_destroy_shader(state.offscreen.billboardShader);
@@ -225,7 +260,10 @@ TextureHandle Renderer::createTexture(uint8_t* data, int width, int height) {
     imageDesc.min_filter    = SG_FILTER_LINEAR;
     imageDesc.mag_filter    = SG_FILTER_LINEAR;
     imageDesc.data = { data, static_cast<size_t>(width * height * 4) };
-    return { sg_make_image(&imageDesc).id };
+
+    sg_image createdImage = sg_make_image(&imageDesc);
+    assert(createdImage.id != SG_INVALID_ID);
+    return { createdImage.id };
 }
 
 void Renderer::destroyTexture(TextureHandle textureHandle) {
@@ -239,17 +277,16 @@ void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
 
 void Renderer::bindMaterial(const RendererMaterial& material) {
     if(material.diffuseTexture.has_value()) {
-        bindTexture(material.diffuseTexture.value(), 0);
+        bindTexture(material.diffuseTexture.value(), SLOT_basic_texture1);
+    }
+
+    if (material.envTexture.has_value()) {
+        bindTexture(material.envTexture.value(), SLOT_env_envSampler);
+    } else {
+        bindTexture({SG_INVALID_ID}, SLOT_env_envSampler);
     }
 
     state.material = material;
-   /* if(material.alphaTexture.has_value()) {
-        bindTexture(material.alphaTexture.value(), 1);
-    }   
-
-    if(material.alphaTexture.has_value()) {
-        bindTexture(material.alphaTexture.value(), 2);
-    }*/
 }
 
 BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
@@ -309,6 +346,10 @@ void Renderer::bindBuffers() {
             sg_apply_pipeline(state.offscreen.billboardPip);
         } break;
 
+        case MaterialKind::ENV: {
+            sg_apply_pipeline(state.offscreen.envPip);
+        } break;
+
         case MaterialKind::CUTOUT: {
             sg_apply_pipeline(state.offscreen.cutoutPip);
         } break;
@@ -322,26 +363,76 @@ void Renderer::bindBuffers() {
 }
 
 void Renderer::setModel(const glm::mat4& model) {
-    state.offscreen.vsParams.model = model;
+    state.model = model;
 }
 
 void Renderer::applyUniforms() {
-    sg_range uniformsRange{
-          &state.offscreen.vsParams,
-          sizeof(basic_vs_params_t)
-    };
+    switch(state.material.kind) {
+        case MaterialKind::ENV: {
 
-    sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &uniformsRange);
+            //NOTE: apply vertex stage uniforms
+            {
+                env_vs_params_t vsUniforms{
+                    state.model,
+                    state.view,
+                    state.proj,
+                    state.viewPos
+                };
+
+                sg_range vsUniformsRange{
+                    &vsUniforms,
+                    sizeof(env_vs_params_t)
+                };
+
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &vsUniformsRange);
+            }
+
+            //NOTE: apply fragment state uniforms
+            {
+                env_fs_params_t fsUniforms{
+                    static_cast<float>(state.material.envTextureBlending),
+                    state.material.envTextureBlendingRatio
+                };
+
+                sg_range fsUniformsRange{
+                   &fsUniforms,
+                   sizeof(env_fs_params_t)
+                };
+
+                sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_env_fs_params, &fsUniformsRange);
+            }
+        } break;
+
+        default: {
+            basic_vs_params_t vertexUniforms{
+                 state.model,
+                 state.view,
+                 state.proj
+            };
+
+            sg_range uniformsRange{
+                &vertexUniforms,
+                sizeof(basic_vs_params_t)
+            };
+
+            sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &uniformsRange);
+        } break;
+    }
 }
 
 void Renderer::setViewMatrix(const glm::mat4 &view) {
-    state.offscreen.vsParams.view = view;
+    state.view = view;
     updateFrustum();
 }
 
 void Renderer::setProjMatrix(const glm::mat4 &proj) {
-    state.offscreen.vsParams.projection = proj;
+    state.proj = proj;
     updateFrustum();
+}
+
+void Renderer::setViewPos(const glm::vec3& pos)
+{
+    state.viewPos = pos;
 }
 
 void Renderer::draw(int baseElement, int numElements, int numInstances) {
@@ -361,7 +452,7 @@ int Renderer::getWidth() { return sapp_width(); }
 int Renderer::getHeight() { return sapp_height(); }
 
 void Renderer::updateFrustum() {
-    mFurstum = Frustum(state.offscreen.vsParams.projection * state.offscreen.vsParams.view);
+    mFurstum = Frustum(state.proj * state.view);
 }
 
 Frustum Renderer::mFurstum;

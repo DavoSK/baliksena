@@ -9,6 +9,7 @@
 
 enum class FrameType
 {
+    ALL = -1,
     FRAME, 
     MESH,
     DUMMY,

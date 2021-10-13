@@ -50,6 +50,6 @@ add_executable(baliksena
 	vendors/imgui/imgui_draw.cpp
 	vendors/imgui/imgui_tables.cpp
 	vendors/imgui/imgui_widgets.cpp
-)
+ "src/dummy.hpp")
 
 target_link_libraries(baliksena)

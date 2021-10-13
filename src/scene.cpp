@@ -70,7 +70,12 @@ void Scene::load(const std::string& missionName) {
     // NOTE: load scene.4ds into primary sector
     std::string scenePath = missionFolder + "/scene.4ds";
     std::shared_ptr<Sector> primarySector = std::make_shared<Sector>();
-    primarySector->addChild( ModelLoader::loadModel(scenePath.c_str()));
+    
+    auto loadedModel = ModelLoader::loadModel(scenePath.c_str());
+    for (auto childNode : loadedModel->getChilds()) {
+        primarySector->addChild(childNode);
+    }
+
     primarySector->setName("Primary sector");
     
     mPrimarySector = primarySector;
@@ -119,6 +124,33 @@ void Scene::load(const std::string& missionName) {
     std::string sceneBinPath = missionFolder + "/scene2.bin";
     std::ifstream sceneBinFile(sceneBinPath.c_str(), std::ifstream::binary);
 
+    std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup;
+
+    auto getParentNameForObject = [this](MFFormat::DataFormatScene2BIN::Object& obj) -> std::string {
+        auto nodeName = std::string(obj.mName.c_str());
+        auto parentName = std::string(obj.mParentName.c_str());
+
+        if (parentName.length() == 0) {
+            glm::vec3 worldPosOfSector = { obj.mPos2.x, obj.mPos2.y, obj.mPos2.z };
+            if (worldPosOfSector.x == 0 &&
+                worldPosOfSector.y == 0 &&
+                worldPosOfSector.z == 0) {
+                return "Primary sector";
+            }
+
+            std::optional<Sector*> foundSector;
+            getSectorOfPoint(worldPosOfSector, this, foundSector);
+
+            if (foundSector.has_value()) {
+                return foundSector.value()->getName();
+            }
+
+            return "Primary sector";
+        }
+        
+        return parentName;
+    };
+
     if (sceneBinFile.good()) {
         MFFormat::DataFormatScene2BIN sceneBin;
         if (sceneBin.load(sceneBinFile)) {
@@ -127,34 +159,39 @@ void Scene::load(const std::string& missionName) {
                 loadedNode->setName(obj.mName.c_str());
                 loadedNode->setMatrix(getMatrixFromPosScaleRot(obj.mPos, obj.mScale, obj.mRot));
                 loadedNode->setOn(!obj.mIsHidden);
+                parentingGroup[getParentNameForObject(obj)].push_back(std::move(loadedNode));
+            }
 
-                auto nodeName = std::string(obj.mName.c_str());
-                auto parentName = std::string(obj.mParentName.c_str());
-
-                if (parentName.length() == 0) {
-                    glm::vec3 worldPosOfSector = { obj.mPos2.x, obj.mPos2.y, obj.mPos2.z };
-                    if (worldPosOfSector.x == 0 && 
-                        worldPosOfSector.y == 0 && 
-                        worldPosOfSector.z == 0) {
-                        primarySector->addChild(loadedNode);
-                        continue;
-                    }
-
-                    std::optional<Sector*> foundSector;
-                    getSectorOfPoint(worldPosOfSector, this, foundSector);
-                    
-                    if (foundSector.has_value()) {
-                        foundSector.value()->addChild(loadedNode);
+            for (auto [parentName, nodes] : parentingGroup) {
+                auto parent = this->findNodeMaf(parentName);
+                if (parent != nullptr) {
+                    for (auto node : nodes) {
+                        parent->addChild(std::move(node));
                     }
                 } else {
-                    auto foundNode = this->findNodeMaf(parentName);
-                    if (foundNode) {
-                        foundNode->addChild(loadedNode);
-                    }
+                    Logger::get().warn("unable to find parent: {}", parentName);
                 }
             }
         }
     }
+
+    // //NOTE: load cachus binus
+   std::string sceneCacheBin = missionFolder + "\\cache.bin";
+  
+   MFFormat::DataFormatCacheBIN cacheBin;
+   std::ifstream cacheBinFile(sceneCacheBin, std::ifstream::binary);
+   if(cacheBinFile.good() && cacheBin.load(cacheBinFile)) {
+       for(const auto& obj : cacheBin.getObjects()) {
+           for(const auto& instance : obj.mInstances) {
+
+               auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName);
+               if(model != nullptr) {
+                   model->setMatrix(getMatrixFromInstance(instance));
+                   addChild(std::move(model));
+               }
+           }
+       }
+   }
 
     init();
 }
