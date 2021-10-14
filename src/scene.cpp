@@ -63,6 +63,8 @@ void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>&
 
 void Scene::load(const std::string& missionName) {
     Logger::get().info("loading mission {}", missionName);
+    setName(missionName);
+
     std::string gameFolder = "C:/Mafia";
     std::string missionFolder = gameFolder + "/MISSIONS/" + missionName + "/";
     std::string modelsFolder = gameFolder + "/MODELS/";
@@ -168,15 +170,18 @@ void Scene::load(const std::string& missionName) {
                     for (auto node : nodes) {
                         parent->addChild(std::move(node));
                     }
-                } else {
-                    Logger::get().warn("unable to find parent: {}", parentName);
+                }
+                else {
+                    for (auto node : nodes) {
+                        Logger::get().warn("unable to get parrent: {} for: {}", parentName, node->getName());
+                    }
                 }
             }
         }
     }
 
     // //NOTE: load cachus binus
-   std::string sceneCacheBin = missionFolder + "\\cache.bin";
+  /* std::string sceneCacheBin = missionFolder + "\\cache.bin";
   
    MFFormat::DataFormatCacheBIN cacheBin;
    std::ifstream cacheBinFile(sceneCacheBin, std::ifstream::binary);
@@ -191,7 +196,7 @@ void Scene::load(const std::string& missionName) {
                }
            }
        }
-   }
+   }*/
 
     init();
 }

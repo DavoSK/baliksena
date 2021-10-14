@@ -9,21 +9,36 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
+#include "imterm/terminal.hpp"
+#include "terminal_commands.hpp"
+
 #include <string>
 
-const char* frameTypes[] = {"FRAME", "MESH", "DUMMY", "SECTOR", "BILLBOARD"};
-static FrameType selectedFrameType = FrameType::ALL;
+static char gNodeSearchText[32] = {};
+static size_t gNodeSearchTexLen = 0;
+
+static bool wasInited = false;
+
+bool doesContainChildNode(Frame* frame, const char* frameName) {
+    if (!frame) return false;
+
+    if (strstr(frame->getName().c_str(), frameName)) {
+        return true;
+    } else {
+        for (const auto& child : frame->getChilds()) {
+            if (doesContainChildNode(child.get(), frameName))
+                return true;
+        }
+    }
+
+    return false;
+}
 
 void renderNodeRecursively(Frame* frame) {
     if (frame == nullptr)
         return;
 
-    if (selectedFrameType != FrameType::ALL && frame->getType() != selectedFrameType) {
-        for (const auto& child : frame->getChilds()) {
-            renderNodeRecursively(child.get());
-        }
-    }
-    else {
+    if ((gNodeSearchTexLen && doesContainChildNode(frame, gNodeSearchText)) || !gNodeSearchTexLen) {
         if (ImGui::TreeNode(frame->getName().c_str())) {
             for (const auto& child : frame->getChilds()) {
                 renderNodeRecursively(child.get());
@@ -40,6 +55,15 @@ ImVec2 lastWsize;
 void Gui::render() {
     auto* scene = App::get()->getScene();
     auto* cam = scene->getActiveCamera();
+    static std::unique_ptr<ImTerm::terminal<terminal_commands>> terminal_log;
+
+    if (!wasInited) {
+        custom_command_struct cmd_struct; // terminal commands can interact with this structure
+        terminal_log = std::make_unique<ImTerm::terminal<terminal_commands>>(cmd_struct, "Terminal");
+        terminal_log->set_min_log_level(ImTerm::message::severity::info);
+	    Logger::get().sinks().push_back(terminal_log->get_terminal_helper());
+        wasInited = true;
+    }
 
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
@@ -88,13 +112,13 @@ void Gui::render() {
             //   DON'T set as NULL, will be returned by the function)
             //                                                              out_id_at_dir is the id of the node in the direction we specified earlier,
             //                                                              out_id_at_opposite_dir is in the opposite direction
-            auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
+            auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.25f, nullptr, &dockspace_id);
             auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
-            auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
+            auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.30f, nullptr, &dockspace_id);
             auto dock_id_center = ImGui::DockBuilderGetCentralNode(dockspace_id);
             // we now dock our windows into the docking node we made above
             ImGui::DockBuilderDockWindow("Scene", dock_id_left);
-            ImGui::DockBuilderDockWindow("Console", dock_id_down);
+            ImGui::DockBuilderDockWindow("Terminal", dock_id_down);
             ImGui::DockBuilderDockWindow("Inspect", dock_id_right);
             ImGui::DockBuilderDockWindow("View", dock_id_center->ID);
             ImGui::DockBuilderFinish(dockspace_id);
@@ -105,33 +129,15 @@ void Gui::render() {
 
     // NOTE: scene section
     ImGui::Begin("Scene");
-    
-    static const char* currentFrameType = nullptr;
-
-    if (ImGui::BeginCombo("##custom combo", currentFrameType)) {
-        for (int n = 0; n < IM_ARRAYSIZE(frameTypes); n++) {
-            bool isSelected = (currentFrameType == frameTypes[n]);
-            if (ImGui::Selectable(frameTypes[n], isSelected)) {
-                currentFrameType = frameTypes[n];
-                selectedFrameType = static_cast<FrameType>(n);
-            }
-
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndCombo();
+    if (ImGui::InputText("Search", gNodeSearchText, 32)) {
+        gNodeSearchTexLen = strnlen_s(gNodeSearchText, 32);
     }
 
     renderNodeRecursively(scene);
     ImGui::End();
 
-    // NOTE: console
-    ImGui::Begin("Console");
-    for(auto& line : Logger::getGuiOutputBuffer()) {
-        ImGui::Text("%s", line.c_str());
-    }
-    ImGui::End();
+    // NOTE: terminal
+    terminal_log->show();
 
     // NOTE: inspect
     ImGui::Begin("Inspect");

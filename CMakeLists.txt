@@ -20,6 +20,7 @@ include_directories(vendors
     src
     shaders/include
     vendors/spdlog/include
+	vendors/ImTerm/include
 )
 
 add_executable(baliksena 
@@ -45,7 +46,7 @@ add_executable(baliksena
     src/texture.cpp 
     src/material.cpp
 	src/logger.cpp
-
+	src/terminal_commands.cpp
     vendors/imgui/imgui.cpp
 	vendors/imgui/imgui_draw.cpp
 	vendors/imgui/imgui_tables.cpp

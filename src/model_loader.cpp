@@ -159,7 +159,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;
     } break;
     default: {
-        Logger::get().warn("unable to load visual mesh type {}",  mesh.mVisualMeshType);
+        //Logger::get().warn("unable to load visual mesh type {}",  mesh.mVisualMeshType);
     } break;
     }
 
@@ -255,7 +255,7 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
         } break;
 
         default: {
-            Logger::get().warn("unable to load mesh type {}", mesh.mMeshName);
+            //Logger::get().warn("unable to load mesh type {}", mesh.mMeshName);
         } break;
     }
 

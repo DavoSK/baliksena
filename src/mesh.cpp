@@ -40,10 +40,10 @@ void Mesh::render() {
 
     if (mStatic || mVertices.empty() || !isOn()) return;
     
-    const auto& worldBBOX = getWorldBBOX();
-     if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
-         return;
-     }
+   /* const auto& worldBBOX = getWorldBBOX();
+    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
+        return;
+    }*/
 
     Renderer::setModel(getWorldMatrix());
 
