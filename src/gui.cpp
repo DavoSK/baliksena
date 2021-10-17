@@ -189,14 +189,17 @@ void Gui::render() {
             //   DON'T set as NULL, will be returned by the function)
             //                                                              out_id_at_dir is the id of the node in the direction we specified earlier,
             //                                                              out_id_at_opposite_dir is in the opposite direction
-            auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.25f, nullptr, &dockspace_id);
-            auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.2f, nullptr, &dockspace_id);
+            auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.30f, nullptr, &dockspace_id);
+            auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.30f, nullptr, &dockspace_id);
             auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.30f, nullptr, &dockspace_id);
             auto dock_id_center = ImGui::DockBuilderGetCentralNode(dockspace_id);
+            auto dock_id_debug = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Up, 0.30, nullptr, &dock_id_right);
+
             // we now dock our windows into the docking node we made above
             ImGui::DockBuilderDockWindow("Scene", dock_id_left);
             ImGui::DockBuilderDockWindow("Terminal", dock_id_down);
             ImGui::DockBuilderDockWindow("Inspect", dock_id_right);
+            ImGui::DockBuilderDockWindow("Debug", dock_id_debug);
             ImGui::DockBuilderDockWindow("View", dock_id_center->ID);
             ImGui::DockBuilderFinish(dockspace_id);
         }
@@ -226,6 +229,7 @@ void Gui::render() {
     ImGui::End();
 
     // NOTE: game view
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("View");
     ImGui::BeginChild("GameRender");
 
@@ -245,6 +249,7 @@ void Gui::render() {
     ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize/*, ImVec2(0, 1), ImVec2(1, 0)*/);
     ImGui::EndChild();
     ImGui::End();
+    ImGui::PopStyleVar();
 
     // NOTE: debug, camera settings
     ImGui::Begin("Debug");
