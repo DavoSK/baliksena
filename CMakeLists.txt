@@ -20,7 +20,6 @@ include_directories(vendors
     src
     shaders/include
     vendors/spdlog/include
-	vendors/ImTerm/include
 )
 
 add_executable(baliksena 
@@ -45,12 +44,24 @@ add_executable(baliksena
     src/frustum_culling.cpp
     src/texture.cpp 
     src/material.cpp
-	src/logger.cpp
-	src/terminal_commands.cpp
+    src/logger.cpp
     vendors/imgui/imgui.cpp
-	vendors/imgui/imgui_draw.cpp
-	vendors/imgui/imgui_tables.cpp
-	vendors/imgui/imgui_widgets.cpp
- "src/dummy.hpp")
+    vendors/imgui/imgui_draw.cpp
+    vendors/imgui/imgui_tables.cpp
+    vendors/imgui/imgui_widgets.cpp
+ )
 
-target_link_libraries(baliksena)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    target_link_libraries(
+        baliksena
+        X11 
+        Xi 
+        Xcursor 
+        GL 
+        dl 
+        pthread 
+        m
+    )
+else()
+    target_link_libraries(baliksena)    
+endif()

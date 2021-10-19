@@ -210,7 +210,7 @@ void Gui::render() {
     // NOTE: scene section
     ImGui::Begin("Scene");
     if (ImGui::InputText("Search", gNodeSearchText, 32)) {
-        gNodeSearchTexLen = strnlen_s(gNodeSearchText, 32);
+        gNodeSearchTexLen = strnlen(gNodeSearchText, 32);
     }
 
     renderNodeRecursively(scene);
