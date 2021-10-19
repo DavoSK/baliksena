@@ -2,7 +2,7 @@
 
 namespace MFFormat {
 
-bool DataFormatCacheBIN::load(std::ifstream& srcFile) {
+bool DataFormatCacheBIN::load(std::istream& srcFile) {
     Header newHeader = {};
     read(srcFile, &newHeader);
 

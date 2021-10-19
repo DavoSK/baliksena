@@ -301,7 +301,7 @@ public:
         }
     } Model;
 
-    virtual bool load(std::ifstream& srcFile) override;
+    virtual bool load(std::istream& srcFile) override;
 
     inline Model getModel() { return mLoadedModel; }
 
@@ -320,21 +320,21 @@ public:
     }
 
 protected:
-    void loadMaterial(Model* model, std::ifstream& file);
-    Lod loadLod(std::ifstream& file);
-    Standard loadStandard(std::ifstream& file);
-    Mirror loadMirror(std::ifstream& file);
-    Glow loadGlow(std::ifstream& file);
-    Portal loadPortal(std::ifstream& file);
-    Sector loadSector(std::ifstream& file);
-    Target loadTarget(std::ifstream& file);
-    Morph loadMorph(std::ifstream& file, bool ignoreStandard);
-    SingleMeshLodJoint loadSingleMeshLodJoint(std::ifstream& file);
-    SingleMeshLod loadSingleMeshLod(std::ifstream& file);
-    SingleMesh loadSingleMesh(std::ifstream& file);
-    SingleMorph loadSingleMorph(std::ifstream& file);
-    void loadMesh(Model* model, std::ifstream& file);
-    Model loadModel(std::ifstream& file);
+    void loadMaterial(Model* model, std::istream& file);
+    Lod loadLod(std::istream& file);
+    Standard loadStandard(std::istream& file);
+    Mirror loadMirror(std::istream& file);
+    Glow loadGlow(std::istream& file);
+    Portal loadPortal(std::istream& file);
+    Sector loadSector(std::istream& file);
+    Target loadTarget(std::istream& file);
+    Morph loadMorph(std::istream& file, bool ignoreStandard);
+    SingleMeshLodJoint loadSingleMeshLodJoint(std::istream& file);
+    SingleMeshLod loadSingleMeshLod(std::istream& file);
+    SingleMesh loadSingleMesh(std::istream& file);
+    SingleMorph loadSingleMorph(std::istream& file);
+    void loadMesh(Model* model, std::istream& file);
+    Model loadModel(std::istream& file);
     Model mLoadedModel;
 };
 

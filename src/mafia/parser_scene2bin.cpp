@@ -29,7 +29,7 @@ std::string DataFormatScene2BIN::lightTypeToStr(LightType t) {
     return "unknown";
 }
 
-bool DataFormatScene2BIN::load(std::ifstream& srcFile) {
+bool DataFormatScene2BIN::load(std::istream& srcFile) {
     Header newHeader = {};
     read(srcFile, &newHeader);
     uint32_t position = 6;
@@ -45,7 +45,7 @@ bool DataFormatScene2BIN::load(std::ifstream& srcFile) {
     return true;
 }
 
-void DataFormatScene2BIN::readHeader(std::ifstream& srcFile, Header* header, uint32_t offset) {
+void DataFormatScene2BIN::readHeader(std::istream& srcFile, Header* header, uint32_t offset) {
     switch (header->mType) {
         case HEADER_SPECIAL_WORLD:
         case HEADER_WORLD: {
@@ -101,7 +101,7 @@ void DataFormatScene2BIN::readHeader(std::ifstream& srcFile, Header* header, uin
     }
 }
 
-void DataFormatScene2BIN::readObject(std::ifstream& srcFile, Header* header, Object* object, uint32_t offset) {
+void DataFormatScene2BIN::readObject(std::istream& srcFile, Header* header, Object* object, uint32_t offset) {
     switch (header->mType) {
         case OBJECT_TYPE_SPECIAL: {
             read(srcFile, &object->mSpecialType);
@@ -209,7 +209,7 @@ void DataFormatScene2BIN::readObject(std::ifstream& srcFile, Header* header, Obj
     }
 }
 
-void DataFormatScene2BIN::readLight(std::ifstream& srcFile, Header* header, Object* object) {
+void DataFormatScene2BIN::readLight(std::istream& srcFile, Header* header, Object* object) {
     switch (header->mType) {
         case OBJECT_LIGHT_TYPE: {
             read(srcFile, &object->mLightType);

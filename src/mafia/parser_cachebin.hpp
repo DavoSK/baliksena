@@ -44,7 +44,7 @@ public:
         uint32_t mVersion; // NOTE(zaklaus): Should always be 1.
     } Chunk;
 
-    virtual bool load(std::ifstream &srcFile) override;
+    virtual bool load(std::istream &srcFile) override;
 
     inline std::vector<Object> getObjects()     { return mObjects; }
     inline size_t getNumObjects()               { return mObjects.size(); }

@@ -5,32 +5,21 @@
 #include "scene.hpp"
 #include "texture.hpp"
 #include "stats.hpp"
+#include "vfs.hpp"
 
 Stats gStats{};
 
 App::App() {
-    mInput = new Input();
-    mScene = new Scene();
-}
-
-App::~App() {
-    //NOTE: dealocate main camera from scene
-    auto* mainCam = mScene->getActiveCamera();
-    if(mainCam != nullptr) {
-        delete mainCam;
-    } 
-
-    delete mInput;
-    delete mScene;
+    mInput = std::make_unique<Input>();
+    mScene = std::make_unique<Scene>();
 }
 
 void App::init() {
     Renderer::init();
-  
-    auto* mainCam = new Camera();
+    Vfs::init();
+    auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
-    //mScene->load("FREERIDE");
 }
 
 void App::render() { 
@@ -72,4 +61,5 @@ void App::destroy() {
     delete this;
     Texture::clearCache();
     Renderer::destroy();
+    Vfs::destroy();
 }

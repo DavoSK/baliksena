@@ -13,6 +13,7 @@
 #include "sector.hpp"
 #include "dummy.hpp"
 #include "logger.hpp"
+#include "vfs.hpp"
 
 #include <filesystem>
 
@@ -263,7 +264,8 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
 }
 
 std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
-    std::ifstream modelFile(path, std::ifstream::binary);
+    
+    auto modelFile = Vfs::getFile(path);
     if (!modelFile.good()) {
         Logger::get().error("unable to load model {}", path);
         return nullptr;
