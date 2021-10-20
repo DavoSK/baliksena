@@ -26,7 +26,10 @@ add_executable(baliksena
     src/mafia/parser_4ds.cpp
     src/mafia/parser_cachebin.cpp
     src/mafia/parser_scene2bin.cpp
-
+    src/mafia/parser_dta.cpp
+    src/mafia/utils.cpp
+    
+    src/vfs.cpp
     src/gui.cpp
     src/main.cpp
     src/app.cpp

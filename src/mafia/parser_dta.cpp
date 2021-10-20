@@ -147,7 +147,7 @@ int DataFormatDTA::getFileIndex(std::string fileName)
     return -1;
 }
 
-MFUtil::ScopedBuffer DataFormatDTA::getFile(std::istream &srcFile, unsigned int index)
+MFUtil::ScopedBuffer DataFormatDTA::getFile(std::ifstream &srcFile, unsigned int index)
 {
     unsigned length = getFileSize(index);
     MFUtil::ScopedBuffer dstBuffer(length);

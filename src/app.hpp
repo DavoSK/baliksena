@@ -22,6 +22,6 @@ public:
 
     Scene* getScene() { return mScene.get(); }
 private: 
-    std::unique_ptr<Input> mInput = nullptr;
-    std::unique_ptr<Scene> mScene = nullptr;
+    std::shared_ptr<Input> mInput = nullptr;
+    std::shared_ptr<Scene> mScene = nullptr;
 };

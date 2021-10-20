@@ -10,8 +10,8 @@
 Stats gStats{};
 
 App::App() {
-    mInput = std::make_unique<Input>();
-    mScene = std::make_unique<Scene>();
+    mInput = std::make_shared<Input>();
+    mScene = std::make_shared<Scene>();
 }
 
 void App::init() {

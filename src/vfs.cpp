@@ -45,7 +45,12 @@ void Vfs::init() {
             currentDtaParser->setDecryptKeys(dtaFile.fileKey1, dtaFile.fileKey2);
             if(currentDtaParser->load(*dtaFileSteam)) {
                 for(unsigned int i = 0; i < currentDtaParser->getNumFiles(); i++) {
-                    gFileMap[currentDtaParser->getFileName(i)] = { 
+                    auto fileName = MFUtil::strToLower(currentDtaParser->getFileName(i));
+                    if(fileName.find("tutorial") != std::string::npos) {
+                        std::cout << fileName << std::endl;
+                    }
+
+                    gFileMap[fileName] = { 
                         std::move(dtaFileSteam),
                         std::move(currentDtaParser),
                         i
@@ -59,12 +64,14 @@ void Vfs::init() {
 }
 
 memstream Vfs::getFile(const std::string& filePath) {
+    auto lowerFilePath = MFUtil::strToLower(filePath);
     if(gFileMap.find(filePath) != gFileMap.end()) {
         DtaFileEntry& entry = gFileMap[filePath];
         auto buffer = entry.parser->getFile(*entry.file, entry.fleIdx);
         return { buffer.as<uint8_t>(), buffer.size() };
     }
 
+    Logger::get().error("VFS unable to get file {}", filePath);
     return {nullptr, 0};
 }
 

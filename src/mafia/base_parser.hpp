@@ -15,7 +15,9 @@ namespace MFFormat {
 /// Abstract class representing a game data format.
 class DataFormat {
 public:
-    virtual bool load(std::istream& srcFile) = 0;
+    virtual bool load(std::istream& srcStream) { return false; }
+    virtual bool load(std::ifstream& srcFile) { return false; }
+
     //virtual bool save(std::ofstream& dstFile) { return false; /* optional */ };
     virtual std::string getErrorStr() { return "Unknown error"; };
 protected:

@@ -65,9 +65,9 @@ void Scene::load(const std::string& missionName) {
     Logger::get().info("loading mission {}", missionName);
     setName(missionName);
 
-    std::string gameFolder = "C:/Mafia";
-    std::string missionFolder = gameFolder + "/MISSIONS/" + missionName + "/";
-    std::string modelsFolder = gameFolder + "/MODELS/";
+ 
+    std::string missionFolder = "MISSIONS/" + missionName;
+    std::string modelsFolder = "MODELS/";
 
     // NOTE: load scene.4ds into primary sector
     std::string scenePath = missionFolder + "/scene.4ds";
