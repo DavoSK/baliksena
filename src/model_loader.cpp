@@ -140,7 +140,7 @@
 std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     std::vector<MFFormat::DataFormat4DS::Lod>* lods = nullptr;
-    bool isStaticMesh = false;
+    bool isStaticMesh = true;
 
     std::shared_ptr<Mesh> newMesh = nullptr;
 
@@ -266,7 +266,7 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
 std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     
     auto modelFile = Vfs::getFile(path);
-    if (!modelFile.good()) {
+    if (!modelFile.size()) {
         Logger::get().error("unable to load model {}", path);
         return nullptr;
     }

@@ -7,6 +7,7 @@
 #include "material.hpp"
 #include "logger.hpp"
 #include "sector.hpp"
+#include "vfs.hpp"
 
 #include "mafia/parser_cachebin.hpp"
 #include "mafia/parser_scene2bin.hpp"
@@ -66,11 +67,11 @@ void Scene::load(const std::string& missionName) {
     setName(missionName);
 
  
-    std::string missionFolder = "MISSIONS/" + missionName;
-    std::string modelsFolder = "MODELS/";
+    std::string missionFolder = "MISSIONS\\" + missionName;
+    std::string modelsFolder = "MODELS\\";
 
     // NOTE: load scene.4ds into primary sector
-    std::string scenePath = missionFolder + "/scene.4ds";
+    std::string scenePath = missionFolder + "\\scene.4ds";
     std::shared_ptr<Sector> primarySector = std::make_shared<Sector>();
     
     auto loadedModel = ModelLoader::loadModel(scenePath.c_str());
@@ -123,9 +124,6 @@ void Scene::load(const std::string& missionName) {
     };
 
     // NOTE: load scene2 bin
-    std::string sceneBinPath = missionFolder + "/scene2.bin";
-    std::ifstream sceneBinFile(sceneBinPath.c_str(), std::ifstream::binary);
-
     std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup;
 
     auto getParentNameForObject = [this](MFFormat::DataFormatScene2BIN::Object& obj) -> std::string {
@@ -153,7 +151,9 @@ void Scene::load(const std::string& missionName) {
         return parentName;
     };
 
-    if (sceneBinFile.good()) {
+    std::string sceneBinPath = missionFolder + "\\scene2.bin";
+    auto sceneBinFile = Vfs::getFile(sceneBinPath);
+    if (sceneBinFile.size()) {
         MFFormat::DataFormatScene2BIN sceneBin;
         if (sceneBin.load(sceneBinFile)) {
             for (auto& [objName, obj] : sceneBin.getObjects()) {
@@ -180,23 +180,22 @@ void Scene::load(const std::string& missionName) {
         }
     }
 
-    // //NOTE: load cachus binus
-  /* std::string sceneCacheBin = missionFolder + "\\cache.bin";
-  
-   MFFormat::DataFormatCacheBIN cacheBin;
-   std::ifstream cacheBinFile(sceneCacheBin, std::ifstream::binary);
-   if(cacheBinFile.good() && cacheBin.load(cacheBinFile)) {
-       for(const auto& obj : cacheBin.getObjects()) {
-           for(const auto& instance : obj.mInstances) {
+    //NOTE: load cachus binus
+    std::string sceneCacheBin = missionFolder + "\\cache.bin";
+    MFFormat::DataFormatCacheBIN cacheBin;
+    auto cacheBinFile = Vfs::getFile(sceneCacheBin);
+    if(cacheBinFile.size() && cacheBin.load(cacheBinFile)) {
+        for(const auto& obj : cacheBin.getObjects()) {
+            for(const auto& instance : obj.mInstances) {
 
-               auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName);
-               if(model != nullptr) {
-                   model->setMatrix(getMatrixFromInstance(instance));
-                   addChild(std::move(model));
-               }
-           }
-       }
-   }*/
+                auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName);
+                if(model != nullptr) {
+                    model->setMatrix(getMatrixFromInstance(instance));
+                    addChild(std::move(model));
+                }
+            }
+        }
+    }
 
     init();
 }

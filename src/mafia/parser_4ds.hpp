@@ -3,6 +3,7 @@
 
 #include "base_parser.hpp"
 #include "math.hpp"
+#include "utils.hpp"
 #include <cstring>
 
 namespace MFFormat {
@@ -301,7 +302,7 @@ public:
         }
     } Model;
 
-    virtual bool load(std::istream& srcFile) override;
+    virtual bool load(MFUtil::ScopedBuffer& srcFile) override;
 
     inline Model getModel() { return mLoadedModel; }
 
@@ -320,21 +321,21 @@ public:
     }
 
 protected:
-    void loadMaterial(Model* model, std::istream& file);
-    Lod loadLod(std::istream& file);
-    Standard loadStandard(std::istream& file);
-    Mirror loadMirror(std::istream& file);
-    Glow loadGlow(std::istream& file);
-    Portal loadPortal(std::istream& file);
-    Sector loadSector(std::istream& file);
-    Target loadTarget(std::istream& file);
-    Morph loadMorph(std::istream& file, bool ignoreStandard);
-    SingleMeshLodJoint loadSingleMeshLodJoint(std::istream& file);
-    SingleMeshLod loadSingleMeshLod(std::istream& file);
-    SingleMesh loadSingleMesh(std::istream& file);
-    SingleMorph loadSingleMorph(std::istream& file);
-    void loadMesh(Model* model, std::istream& file);
-    Model loadModel(std::istream& file);
+    void loadMaterial(Model* model, MFUtil::ScopedBuffer& file);
+    Lod loadLod(MFUtil::ScopedBuffer& file);
+    Standard loadStandard(MFUtil::ScopedBuffer& file);
+    Mirror loadMirror(MFUtil::ScopedBuffer& file);
+    Glow loadGlow(MFUtil::ScopedBuffer& file);
+    Portal loadPortal(MFUtil::ScopedBuffer& file);
+    Sector loadSector(MFUtil::ScopedBuffer& file);
+    Target loadTarget(MFUtil::ScopedBuffer& file);
+    Morph loadMorph(MFUtil::ScopedBuffer& file, bool ignoreStandard);
+    SingleMeshLodJoint loadSingleMeshLodJoint(MFUtil::ScopedBuffer& file);
+    SingleMeshLod loadSingleMeshLod(MFUtil::ScopedBuffer& file);
+    SingleMesh loadSingleMesh(MFUtil::ScopedBuffer& file);
+    SingleMorph loadSingleMorph(MFUtil::ScopedBuffer& file);
+    void loadMesh(Model* model, MFUtil::ScopedBuffer& file);
+    Model loadModel(MFUtil::ScopedBuffer& file);
     Model mLoadedModel;
 };
 

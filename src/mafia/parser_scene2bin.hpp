@@ -4,6 +4,7 @@
 #include <cstring>
 #include "math.hpp"
 #include "base_parser.hpp"
+#include "utils.hpp"
 
 namespace MFFormat
 {
@@ -133,7 +134,7 @@ public:
         } mSpecialProps;
     } Object;
 
-    virtual bool load(std::istream &srcFile);
+    virtual bool load(MFUtil::ScopedBuffer&srcFile);
     inline size_t getNumObjects()                               { return mObjects.size(); }
     inline Object* getObject(std::string name)                  { return &mObjects.at(name); }
     inline std::unordered_map<std::string, Object> getObjects() { return mObjects; }
@@ -147,9 +148,9 @@ public:
     static std::string lightTypeToStr(LightType t);
 
 private:
-    void readHeader(std::istream &srcFile, Header* header, uint32_t offset);
-    void readObject(std::istream &srcFile, Header* header, Object* object, uint32_t offset);
-    void readLight (std::istream &srcFile, Header* header, Object* object);
+    void readHeader(MFUtil::ScopedBuffer&srcFile, Header* header, uint32_t offset);
+    void readObject(MFUtil::ScopedBuffer&srcFile, Header* header, Object* object, uint32_t offset);
+    void readLight (MFUtil::ScopedBuffer&srcFile, Header* header, Object* object);
     
     std::unordered_map<std::string, Object> mObjects;
     std::unordered_map<std::string, Object> mExternalObjects;

@@ -2,7 +2,7 @@
 
 namespace MFFormat {
 
-void DataFormat4DS::loadMaterial(Model* model, std::istream& file) {
+void DataFormat4DS::loadMaterial(Model* model, MFUtil::ScopedBuffer& file) {
     read(file, &model->mMaterialCount);
 
     for (size_t i = 0; i < model->mMaterialCount; ++i) {
@@ -39,7 +39,7 @@ void DataFormat4DS::loadMaterial(Model* model, std::istream& file) {
     }
 }
 
-DataFormat4DS::Lod DataFormat4DS::loadLod(std::istream& file) {
+DataFormat4DS::Lod DataFormat4DS::loadLod(MFUtil::ScopedBuffer& file) {
     Lod newLod = {};
     read(file, &newLod.mRelativeDistance);
     read(file, &newLod.mVertexCount);
@@ -69,7 +69,7 @@ DataFormat4DS::Lod DataFormat4DS::loadLod(std::istream& file) {
     return newLod;
 }
 
-DataFormat4DS::Standard DataFormat4DS::loadStandard(std::istream& file) {
+DataFormat4DS::Standard DataFormat4DS::loadStandard(MFUtil::ScopedBuffer& file) {
     Standard newStandard = {};
     read(file, &newStandard.mInstanced);
 
@@ -86,7 +86,7 @@ DataFormat4DS::Standard DataFormat4DS::loadStandard(std::istream& file) {
     return newStandard;
 }
 
-DataFormat4DS::Mirror DataFormat4DS::loadMirror(std::istream& file) {
+DataFormat4DS::Mirror DataFormat4DS::loadMirror(MFUtil::ScopedBuffer& file) {
     Mirror newMirror = {};
     read(file, &newMirror.mMinBox);
     read(file, &newMirror.mMaxBox);
@@ -112,7 +112,7 @@ DataFormat4DS::Mirror DataFormat4DS::loadMirror(std::istream& file) {
     return newMirror;
 }
 
-DataFormat4DS::Glow DataFormat4DS::loadGlow(std::istream& file) {
+DataFormat4DS::Glow DataFormat4DS::loadGlow(MFUtil::ScopedBuffer& file) {
     Glow newGlow = {};
     read(file, &newGlow.mGlowCount);
 
@@ -126,7 +126,7 @@ DataFormat4DS::Glow DataFormat4DS::loadGlow(std::istream& file) {
     return newGlow;
 }
 
-DataFormat4DS::Portal DataFormat4DS::loadPortal(std::istream& file) {
+DataFormat4DS::Portal DataFormat4DS::loadPortal(MFUtil::ScopedBuffer& file) {
     Portal newPortal = {};
     read(file, &newPortal.mVertexCount);
     read(file, &newPortal.mUnk0);
@@ -141,7 +141,7 @@ DataFormat4DS::Portal DataFormat4DS::loadPortal(std::istream& file) {
     return newPortal;
 }
 
-DataFormat4DS::Sector DataFormat4DS::loadSector(std::istream& file) {
+DataFormat4DS::Sector DataFormat4DS::loadSector(MFUtil::ScopedBuffer& file) {
     Sector newSector = {};
     read(file, &newSector.mUnk0);
     read(file, &newSector.mUnk1);
@@ -173,7 +173,7 @@ DataFormat4DS::Sector DataFormat4DS::loadSector(std::istream& file) {
     return newSector;
 }
 
-DataFormat4DS::Target DataFormat4DS::loadTarget(std::istream& file) {
+DataFormat4DS::Target DataFormat4DS::loadTarget(MFUtil::ScopedBuffer& file) {
     Target newTarget = {};
     read(file, &newTarget.mUnk0);
     read(file, &newTarget.mTargetCount);
@@ -187,7 +187,7 @@ DataFormat4DS::Target DataFormat4DS::loadTarget(std::istream& file) {
     return newTarget;
 }
 
-DataFormat4DS::Morph DataFormat4DS::loadMorph(std::istream& file,
+DataFormat4DS::Morph DataFormat4DS::loadMorph(MFUtil::ScopedBuffer& file,
                                               bool ignoreStandard) {
     Morph newMorph = {};
     // NOTE(zaklaus): Single Morph contains Standard Mesh in Single Mesh
@@ -235,7 +235,7 @@ DataFormat4DS::Morph DataFormat4DS::loadMorph(std::istream& file,
 }
 
 DataFormat4DS::SingleMeshLodJoint DataFormat4DS::loadSingleMeshLodJoint(
-    std::istream& file) {
+    MFUtil::ScopedBuffer& file) {
     SingleMeshLodJoint newJoint = {};
     read(file, &newJoint.mTransform);
     read(file, &newJoint.mOneWeightedVertCount);
@@ -254,7 +254,7 @@ DataFormat4DS::SingleMeshLodJoint DataFormat4DS::loadSingleMeshLodJoint(
 }
 
 DataFormat4DS::SingleMeshLod DataFormat4DS::loadSingleMeshLod(
-    std::istream& file) {
+    MFUtil::ScopedBuffer& file) {
     // Every LOD's vertext buffer is sorted in the following order:
     // - non-weighted vertices
     // - BONE0's fully-weighted vertices (1.0f weight)
@@ -277,7 +277,7 @@ DataFormat4DS::SingleMeshLod DataFormat4DS::loadSingleMeshLod(
     return newLod;
 }
 
-DataFormat4DS::SingleMesh DataFormat4DS::loadSingleMesh(std::istream& file) {
+DataFormat4DS::SingleMesh DataFormat4DS::loadSingleMesh(MFUtil::ScopedBuffer& file) {
     SingleMesh newMesh = {};
 
     newMesh.mStandard = loadStandard(file);
@@ -291,7 +291,7 @@ DataFormat4DS::SingleMesh DataFormat4DS::loadSingleMesh(std::istream& file) {
     return newMesh;
 }
 
-DataFormat4DS::SingleMorph DataFormat4DS::loadSingleMorph(std::istream& file) {
+DataFormat4DS::SingleMorph DataFormat4DS::loadSingleMorph(MFUtil::ScopedBuffer& file) {
     SingleMorph newMorph = {};
     newMorph.mSingleMesh = loadSingleMesh(file);
 
@@ -299,7 +299,7 @@ DataFormat4DS::SingleMorph DataFormat4DS::loadSingleMorph(std::istream& file) {
     return newMorph;
 }
 
-void DataFormat4DS::loadMesh(Model* model, std::istream& file) {
+void DataFormat4DS::loadMesh(Model* model, MFUtil::ScopedBuffer& file) {
     read(file, &model->mMeshCount);
 
     for (size_t i = 0; i < model->mMeshCount; ++i) {
@@ -425,7 +425,7 @@ void DataFormat4DS::loadMesh(Model* model, std::istream& file) {
     }
 }
 
-DataFormat4DS::Model DataFormat4DS::loadModel(std::istream& file) {
+DataFormat4DS::Model DataFormat4DS::loadModel(MFUtil::ScopedBuffer& file) {
     Model model;
     read(file, &model.mSignature, 4);
 
@@ -445,7 +445,7 @@ DataFormat4DS::Model DataFormat4DS::loadModel(std::istream& file) {
     return model;
 }
 
-bool DataFormat4DS::load(std::istream& srcFile) {
+bool DataFormat4DS::load(MFUtil::ScopedBuffer& srcFile) {
     mLoadedModel = loadModel(srcFile);
     return mErrorCode == DataFormat4DS::ERROR_SUCCESS;
 }

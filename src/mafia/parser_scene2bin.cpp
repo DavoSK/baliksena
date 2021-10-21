@@ -29,13 +29,13 @@ std::string DataFormatScene2BIN::lightTypeToStr(LightType t) {
     return "unknown";
 }
 
-bool DataFormatScene2BIN::load(std::istream& srcFile) {
+bool DataFormatScene2BIN::load(MFUtil::ScopedBuffer& srcFile) {
     Header newHeader = {};
     read(srcFile, &newHeader);
     uint32_t position = 6;
 
     while (position + 6 < newHeader.mSize) {
-        srcFile.seekg(position, srcFile.beg);
+        srcFile.seek(position);
         Header nextHeader = {};
         read(srcFile, &nextHeader);
         readHeader(srcFile, &nextHeader, position + 6);
@@ -45,14 +45,14 @@ bool DataFormatScene2BIN::load(std::istream& srcFile) {
     return true;
 }
 
-void DataFormatScene2BIN::readHeader(std::istream& srcFile, Header* header, uint32_t offset) {
+void DataFormatScene2BIN::readHeader(MFUtil::ScopedBuffer& srcFile, Header* header, uint32_t offset) {
     switch (header->mType) {
         case HEADER_SPECIAL_WORLD:
         case HEADER_WORLD: {
             uint32_t position = offset;
             while (position + 6 < offset + header->mSize) {
                 Header nextHeader = {};
-                srcFile.seekg(position, srcFile.beg);
+                srcFile.seek(position);
                 read(srcFile, &nextHeader);
                 readHeader(srcFile, &nextHeader, position + 6);
                 position += nextHeader.mSize;
@@ -77,7 +77,7 @@ void DataFormatScene2BIN::readHeader(std::istream& srcFile, Header* header, uint
             Object newObject = {};
             while (position + 6 < offset + header->mSize) {
                 Header nextHeader = {};
-                srcFile.seekg(position, srcFile.beg);
+                srcFile.seek(position);
                 read(srcFile, &nextHeader);
                 readObject(srcFile, &nextHeader, &newObject, position + 6);
                 position += nextHeader.mSize;
@@ -101,7 +101,7 @@ void DataFormatScene2BIN::readHeader(std::istream& srcFile, Header* header, uint
     }
 }
 
-void DataFormatScene2BIN::readObject(std::istream& srcFile, Header* header, Object* object, uint32_t offset) {
+void DataFormatScene2BIN::readObject(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object, uint32_t offset) {
     switch (header->mType) {
         case OBJECT_TYPE_SPECIAL: {
             read(srcFile, &object->mSpecialType);
@@ -127,7 +127,7 @@ void DataFormatScene2BIN::readObject(std::istream& srcFile, Header* header, Obje
         case OBJECT_SPECIAL_DATA: {
             switch (object->mSpecialType) {
                 case SPECIAL_OBJECT_TYPE_PHYSICAL: {
-                    srcFile.seekg(2, srcFile.cur);
+                    srcFile.seek(2, srcFile.cur);
 
                     read(srcFile, &object->mSpecialProps.mMovVal1);
                     read(srcFile, &object->mSpecialProps.mMovVal2);
@@ -136,7 +136,7 @@ void DataFormatScene2BIN::readObject(std::istream& srcFile, Header* header, Obje
                     read(srcFile, &object->mSpecialProps.mMovVal4);
                     read(srcFile, &object->mSpecialProps.mSound);
 
-                    srcFile.seekg(1, srcFile.cur);
+                    srcFile.seek(1, srcFile.cur);
 
                     read(srcFile, &object->mSpecialProps.mMovVal5);
                 } break;
@@ -209,7 +209,7 @@ void DataFormatScene2BIN::readObject(std::istream& srcFile, Header* header, Obje
     }
 }
 
-void DataFormatScene2BIN::readLight(std::istream& srcFile, Header* header, Object* object) {
+void DataFormatScene2BIN::readLight(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
     switch (header->mType) {
         case OBJECT_LIGHT_TYPE: {
             read(srcFile, &object->mLightType);

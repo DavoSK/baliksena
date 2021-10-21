@@ -15,8 +15,8 @@ App::App() {
 }
 
 void App::init() {
+    Vfs::init("C:\\Mafia\\");
     Renderer::init();
-    Vfs::init();
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);

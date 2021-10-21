@@ -44,15 +44,31 @@ public:
         return reinterpret_cast<TypeT*>(mData);
     }
 
+    uint8_t beg = 1;
+    uint8_t cur = 0;
+    
+    void seek(size_t offset, uint8_t seekType = 1) {
+        if(seekType == 1)
+            mOffset = offset;
+        else
+            mOffset += offset;
+    }
+
+    size_t tellg() const { return mOffset; }
+
+    void read(char* data, size_t size) {
+        memcpy(data, mData + mOffset, size);
+        mOffset += size;
+    }
+
     // copies specified data to this instance, starting write at given offset
     void copy_from(size_t offset, const void *sptr, size_t ssize);
-
 private:
     ScopedBuffer(const ScopedBuffer &other) = delete;
     ScopedBuffer &operator=(const ScopedBuffer &other) = delete;
-
     char *mData;
     size_t mSize;
+    size_t mOffset = 0;
 };
 
 std::string strToLower(std::string str);

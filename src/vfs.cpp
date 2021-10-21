@@ -4,8 +4,8 @@
 
 struct DtaFileEntry 
 {
-    std::unique_ptr<std::ifstream> file;
-    std::unique_ptr<MFFormat::DataFormatDTA> parser;
+    std::shared_ptr<std::ifstream> file;
+    std::shared_ptr<MFFormat::DataFormatDTA> parser;
     unsigned int fleIdx;
 };
 
@@ -16,8 +16,9 @@ struct DTAFile
     uint32_t fileKey2; 
 };
 
-std::vector<DTAFile> mFilesToFetchVer2 =
-{
+std::unordered_map<size_t, DtaFileEntry> gFileMap;
+
+std::vector<DTAFile> mFilesToFetchVer2 = {
     { "a8.dta", 0x6A63FA71, 0x0EC45D8CE },
     //{ "b8.dta", 0x79E21CDB, 0x0B60F823F },
     { "a2.dta", 0x1417D340, 0x0B6399E19 },
@@ -34,25 +35,21 @@ std::vector<DTAFile> mFilesToFetchVer2 =
     { "ab.dta", 0x7F3D9B74, 0x0EC48FE17 }
 };
 
-std::unordered_map<std::string, DtaFileEntry> gFileMap;
-
-void Vfs::init() {
+void Vfs::init(const std::string& rootDir) {
+    
     for(const auto& dtaFile : mFilesToFetchVer2) {    
-        auto filePathToOpen = "C:\\Mafia\\" + dtaFile.fileName;
-        auto dtaFileSteam = std::make_unique<std::ifstream>(filePathToOpen, std::ifstream::binary);
+        auto filePathToOpen = rootDir + dtaFile.fileName;
+        auto dtaFileSteam = std::make_shared<std::ifstream>(filePathToOpen, std::ifstream::binary);
         if(dtaFileSteam->good()) {
-            auto currentDtaParser = std::make_unique<MFFormat::DataFormatDTA >();
+            auto currentDtaParser = std::make_shared<MFFormat::DataFormatDTA >();
             currentDtaParser->setDecryptKeys(dtaFile.fileKey1, dtaFile.fileKey2);
             if(currentDtaParser->load(*dtaFileSteam)) {
                 for(unsigned int i = 0; i < currentDtaParser->getNumFiles(); i++) {
                     auto fileName = MFUtil::strToLower(currentDtaParser->getFileName(i));
-                    if(fileName.find("tutorial") != std::string::npos) {
-                        std::cout << fileName << std::endl;
-                    }
-
-                    gFileMap[fileName] = { 
-                        std::move(dtaFileSteam),
-                        std::move(currentDtaParser),
+                    std::hash<std::string> hasher;
+                    gFileMap[hasher(fileName)] = { 
+                        dtaFileSteam,
+                        currentDtaParser,
                         i
                     };
                 }
@@ -61,18 +58,21 @@ void Vfs::init() {
             Logger::get().error("unable to open DTA: {}", filePathToOpen);
         }
     }
+    Logger::get().info("VFS mounted");
 }
 
-memstream Vfs::getFile(const std::string& filePath) {
+MFUtil::ScopedBuffer Vfs::getFile(const std::string& filePath) {
+    std::hash<std::string> hasher;
     auto lowerFilePath = MFUtil::strToLower(filePath);
-    if(gFileMap.find(filePath) != gFileMap.end()) {
-        DtaFileEntry& entry = gFileMap[filePath];
-        auto buffer = entry.parser->getFile(*entry.file, entry.fleIdx);
-        return { buffer.as<uint8_t>(), buffer.size() };
+    const auto fileHash = hasher(lowerFilePath);
+
+    if(gFileMap.find(fileHash) != gFileMap.end()) {
+        DtaFileEntry& entry = gFileMap[fileHash];
+        return entry.parser->getFile(*entry.file, entry.fleIdx);
     }
 
     Logger::get().error("VFS unable to get file {}", filePath);
-    return {nullptr, 0};
+    return { 0 };
 }
 
 void Vfs::destroy() {
