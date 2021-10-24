@@ -86,6 +86,12 @@ void renderInspect(Frame* frame) {
     ImGui::Text("Pos: %f %f %f", origTranslation.x, origTranslation.y, origTranslation.z);
     ImGui::Text("Rot: %f %f %f %f", origRotation.x, origRotation.y, origRotation.z, origRotation.w);
     ImGui::Text("Scale: %f %f %f", origScale.x, origScale.y, origScale.z);
+
+    if(ImGui::Button("Teleport")) {
+        if(auto* cam = App::get()->getScene()->getActiveCamera()) {
+            cam->Position = origTranslation;
+        }
+    }
 }
 
 namespace spdlog::sinks {

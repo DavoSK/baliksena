@@ -208,7 +208,7 @@ void Scene::load(const std::string& missionName) {
                     } else {
                         meshPos = origTranslation;
                     } 
-
+                    
                     if( obj.mIsScalePatched ) {
                         meshScale = {obj.mScale.x, obj.mScale.y, obj.mScale.z};
                     } else {
@@ -232,7 +232,8 @@ void Scene::load(const std::string& missionName) {
                     nodeToPatch->setMatrix(world);
                     nodeToPatch->setOn(!obj.mIsHidden);      
 
-                    //NOTE: reparent if needed
+                    //NOTE: if current parent its not same as patch parent
+                    //we need to reparent our node
                     if(!obj.mParentName.empty()) {
                         if(nodeToPatch->getOwner()->getName() != obj.mParentName) {
                             auto patchedNodeParent = this->findNodeMaf(obj.mParentName);
