@@ -73,7 +73,7 @@ namespace spdlog::sinks {
         const string_view_t cyan = "\033[36m";
         const string_view_t white = "\033[37m";
 
-        /// Background colors
+        // Background colors
         const string_view_t on_black = "\033[40m";
         const string_view_t on_red = "\033[41m";
         const string_view_t on_green = "\033[42m";

@@ -367,6 +367,24 @@ void Renderer::setModel(const glm::mat4& model) {
 
 void Renderer::applyUniforms() {
     switch(state.material.kind) {
+        case MaterialKind::BILLBOARD: {
+            //NOTE: apply vertex stage uniforms
+            {
+                billboard_vs_params_t vsUniforms {
+                    state.model,
+                    state.view,
+                    state.proj
+                };
+
+                sg_range vsUniformsRange{
+                    &vsUniforms,
+                    sizeof(billboard_vs_params_t)
+                };
+
+                sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &vsUniformsRange);
+            }
+        } break;
+
         case MaterialKind::ENV: {
 
             //NOTE: apply vertex stage uniforms

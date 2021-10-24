@@ -13,8 +13,6 @@
 #include <vector>
 
 namespace MFFormat {
-
-/// Abstract class representing a game data format.
 class DataFormat {
 public:
     virtual bool load(MFUtil::ScopedBuffer& srcStream) { return false; }
