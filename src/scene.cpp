@@ -17,6 +17,7 @@
 #include <unordered_map>
 
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 [[nodiscard]] glm::mat4 getMatrixFromPosScaleRot(const MFMath::Vec3& mpos, const MFMath::Vec3& mscale, const MFMath::Quat& mrot) {
     glm::vec3 meshPos = {mpos.x, mpos.y, mpos.z};
@@ -61,6 +62,8 @@ void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>&
         getSectorOfPoint(pos, node.get(), foundSector);
     }
 };
+
+std::vector<std::string> split(std::string const& original, char separator);
 
 void Scene::load(const std::string& missionName) {
     Logger::get().info("loading mission {}", missionName);
@@ -151,12 +154,21 @@ void Scene::load(const std::string& missionName) {
         return parentName;
     };
 
+    std::vector<MFFormat::DataFormatScene2BIN::Object> patchObjects;
+
     std::string sceneBinPath = missionFolder + "\\scene2.bin";
     auto sceneBinFile = Vfs::getFile(sceneBinPath);
     if (sceneBinFile.size()) {
         MFFormat::DataFormatScene2BIN sceneBin;
         if (sceneBin.load(sceneBinFile)) {
             for (auto& [objName, obj] : sceneBin.getObjects()) {
+                //NOTE: check if node is patch
+                if(obj.mIsPatch) {
+                    patchObjects.push_back(obj);
+                    continue;
+                }
+
+                //NOTE: is not patch
                 std::shared_ptr<Frame> loadedNode = objectFactory(objName.c_str(), obj);
                 loadedNode->setName(obj.mName.c_str());
                 loadedNode->setMatrix(getMatrixFromPosScaleRot(obj.mPos, obj.mScale, obj.mRot));
@@ -170,11 +182,68 @@ void Scene::load(const std::string& missionName) {
                     for (auto node : nodes) {
                         parent->addChild(std::move(node));
                     }
-                }
-                else {
+                } else {
                     for (auto node : nodes) {
                         Logger::get().warn("unable to get parrent: {} for: {}", parentName, node->getName());
                     }
+                }
+            }
+
+            for(const auto& obj : patchObjects) {
+                auto nodeToPatch = this->findNodeMaf(obj.mName);
+                if(nodeToPatch) {
+                    glm::vec3 origScale;
+                    glm::quat origRotation;
+                    glm::vec3 origTranslation;
+                    glm::vec3 origSkew;
+                    glm::vec4 origPerspective;
+                    glm::decompose(nodeToPatch->getMatrix(), origScale, origRotation, origTranslation, origSkew, origPerspective);
+
+                    glm::vec3 meshPos {};
+                    glm::vec3 meshScale {};
+                    glm::quat meshRot {};
+                    
+                    if( obj.mIsPosPatched ) {
+                        meshPos = {obj.mPos.x, obj.mPos.y, obj.mPos.z};
+                    } else {
+                        meshPos = origTranslation;
+                    } 
+
+                    if( obj.mIsScalePatched ) {
+                        meshScale = {obj.mScale.x, obj.mScale.y, obj.mScale.z};
+                    } else {
+                        meshScale = origScale;
+                    }
+
+                    if(obj.mIsRotPatched) {
+                        meshRot.w = obj.mRot.w;
+                        meshRot.x = obj.mRot.x;
+                        meshRot.y = obj.mRot.y;
+                        meshRot.z = obj.mRot.z;
+                    } else {
+                        meshRot = origRotation;
+                    }
+
+                    const auto translation = glm::translate(glm::mat4(1.f), meshPos);
+                    const auto scale = glm::scale(glm::mat4(1.f), meshScale);
+                    const auto rot =  glm::mat4(1.f) * glm::toMat4(meshRot);
+                    const auto world = translation * rot * scale;
+
+                    nodeToPatch->setMatrix(world);
+                    nodeToPatch->setOn(!obj.mIsHidden);      
+
+                    //NOTE: reparent if needed
+                    if(!obj.mParentName.empty()) {
+                        if(nodeToPatch->getOwner()->getName() != obj.mParentName) {
+                            auto patchedNodeParent = this->findNodeMaf(obj.mParentName);
+                            if(patchedNodeParent) {
+                                nodeToPatch->getOwner()->removeChild(nodeToPatch);
+                                patchedNodeParent->addChild(std::move(nodeToPatch));
+                            }
+                        }
+                    }
+                } else {
+                    Logger::get().warn("unable to find node: {} for patching !", obj.mName);
                 }
             }
         }
@@ -197,6 +266,7 @@ void Scene::load(const std::string& missionName) {
         }
     }
 
+    invalidateTransformRecursively();
     init();
 }
 

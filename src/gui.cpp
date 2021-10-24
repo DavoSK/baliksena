@@ -13,11 +13,17 @@
 #include <string>
 #include <vector>
 
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
 static char gNodeSearchText[32] = {};
 static size_t gNodeSearchTexLen = 0;
 static std::vector<std::string> gLogBuffer;
 
 static bool wasInited = false;
+static Frame* gSelectedNode = nullptr;
+static int gButtonIdCnt = 0;
+
 bool doesContainChildNode(Frame* frame, const char* frameName) {
     if (!frame) return false;
 
@@ -38,15 +44,48 @@ void renderNodeRecursively(Frame* frame) {
         return;
 
     if ((gNodeSearchTexLen && doesContainChildNode(frame, gNodeSearchText)) || !gNodeSearchTexLen) {
-        if (ImGui::TreeNode(frame->getName().c_str())) {
+        ImGui::AlignTextToFramePadding();
+        ImGui::PushID(gButtonIdCnt++);
+        if (ImGui::Button("I")) {
+            gSelectedNode = frame;
+        }
+        ImGui::PopID();
+        ImGui::SameLine();
+
+        if (ImGui::TreeNodeEx(frame->getName().c_str(), ImGuiTreeNodeFlags_AllowItemOverlap)) {
             for (const auto& child : frame->getChilds()) {
                 renderNodeRecursively(child.get());
             }
-
             ImGui::TreePop();
-            ImGui::Separator();
         }
     }
+}
+
+void renderInspect(Frame* frame) {
+    if(frame == nullptr)
+        return;
+
+    ImGui::Text("Frame name: %s", frame->getName().c_str());
+    ImGui::Text("Frame owner: %s", frame->getOwner() != nullptr ? frame->getOwner()->getName().c_str() : nullptr);
+    ImGui::Text("Frame type: %d", frame->getType());
+
+    static bool isFrameOn = frame->isOn();
+    if(ImGui::Checkbox("Frame ON", &isFrameOn)) {
+        frame->setOn(isFrameOn);
+    }
+
+    ImGui::Separator();
+    
+    glm::vec3 origScale;
+    glm::quat origRotation;
+    glm::vec3 origTranslation;
+    glm::vec3 origSkew;
+    glm::vec4 origPerspective;
+    glm::decompose(frame->getMatrix(), origScale, origRotation, origTranslation, origSkew, origPerspective);
+
+    ImGui::Text("Pos: %f %f %f", origTranslation.x, origTranslation.y, origTranslation.z);
+    ImGui::Text("Rot: %f %f %f %f", origRotation.x, origRotation.y, origRotation.z, origRotation.w);
+    ImGui::Text("Scale: %f %f %f", origScale.x, origScale.y, origScale.z);
 }
 
 namespace spdlog::sinks {
@@ -180,22 +219,16 @@ void Gui::render() {
         if (first_time) {
             first_time = false;
 
-            ImGui::DockBuilderRemoveNode(dockspace_id);  // clear any previous layout
+            ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
             ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
 
-            // split the dockspace into 2 nodes -- DockBuilderSplitNode takes in the following args in the following order
-            //   window ID to split, direction, fraction (between 0 and 1), the final two setting let's us choose which id we want (which ever one we
-            //   DON'T set as NULL, will be returned by the function)
-            //                                                              out_id_at_dir is the id of the node in the direction we specified earlier,
-            //                                                              out_id_at_opposite_dir is in the opposite direction
-            auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.30f, nullptr, &dockspace_id);
+            auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.25, nullptr, &dockspace_id);
             auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.30f, nullptr, &dockspace_id);
-            auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.30f, nullptr, &dockspace_id);
+            auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
+            auto dock_id_debug = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Up, 0.30f, nullptr, &dock_id_right);
             auto dock_id_center = ImGui::DockBuilderGetCentralNode(dockspace_id);
-            auto dock_id_debug = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Up, 0.30, nullptr, &dock_id_right);
 
-            // we now dock our windows into the docking node we made above
             ImGui::DockBuilderDockWindow("Scene", dock_id_left);
             ImGui::DockBuilderDockWindow("Terminal", dock_id_down);
             ImGui::DockBuilderDockWindow("Inspect", dock_id_right);
@@ -213,6 +246,7 @@ void Gui::render() {
         gNodeSearchTexLen = strnlen(gNodeSearchText, 32);
     }
 
+    gButtonIdCnt = 0;
     renderNodeRecursively(scene);
     ImGui::End();
 
@@ -225,7 +259,7 @@ void Gui::render() {
 
     // NOTE: inspect
     ImGui::Begin("Inspect");
-    //if (gSelectedNode != nullptr) renderNode(gSelectedNode);
+    if (gSelectedNode != nullptr) renderInspect(gSelectedNode);
     ImGui::End();
 
     // NOTE: game view
@@ -246,7 +280,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize, ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize/*, ImVec2(0, 1), ImVec2(1, 0)*/);
     ImGui::EndChild();
     ImGui::End();
     ImGui::PopStyleVar();

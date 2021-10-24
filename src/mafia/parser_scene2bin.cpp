@@ -1,4 +1,5 @@
 #include "parser_scene2bin.hpp"
+#include "../logger.hpp"
 
 namespace MFFormat {
 
@@ -101,10 +102,54 @@ void DataFormatScene2BIN::readHeader(MFUtil::ScopedBuffer& srcFile, Header* head
     }
 }
 
+void DataFormatScene2BIN::readLm(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
+    // int lmLevel = 1;
+    // uint8_t unk1;
+    // read(srcFile, &unk1);
+
+    // if (!unk1)
+    //     return;
+
+    // uint32_t v6 = 0;
+    // uint32_t v7 = 1;
+    // uint32_t v8 = 8;
+
+    // do
+    // {
+    //     if ( ((unsigned __int8)v7 & unk1) != 0 )
+    //     ++v6;
+    //     v7 *= 2;
+    //     --v8;
+    // }
+    // while ( v8 );
+
+    // unk1 = v6;
+
+    // if ( !v6 )
+    //     return;
+
+    // struct LMStruct {
+    //     uint8_t data[15];
+    // };
+
+    // while( 1 ) 
+    // {
+    //     LMStruct lm {};
+    //     read(srcFile, &lm);
+
+
+    // }
+    // Logger::get().info("[LM] count: {}", v6);
+}
+
 void DataFormatScene2BIN::readObject(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object, uint32_t offset) {
     switch (header->mType) {
         case OBJECT_TYPE_SPECIAL: {
             read(srcFile, &object->mSpecialType);
+        } break;
+
+        case OBJECT_TYPE_LM: {
+           readLm(srcFile, header, object);
         } break;
 
         case OBJECT_TYPE_NORMAL: {

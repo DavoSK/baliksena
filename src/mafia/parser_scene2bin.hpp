@@ -33,6 +33,7 @@ public:
     typedef enum {
         OBJECT_TYPE_SPECIAL = 0xAE22,
         OBJECT_TYPE_NORMAL = 0x4011,
+        OBJECT_TYPE_LM = 0x40A0,
         OBJECT_POSITION = 0x0020,
         OBJECT_ROTATION = 0x0022,
         OBJECT_POSITION_2 = 0x002C,
@@ -151,6 +152,7 @@ private:
     void readHeader(MFUtil::ScopedBuffer&srcFile, Header* header, uint32_t offset);
     void readObject(MFUtil::ScopedBuffer&srcFile, Header* header, Object* object, uint32_t offset);
     void readLight (MFUtil::ScopedBuffer&srcFile, Header* header, Object* object);
+    void readLm(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object);
     
     std::unordered_map<std::string, Object> mObjects;
     std::unordered_map<std::string, Object> mExternalObjects;

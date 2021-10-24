@@ -14,6 +14,11 @@ void Frame::addChild(std::shared_ptr<Frame> frame) {
     mChilds.push_back(std::move(frame));
 }
 
+void Frame::removeChild(std::shared_ptr<Frame> frame) {
+    frame->setOwner(nullptr);
+    mChilds.erase(std::remove(mChilds.begin(), mChilds.end(), frame), mChilds.end());
+}
+
 const glm::mat4& Frame::getWorldMatrix() {
     if (!mIsTransformDirty) {
         return mCachedTransform;
@@ -49,7 +54,6 @@ void Frame::updateAABBWorld() {
     mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
 }
 
-
 std::vector<std::string> split(std::string const& original, char separator) {
     std::vector<std::string> results;
     std::string::const_iterator start = original.begin();
@@ -64,12 +68,12 @@ std::vector<std::string> split(std::string const& original, char separator) {
     return results;
 }
 
-Frame* Frame::findNode(const std::string& name) const {
+std::shared_ptr<Frame> Frame::findNode(const std::string& name) const {
     auto res = std::find_if(mChilds.begin(), mChilds.end(), [&name](const auto& a) { return a->getName().compare(name) == 0; });
     if (res != mChilds.end())
-        return res->get();
+        return *res;
 
-    Frame* foundNode = nullptr;
+    std::shared_ptr<Frame> foundNode = nullptr;
     for (const auto& node : mChilds) {
         foundNode = node->findNode(name);
         if (foundNode != nullptr) 
@@ -79,7 +83,7 @@ Frame* Frame::findNode(const std::string& name) const {
     return nullptr;
 }
 
-Frame* Frame::findNodeMaf(const std::string& path) const {
+std::shared_ptr<Frame> Frame::findNodeMaf(const std::string& path) const {
     if(path.find(".") != std::string::npos) {
         auto splitedPath = split(path, '.');
         auto parentNode = findNode(splitedPath[0]);

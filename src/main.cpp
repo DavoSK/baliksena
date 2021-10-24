@@ -9,15 +9,13 @@ void event(const sapp_event* e) { App::get()->event(e); }
 sapp_desc sokol_main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
-    //setbuf(stdout, NULL);
-
     sapp_desc desc{};
     desc.init_cb            = init;
     desc.frame_cb           = frame;
     desc.cleanup_cb         = cleanup;
     desc.event_cb           = event;
-    desc.width              = 800;
-    desc.height             = 600;
+    desc.width              = 1600;
+    desc.height             = 900;
     desc.swap_interval      = 1;
     desc.sample_count       = 4;
     desc.window_title       = "Senko";

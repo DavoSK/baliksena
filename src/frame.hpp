@@ -43,7 +43,9 @@ public:
     const std::string& getName() const { return mName;  }
 
     void addChild(std::shared_ptr<Frame> frame);
+    void removeChild(std::shared_ptr<Frame> frame);
     const std::vector<std::shared_ptr<Frame>>& getChilds() { return mChilds; };
+
     void clear() { mChilds.clear(); }
     
     const glm::mat4& getWorldMatrix();
@@ -64,8 +66,8 @@ public:
     void setOn(bool on) { mOn = on; }
     bool isOn() const { return mOn; }
 
-    Frame* findNode(const std::string& name) const;
-    Frame* findNodeMaf(const std::string& path) const ;
+    std::shared_ptr<Frame> findNode(const std::string& name) const;
+    std::shared_ptr<Frame> findNodeMaf(const std::string& path) const;
 private:
     void updateAABBWorld();
     std::pair<glm::vec3, glm::vec3> mAABB;

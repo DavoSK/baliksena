@@ -255,6 +255,7 @@ void DataFormatDTA::decrypt(char *buffer, unsigned int bufferLen, unsigned int r
     uint32_t keys[2] = {key1, key2};
     char *keyBytes = reinterpret_cast<char *>(keys);
 
+
     for (unsigned int i = 0; i < bufferLen; ++i)
     {
         char dataByte = buffer[i];
