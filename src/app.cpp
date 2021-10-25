@@ -17,12 +17,14 @@ App::App() {
 void App::init() {
     Vfs::init("C:\\Mafia\\");
     Renderer::init();
+
+    //NOTE: create main camera
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
 }
 
-void App::render() { 
+void App::render() {
     const auto deltaTime = 16.0f;
 
     //NOTE: update camera & render

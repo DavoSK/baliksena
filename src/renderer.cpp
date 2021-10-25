@@ -4,8 +4,8 @@
 #define SOKOL_LOG(X) Logger::get().warn(X);
 #define SOKOL_IMPL
 
-#define SOKOL_D3D11
-//#define SOKOL_GLCORE33
+//#define SOKOL_D3D11
+#define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
@@ -168,8 +168,7 @@ void Renderer::init() {
         state.offscreen.cutoutPip       = sg_make_pipeline(&pipelineDesc);
     }
 
-
-     //NOTE: env shader
+    //NOTE: env shader
     {
         state.offscreen.envShader       = sg_make_shader(env_env_shader_desc(sg_query_backend()));
 
@@ -206,6 +205,8 @@ void Renderer::init() {
         pipelineDesc.label              = "billboard-pipeline";
         state.offscreen.billboardPip    = sg_make_pipeline(&pipelineDesc);
     }
+
+    Gui::init();
 }
 
 void Renderer::destroy() {

@@ -1617,6 +1617,8 @@ static bool _simgui_is_osx(void) {
     #endif
 }
 
+#include "imgui/IconsFontAwesome5.h"
+
 SOKOL_API_IMPL void simgui_setup(const simgui_desc_t* desc) {
     SOKOL_ASSERT(desc);
     memset(&_simgui, 0, sizeof(_simgui));
@@ -1647,6 +1649,12 @@ SOKOL_API_IMPL void simgui_setup(const simgui_desc_t* desc) {
         if (!_simgui.desc.no_default_font) {
             io->Fonts->AddFontDefault();
         }
+
+        //NOTE: add font awesome
+        static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+        ImFontConfig icons_config; icons_config.MergeMode = true; icons_config.PixelSnapH = true;
+        io->Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges );
+
     #else
         igCreateContext(NULL);
         igStyleColorsDark(igGetStyle());
@@ -1655,6 +1663,7 @@ SOKOL_API_IMPL void simgui_setup(const simgui_desc_t* desc) {
             ImFontAtlas_AddFontDefault(io->Fonts, NULL);
         }
     #endif
+
     io->IniFilename = _simgui.desc.ini_filename;
     io->ConfigMacOSXBehaviors = _simgui_is_osx();
     io->BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;

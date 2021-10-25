@@ -8,9 +8,11 @@
 class Mesh;
 class Material;
 
+//NOTE: verties that share's same material
 class FaceGroup {
 public:
-    explicit FaceGroup(std::vector<uint16_t> indices, std::weak_ptr<Mesh> mesh) :
+    explicit FaceGroup(std::vector<uint16_t> indices, 
+		       std::weak_ptr<Mesh> mesh) :
         mIndices(std::move(indices)),
         mMesh(mesh) {
         

@@ -5,10 +5,8 @@
 #include "camera.h"
 #include "logger.hpp"
 #include "stats.hpp"
-
 #include "imgui_ansi.hpp"
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/base_sink.h>
+#include "imgui/IconsFontAwesome5.h"
 
 #include <string>
 #include <vector>
@@ -19,10 +17,9 @@
 static char gNodeSearchText[32] = {};
 static size_t gNodeSearchTexLen = 0;
 static std::vector<std::string> gLogBuffer;
-
-static bool wasInited = false;
 static Frame* gSelectedNode = nullptr;
 static int gButtonIdCnt = 0;
+static ImVec2 lastWsize;
 
 bool doesContainChildNode(Frame* frame, const char* frameName) {
     if (!frame) return false;
@@ -46,7 +43,7 @@ void renderNodeRecursively(Frame* frame) {
     if ((gNodeSearchTexLen && doesContainChildNode(frame, gNodeSearchText)) || !gNodeSearchTexLen) {
         ImGui::AlignTextToFramePadding();
         ImGui::PushID(gButtonIdCnt++);
-        if (ImGui::Button("I")) {
+        if (ImGui::Button(ICON_FA_EYE)) {
             gSelectedNode = frame;
         }
         ImGui::PopID();
@@ -75,7 +72,7 @@ void renderInspect(Frame* frame) {
     }
 
     ImGui::Separator();
-    
+
     glm::vec3 origScale;
     glm::quat origRotation;
     glm::vec3 origTranslation;
@@ -94,98 +91,12 @@ void renderInspect(Frame* frame) {
     }
 }
 
-namespace spdlog::sinks {
-    template<typename Mutex>
-    class gui_sink final : public base_sink<Mutex> {
-    public:
-        // Formatting codes
-        const string_view_t reset = "\033[m";
-        const string_view_t bold = "\033[1m";
-        const string_view_t dark = "\033[2m";
-        const string_view_t underline = "\033[4m";
-        const string_view_t blink = "\033[5m";
-        const string_view_t reverse = "\033[7m";
-        const string_view_t concealed = "\033[8m";
-        const string_view_t clear_line = "\033[K";
-
-        // Foreground colors
-        const string_view_t black = "\033[30m";
-        const string_view_t red = "\033[31m";
-        const string_view_t green = "\033[32m";
-        const string_view_t yellow = "\033[33m";
-        const string_view_t blue = "\033[34m";
-        const string_view_t magenta = "\033[35m";
-        const string_view_t cyan = "\033[36m";
-        const string_view_t white = "\033[37m";
-
-        // Background colors
-        const string_view_t on_black = "\033[40m";
-        const string_view_t on_red = "\033[41m";
-        const string_view_t on_green = "\033[42m";
-        const string_view_t on_yellow = "\033[43m";
-        const string_view_t on_blue = "\033[44m";
-        const string_view_t on_magenta = "\033[45m";
-        const string_view_t on_cyan = "\033[46m";
-        const string_view_t on_white = "\033[47m";
-
-        /// Bold colors
-        const string_view_t yellow_bold = "\033[33m\033[1m";
-        const string_view_t red_bold = "\033[31m\033[1m";
-        const string_view_t bold_on_red = "\033[1m\033[41m";
-
-        gui_sink() {
-            colors_[level::trace] = to_string_(white);
-            colors_[level::debug] = to_string_(cyan);
-            colors_[level::info] = to_string_(green);
-            colors_[level::warn] = to_string_(yellow_bold);
-            colors_[level::err] = to_string_(red_bold);
-            colors_[level::critical] = to_string_(bold_on_red);
-            colors_[level::off] = to_string_(reset);
-        }
-        gui_sink(const gui_sink &) = delete;
-        gui_sink &operator=(const gui_sink &) = delete;
-    protected:
-        void sink_it_(const details::log_msg &msg) override {
-            memory_buf_t formatted;
-            base_sink<Mutex>::formatter_->format(msg, formatted);
-            
-            std::string outString;
-            outString += std::string(formatted.data(), msg.color_range_start);
-            outString += colors_[msg.level];
-            outString += std::string(formatted.data() + msg.color_range_start, msg.color_range_end - msg.color_range_start);
-            outString += reset;
-            outString += std::string(formatted.data() + msg.color_range_end, formatted.size() - msg.color_range_end);
-
-            gLogBuffer.push_back(outString);
-        }
-        void flush_() override {
-            gLogBuffer.clear();
-        }
-
-        std::string to_string_(std::string_view view) {
-            return std::string(view.data(), view.size());
-        }
-    private:
-        std::array<std::string, level::n_levels> colors_;
-    };
-
-    using gui_sink_mt = gui_sink<std::mutex>;
-    using gui_sink_st = gui_sink<details::null_mutex>;
-}; 
-
-ImVec2 lastWsize;
+void Gui::init() {
+}
 
 void Gui::render() {
     auto* scene = App::get()->getScene();
     auto* cam = scene->getActiveCamera();
-
-    if (!wasInited) {
-     //   custom_command_struct cmd_struct; // terminal commands can interact with this structure
-     //   terminal_log = std::make_unique<ImTerm::terminal<terminal_commands>>(cmd_struct, "Terminal");
-     //   terminal_log->set_min_log_level(ImTerm::message::severity::info)
-        Logger::get().sinks().push_back(std::make_shared<spdlog::sinks::gui_sink_st>());
-        wasInited = true;
-    }
 
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
@@ -224,7 +135,6 @@ void Gui::render() {
         static auto first_time = true;
         if (first_time) {
             first_time = false;
-
             ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
             ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
@@ -286,7 +196,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize/*, ImVec2(0, 1), ImVec2(1, 0)*/);
+    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
     ImGui::EndChild();
     ImGui::End();
     ImGui::PopStyleVar();
@@ -319,4 +229,8 @@ void Gui::render() {
 
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
+}
+
+void Gui::addLogMessage(const std::string& message) {
+    gLogBuffer.push_back(message);
 }

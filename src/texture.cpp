@@ -11,8 +11,6 @@
 #include <fstream>
 #include <unordered_map>
 
-#include <Windows.h>
-
 std::unordered_map<std::string, Texture*> gTextureCache;
 
 void Texture::clearCache() {
