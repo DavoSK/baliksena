@@ -3,7 +3,6 @@
 #include "app.hpp"
 #include "scene.hpp"
 #include "camera.h"
-#include "logger.hpp"
 #include "stats.hpp"
 #include "imgui_ansi.hpp"
 #include "imgui/IconsFontAwesome5.h"
@@ -16,7 +15,7 @@
 
 static char gNodeSearchText[32] = {};
 static size_t gNodeSearchTexLen = 0;
-static std::vector<std::string> gLogBuffer;
+static std::unordered_map<uint32_t, std::vector<std::string>> gLogBuffer;
 static Frame* gSelectedNode = nullptr;
 static int gButtonIdCnt = 0;
 static ImVec2 lastWsize;
@@ -58,7 +57,7 @@ void renderNodeRecursively(Frame* frame) {
     }
 }
 
-void renderInspect(Frame* frame) {
+void renderInspectWidget(Frame* frame) {
     if(frame == nullptr)
         return;
 
@@ -92,6 +91,37 @@ void renderInspect(Frame* frame) {
 }
 
 void Gui::init() {
+}
+
+void renderTerminalWidget() {
+    static int currentLogLevel = 7;    
+    static const char* logLevelNames[8] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical", "Off", "All" };
+    static const char* currentLogLevelName = logLevelNames[LOGGER_ALL_INDEX];
+
+    ImGui::SameLine();
+    if (ImGui::BeginCombo("##combo", currentLogLevelName)) {
+        for (int n = 0; n < IM_ARRAYSIZE(logLevelNames); n++) {
+            bool isSelected = (currentLogLevelName == logLevelNames[n]);
+            if (ImGui::Selectable(logLevelNames[n], isSelected)) {
+                currentLogLevelName = logLevelNames[n];
+                currentLogLevel = n;
+            }
+
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::SameLine();
+    if(ImGui::Button(ICON_FA_TRASH)) {
+        gLogBuffer.clear();
+    }
+
+    for(const auto& msg : gLogBuffer[currentLogLevel]) {
+        ImGui::TextAnsiUnformatted(msg.c_str(), nullptr);
+    }
 }
 
 void Gui::render() {
@@ -146,7 +176,7 @@ void Gui::render() {
             auto dock_id_center = ImGui::DockBuilderGetCentralNode(dockspace_id);
 
             ImGui::DockBuilderDockWindow("Scene", dock_id_left);
-            ImGui::DockBuilderDockWindow("Terminal", dock_id_down);
+            ImGui::DockBuilderDockWindow("Log", dock_id_down);
             ImGui::DockBuilderDockWindow("Inspect", dock_id_right);
             ImGui::DockBuilderDockWindow("Debug", dock_id_debug);
             ImGui::DockBuilderDockWindow("View", dock_id_center->ID);
@@ -167,15 +197,13 @@ void Gui::render() {
     ImGui::End();
 
     // NOTE: terminal
-    ImGui::Begin("Terminal");
-    for(const auto& msg : gLogBuffer) {
-        ImGui::TextAnsiUnformatted(msg.c_str(), nullptr);
-    }
+    ImGui::Begin("Log");
+    renderTerminalWidget();
     ImGui::End();
 
     // NOTE: inspect
     ImGui::Begin("Inspect");
-    if (gSelectedNode != nullptr) renderInspect(gSelectedNode);
+    renderInspectWidget(gSelectedNode);
     ImGui::End();
 
     // NOTE: game view
@@ -196,7 +224,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)Renderer::getRenderTargetTexture().id, wsize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+    ImGui::Image((ImTextureID)(Renderer::getRenderTargetTexture().id), wsize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
     ImGui::EndChild();
     ImGui::End();
     ImGui::PopStyleVar();
@@ -231,6 +259,7 @@ void Gui::render() {
     ImGui::End();
 }
 
-void Gui::addLogMessage(const std::string& message) {
-    gLogBuffer.push_back(message);
+void Gui::addLogMessage(uint32_t logLevel, const std::string& message) {
+    gLogBuffer[logLevel].push_back(message);
+    gLogBuffer[LOGGER_ALL_INDEX].push_back(message);
 }

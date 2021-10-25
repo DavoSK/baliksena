@@ -69,7 +69,7 @@ namespace spdlog::sinks {
             outString += std::string(formatted.data() + msg.color_range_start, msg.color_range_end - msg.color_range_start);
             outString += reset;
             outString += std::string(formatted.data() + msg.color_range_end, formatted.size() - msg.color_range_end);
-            Gui::addLogMessage(outString);
+            Gui::addLogMessage((uint32_t)msg.level, outString);
         }
 
         void flush_() override {

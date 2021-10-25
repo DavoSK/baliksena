@@ -64,11 +64,11 @@ void Model::init() {
             return;
         }
 
-        for (const auto& faceGroup : mesh->getFaceGroups()) {
+        /*for (const auto& faceGroup : mesh->getFaceGroups()) {
             auto material = faceGroup->getMaterial();
             if(!material) continue;
 
-            auto diffuse = material->getTexture(TextureSlots::DIFFUSE);
+            auto diffuse = material->getDiffuse();
             if (!diffuse) continue;
 
             std::vector<Vertex> translatedVertices;
@@ -86,7 +86,7 @@ void Model::init() {
                 faceGroup->getIndices(),
                 material.get()
             });
-        }
+        }*/
     }, this);
 
     //NOTE: join geometry by same material

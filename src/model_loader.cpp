@@ -72,16 +72,16 @@
     bool mulBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_MULTIPLYTEXTUREBLEND;
     bool addBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVETEXTUREBLEND;
     bool hasTransparencyKey = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_COLORKEY;
-    bool hasAditiveMixing = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVEMIXING;
+    //bool hasAditiveMixing = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVEMIXING;
 
     if (hasDiffuse) {
         material->setHasTransparencyKey(hasTransparencyKey);
-        material->createTextureForSlot(TextureSlots::DIFFUSE, mafiaMaterial.mDiffuseMapName);
+        material->createDiffuseTexture(mafiaMaterial.mDiffuseMapName);
         material->setKind(hasTransparencyKey ? MaterialKind::CUTOUT : MaterialKind::DIFFUSE);
     }
 
     if (hasAlpha) {
-        material->createTextureForSlot(TextureSlots::ALPHA, mafiaMaterial.mAlphaMapName);
+        material->createAlphaTexture(mafiaMaterial.mAlphaMapName);
         material->setKind(MaterialKind::ALPHA);
     }
 
@@ -101,7 +101,7 @@
             }
         }
 
-        material->setAnimated(true, mafiaMaterial.mFramePeriod);
+        material->setAnimationPeriod(mafiaMaterial.mFramePeriod);
     }
 
     if (hasEnvMap) {
@@ -120,13 +120,13 @@
             material->setTextureBlending(TextureBlending::ADD);
         }
 
-        material->createTextureForSlot(TextureSlots::ENV, mafiaMaterial.mEnvMapName);
+        material->createEnvTexture(mafiaMaterial.mEnvMapName);
         material->setKind(MaterialKind::ENV);
     }
 
     material->setTransparency(mafiaMaterial.mTransparency);
     material->setDoubleSided(isDoubleSided);
-    material->setAditiveMixing(hasAditiveMixing);
+    //material->setAditiveMixing(hasAditiveMixing);
     material->setAmbient({mafiaMaterial.mAmbient.x, mafiaMaterial.mAmbient.y, mafiaMaterial.mAmbient.z});
     material->setEmission({mafiaMaterial.mEmission.x, mafiaMaterial.mEmission.y, mafiaMaterial.mEmission.z});
 
@@ -134,14 +134,14 @@
         material->setDiffuse({mafiaMaterial.mDiffuse.x, mafiaMaterial.mDiffuse.y, mafiaMaterial.mDiffuse.z});
     }
 
-    material->init();
+    //material->init();
     return material;
 }
 
 std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     std::vector<MFFormat::DataFormat4DS::Lod>* lods = nullptr;
-    bool isStaticMesh = true;
+    bool isStaticMesh = false;
 
     std::shared_ptr<Mesh> newMesh = nullptr;
 
