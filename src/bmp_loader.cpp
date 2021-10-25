@@ -55,8 +55,38 @@ uint8_t* loadBMP(std::istream& file, int* w, int* h, bool useTransparencyKey) {
     // 8 byte texture -> simple array of indices into color pallet that is
     // located after BITMAPINFOHEADER and 24 byte texture that is even simplier (
     // linear array of BRG components )
+    if(!bmmpInfoHeader.biClrUsed) {
+        bmmpInfoHeader.biClrUsed = 256;
+    }
+
+    if(!bmmpInfoHeader.biWidth) {
+        bmmpInfoHeader.biWidth = 256;
+    }
+
+    if(!bmmpInfoHeader.biHeight) {
+         bmmpInfoHeader.biHeight = 256;
+    }
+
+
+    
+    /* Load the palette, if any */
+    //printf("bc %d bused %d\n", biBitCount, biClrUsed);
+    /*if (bmmpInfoHeader.biBitCount <= 8) {
+        if (bmmpInfoHeader.biClrUsed == 0) {
+            bmmpInfoHeader.biClrUsed = 1 << bmmpInfoHeader.biBitCount;
+        }
+
+        if (bmmpInfoHeader.biClrUsed > 256) {
+            assert(false);
+        }
+
+        for (i = 0; i < (int) biClrUsed; ++i) {
+            SDL_RWread(src, &palette[i], 4, 1);
+        }
+    }*/
+
+    const auto palleteSize = bmmpInfoHeader.biClrUsed ? bmmpInfoHeader.biClrUsed : 1 << bmmpInfoHeader.biBitCount;
     if (bmmpInfoHeader.biBitCount == 8) {
-        const auto palleteSize = bmmpInfoHeader.biClrUsed ? bmmpInfoHeader.biClrUsed : 1 << bmmpInfoHeader.biBitCount;
         file.read((char*)bmiColors, sizeof(RGBQUAD) * palleteSize);
         is8Byte = true;
     } else {
@@ -81,6 +111,10 @@ uint8_t* loadBMP(std::istream& file, int* w, int* h, bool useTransparencyKey) {
         file.read((char*)indices, indexedSize);
 
         for (size_t i = 0, j = 0; i < indexedSize; i++, j += 4) {
+            if(indices[i] > palleteSize) {
+                int test = 0; 
+                test++;
+            }
             auto pixel = bmiColors[indices[i]];
             buffer[j] = pixel.rgbRed;
             buffer[j + 1] = pixel.rgbGreen;
@@ -130,12 +164,14 @@ uint8_t* loadBMP(MFUtil::ScopedBuffer& file, int* w, int* h, bool useTransparenc
     // 8 byte texture -> simple array of indices into color pallet that is
     // located after BITMAPINFOHEADER and 24 byte texture that is even simplier (
     // linear array of BRG components )
+    const auto palleteSize = bmmpInfoHeader.biClrUsed ? bmmpInfoHeader.biClrUsed : (1 << bmmpInfoHeader.biBitCount);
     if (bmmpInfoHeader.biBitCount == 8) {
-        const auto palleteSize = bmmpInfoHeader.biClrUsed ? bmmpInfoHeader.biClrUsed : 1 << bmmpInfoHeader.biBitCount;
         file.read((char*)bmiColors, sizeof(RGBQUAD) * palleteSize);
         is8Byte = true;
     } else {
-        file.read((char*)bmiColors, sizeof(RGBQUAD));
+        if(useTransparencyKey) {
+            file.read((char*)bmiColors, sizeof(RGBQUAD));
+        }
     }
 
     file.seek(bmpFileHeader.bfOffBits);
@@ -156,7 +192,14 @@ uint8_t* loadBMP(MFUtil::ScopedBuffer& file, int* w, int* h, bool useTransparenc
         file.read((char*)indices, indexedSize);
 
         for (size_t i = 0, j = 0; i < indexedSize; i++, j += 4) {
-            auto pixel = bmiColors[indices[i]];
+            auto paletteIdx = indices[i];
+            if(paletteIdx > palleteSize) {
+                int test = 0;
+                test++;
+                paletteIdx = 0;
+            }
+
+            auto pixel = bmiColors[paletteIdx];
             buffer[j] = pixel.rgbRed;
             buffer[j + 1] = pixel.rgbGreen;
             buffer[j + 2] = pixel.rgbBlue;
