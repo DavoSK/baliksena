@@ -17,13 +17,13 @@ public:
     //void init();
 
     void createDiffuseTexture(const std::string& path);
-    [[nodiscard]] std::optional<TextureHandle> getDiffuseTexture() const { return mRenderMaterial.diffuseTexture; }
+    [[nodiscard]] std::optional<Renderer::TextureHandle> getDiffuseTexture() const { return mRenderMaterial.diffuseTexture; }
 
     void createEnvTexture(const std::string& path);
-    [[nodiscard]] std::optional<TextureHandle> getEnvTexture() const { return mRenderMaterial.envTexture; }
+    [[nodiscard]] std::optional<Renderer::TextureHandle> getEnvTexture() const { return mRenderMaterial.envTexture; }
      
     void createAlphaTexture(const std::string& path);
-    [[nodiscard]] std::optional<TextureHandle> getAlphaTexture() const { return mRenderMaterial.alphaTexture; }
+    [[nodiscard]] std::optional<Renderer::TextureHandle> getAlphaTexture() const { return mRenderMaterial.alphaTexture; }
 
     void appendAnimatedTexture(const std::string& path);
     
@@ -45,14 +45,14 @@ public:
     void setDoubleSided(bool val) { mRenderMaterial.isDoubleSided = val; }
     [[nodiscard]] bool isDoubleSided() const { return mRenderMaterial.isDoubleSided; }
 
-    void setTextureBlending(TextureBlending blending) { mRenderMaterial.envTextureBlending = blending; }
-    [[nodiscard]] TextureBlending getTextureBlending() const { return mRenderMaterial.envTextureBlending; }
+    void setTextureBlending(Renderer::TextureBlending blending) { mRenderMaterial.envTextureBlending = blending; }
+    [[nodiscard]] Renderer::TextureBlending getTextureBlending() const { return mRenderMaterial.envTextureBlending; }
 
     void setHasTransparencyKey(bool hasKey) { mRenderMaterial.hasTransparencyKey = hasKey; }
     [[nodiscard]] bool hasTransparencyKey() const { return mRenderMaterial.hasTransparencyKey; }
 
-    void setKind(MaterialKind kind) { mRenderMaterial.kind = kind; }
-    [[nodiscard]] MaterialKind getKind() const { return mRenderMaterial.kind; }
+    void setKind(Renderer::MaterialKind kind) { mRenderMaterial.kind = kind; }
+    [[nodiscard]] Renderer::MaterialKind getKind() const { return mRenderMaterial.kind; }
 
     void setColored(bool val) { mRenderMaterial.isColored = val; }
     [[nodiscard]] bool isColored() const { return mRenderMaterial.isColored; }
@@ -62,7 +62,7 @@ public:
     
     [[nodiscard]] bool isTransparent() const { return mRenderMaterial.transparency < 1.0f || mRenderMaterial.alphaTexture.has_value(); }
 private:
-    RendererMaterial mRenderMaterial{};
+    Renderer::Material mRenderMaterial{};
     std::vector<Texture*> mAnimatedTextures;
     uint32_t mAnimationPeriod           = 0;
     size_t mCurrentAnimatedDiffuseIdx   = 0;

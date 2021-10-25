@@ -25,23 +25,7 @@ void App::init() {
 }
 
 void App::render() {
-    const auto deltaTime = 16.0f;
-
-    //NOTE: update camera & render
-    if(auto* cam = mScene->getActiveCamera()) {
-        if(mInput->isMouseLocked()) {
-            cam->setDirDelta(mInput->getMouseDelta());
-            cam->setPosDelta(mInput->getMoveDir());
-            cam->update(deltaTime);
-        }
-
-        mInput->clearDeltas();
-        Renderer::setProjMatrix(cam->getProjMatrix());
-        Renderer::setViewMatrix(cam->getViewMatrix());
-        Renderer::setViewPos(cam->Position);
-    }
-
-    Renderer::begin(RenderPass::NORMAL);
+    Renderer::begin();
     mScene->render();
     Renderer::end();
     Renderer::commit();

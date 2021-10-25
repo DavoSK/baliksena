@@ -17,11 +17,11 @@ public:
     ~Model() { gStats.modelsInUse--; }
     void render() override;
     void init();
-private:
+protected:
     Material* mMat = nullptr;
     std::unordered_map<Material*, RenderHelper> mRenderHelper;
-    std::vector<Vertex> mVertices;
+    std::vector<Renderer::Vertex> mVertices;
     std::vector<uint32_t> mIndices;
-    BufferHandle mVertexBuffer{ 0 };
-    BufferHandle mIndexBuffer{ 0 };
+    Renderer::BufferHandle mVertexBuffer{ 0 };
+    Renderer::BufferHandle mIndexBuffer{ 0 };
 };

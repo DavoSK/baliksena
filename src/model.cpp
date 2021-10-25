@@ -9,22 +9,23 @@
 #include <unordered_map>
 
 void Model::render() {
-    if (mVertexBuffer.id != 0 && mIndexBuffer.id != 0) {
+    /*if (mVertexBuffer.id != 0 && mIndexBuffer.id != 0) {
         Renderer::setVertexBuffer(mVertexBuffer);
         Renderer::setIndexBuffer(mIndexBuffer);
-    }
+    }*/
 
     //NOTE: if this model have static geometry
     //render that first
     Renderer::setModel(getMatrix());
-    for (auto& [material, renderHelper] : mRenderHelper) {
+    
+    /*for (auto& [material, renderHelper] : mRenderHelper) {
         if (material != nullptr)
             material->bind();
 
         Renderer::bindBuffers();
         Renderer::applyUniforms();
         Renderer::draw(renderHelper.vertexBufferOffset, renderHelper.verticesCount, 1);
-    }
+    }*/
     
     //NOTE: recursively go trough all childs
     //may potentionaly include dynamic geometry
@@ -49,7 +50,7 @@ void forEachMesh(std::function<void(Mesh*)> callback, Frame* owner) {
 
 void Model::init() {
     struct GeometryBufer {
-        std::vector<Vertex> vertices;
+        std::vector<Renderer::Vertex> vertices;
         std::vector<uint16_t> indices;
         Material* material;
     };
@@ -91,7 +92,7 @@ void Model::init() {
 
     //NOTE: join geometry by same material
     //save offset in vertex buffer into render helper
-    for (const auto& [diffuseName, geometry] : staticBatchingGroup) {
+    /*for (const auto& [diffuseName, geometry] : staticBatchingGroup) {
         if (geometry.empty()) continue;
 
         Material* sharedMaterial = geometry[0].material;
@@ -106,7 +107,7 @@ void Model::init() {
             }
         }
         mRenderHelper[sharedMaterial].verticesCount = mIndices.size() - indicesCountBefore;
-    }
+    }*/
 
     //NOTE: insert dynamic meshes vertices after static geometry 
     for (Mesh* dynamicMesh : dynamicMeshes) {

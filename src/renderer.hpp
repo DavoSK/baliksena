@@ -6,69 +6,64 @@
 #include "frustum_culling.h"
 struct sapp_event;
 
-enum class RenderPass {
-    NORMAL,
-    BILLBOARD,
-    TRANSPARENCY,
-    CAMERA_RELATIVE,
-};
-
-enum class MaterialKind {
-    DIFFUSE,
-    CUTOUT,
-    ALPHA,
-    ENV,
-    BILLBOARD
-};
-
-enum class TextureBlending {
-    NORMAL,
-    MUL,
-    ADD
-};
-
-struct Vertex {
-    glm::vec3 p;
-    glm::vec3 n;
-    glm::vec2 uv;
-};
-
-struct TextureHandle {
-    uint32_t id;
-};
-
-struct RendererMaterial {
-    std::optional<TextureHandle> diffuseTexture;
-    std::optional<TextureHandle> alphaTexture;
-    std::optional<TextureHandle> envTexture;
-    TextureBlending envTextureBlending;
-    float envTextureBlendingRatio;
-    float transparency;
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 emission;
-    MaterialKind kind;
-    bool isDoubleSided;
-    bool isColored;
-    bool hasTransparencyKey;
-};
-
-struct BufferHandle {
-    uint32_t id;
-};
-
 class Renderer {
 public:
+    enum class RenderPass {
+        NORMAL,
+        SKYBOX,
+    };
+
+    enum class MaterialKind {
+        DIFFUSE,
+        CUTOUT,
+        ALPHA,
+        ENV,
+        BILLBOARD
+    };
+
+    enum class TextureBlending {
+        NORMAL,
+        MUL,
+        ADD
+    };
+
+    static constexpr int InvalidHandle = 0;
+    struct TextureHandle { uint32_t id; };  
+    struct BufferHandle { uint32_t id; };
+    struct Material {
+        std::optional<TextureHandle> diffuseTexture;
+        std::optional<TextureHandle> alphaTexture;
+        std::optional<TextureHandle> envTexture;
+        TextureBlending envTextureBlending;
+        float envTextureBlendingRatio;
+        float transparency;
+        glm::vec3 ambient;
+        glm::vec3 diffuse;
+        glm::vec3 emission;
+        MaterialKind kind;
+        bool isDoubleSided;
+        bool isColored;
+        bool hasTransparencyKey;
+    };
+
+    struct Vertex {
+        glm::vec3 p;
+        glm::vec3 n;
+        glm::vec2 uv;
+    };
+
     static void destroy();
     static void init();
-    static void begin(RenderPass pass);
+    static void begin();
+    static void setPass(RenderPass pass);
+    static RenderPass getPass();
     static void end();
     static void commit();
 
     static TextureHandle createTexture(uint8_t* data, int width, int height);
     static void destroyTexture(TextureHandle textureHandle);
     static void bindTexture(TextureHandle textureHandle, unsigned int slot);
-    static void bindMaterial(const RendererMaterial& material);
+    static void bindMaterial(const Material& material);
 
     static BufferHandle createVertexBuffer(const std::vector<Vertex>& vertices);
     static BufferHandle createIndexBuffer(const std::vector<uint32_t>& indices);

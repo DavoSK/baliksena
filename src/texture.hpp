@@ -13,12 +13,12 @@ public:
     const std::string& getName() const { return mTextureName; }
     int getWidth() const { return mWidth; }
     int getHeight() const { return mHeight; }
-    TextureHandle getTextureHandle() const { return mTextureHandle; }
+    Renderer::TextureHandle getTextureHandle() const { return mTextureHandle; }
 private:
     void release();
     uint8_t* mBuffer{nullptr};
     std::string mTextureName;
-    TextureHandle mTextureHandle{0};
+    Renderer::TextureHandle mTextureHandle{0};
     int mWidth = 0;
     int mHeight = 0;
 };

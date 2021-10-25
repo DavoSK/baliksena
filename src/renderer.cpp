@@ -24,6 +24,7 @@
 #include "shader_cutout.h" 
 #include "shader_billboard.h" 
 #include "shader_env.h"
+#include "shader_skybox.h"
 
 #include "renderer.hpp"
 #include "gui.hpp"
@@ -48,6 +49,12 @@ static struct {
         sg_shader billboardShader;
         sg_pipeline billboardPip[2];
 
+        //NOTE: skybox will have backface culling always on
+        //why not ?
+        sg_shader skyboxShader;
+        sg_pipeline skyboxPip;
+        
+
         sg_bindings bind;
         sg_pass pass;
         sg_pass_desc passDesc;
@@ -59,7 +66,8 @@ static struct {
     glm::mat4 view;
     glm::mat4 proj;
     glm::vec3 viewPos;
-    RendererMaterial material;
+    Renderer::Material material;
+    Renderer::RenderPass pass;
 } state;
 
 void Renderer::createRenderTarget(int width, int height) {
@@ -226,6 +234,22 @@ void Renderer::init() {
         state.offscreen.billboardPip[1] = sg_make_pipeline(&pipelineDesc);
     }
 
+    //NOTE: skybox shader
+    {
+        state.offscreen.skyboxShader = sg_make_shader(skybox_skybox_shader_desc(sg_query_backend()));
+
+        sg_pipeline_desc pipelineDesc   = {};
+        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+        pipelineDesc.shader             = state.offscreen.skyboxShader;
+        pipelineDesc.layout             = layoutDesc;
+        pipelineDesc.depth              = depthState;
+        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
+        pipelineDesc.label              = "skybox-pipeline";
+        state.offscreen.skyboxPip       = sg_make_pipeline(&pipelineDesc);
+    }
+
     Gui::init();
 }
 
@@ -242,16 +266,29 @@ void Renderer::destroy() {
         sg_destroy_pipeline(state.offscreen.billboardPip[i]);
     }
 
+    sg_destroy_shader(state.offscreen.skyboxShader);
+    sg_destroy_pipeline(state.offscreen.skyboxPip);
+
     sg_shutdown();
 }
 
-void Renderer::begin(RenderPass pass) {
+void Renderer::begin() {
     sg_begin_pass(state.offscreen.pass, &state.offscreen.passAction);
+}
+
+void Renderer::setPass(RenderPass pass) {
+    state.pass = pass;
+}
+
+Renderer::RenderPass Renderer::getPass() {
+    return state.pass;
 }
 
 void Renderer::end()  {
     sg_end_pass();
-    
+}
+
+void Renderer::commit() { 
     //NOTE: begin default pass for GUI
     {
         static uint64_t lastTime = 0;
@@ -266,11 +303,11 @@ void Renderer::end()  {
         simgui_render();
         sg_end_pass();
     }
+
+    sg_commit(); 
 }
 
-void Renderer::commit() { sg_commit(); }
-
-TextureHandle Renderer::createTexture(uint8_t* data, int width, int height) {
+Renderer::TextureHandle Renderer::createTexture(uint8_t* data, int width, int height) {
     sg_image_desc imageDesc {};
     imageDesc.width         = width;
     imageDesc.height        = height;
@@ -295,7 +332,7 @@ void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
     state.offscreen.bind.fs_images[slot] = textureToBind;
 }
 
-void Renderer::bindMaterial(const RendererMaterial& material) {
+void Renderer::bindMaterial(const Material& material) {
     if(material.diffuseTexture.has_value()) {
         bindTexture(material.diffuseTexture.value(), SLOT_basic_texture1);
     }
@@ -309,7 +346,7 @@ void Renderer::bindMaterial(const RendererMaterial& material) {
     state.material = material;
 }
 
-BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
+Renderer::BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
     sg_range bufferData {
         vertices.data(),
         sizeof(Vertex) * vertices.size()
@@ -325,7 +362,7 @@ BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
     return { buffer.id };
 }
 
-BufferHandle Renderer::createIndexBuffer(const std::vector<uint32_t>& indices) {
+Renderer::BufferHandle Renderer::createIndexBuffer(const std::vector<uint32_t>& indices) {
     sg_range bufferData = {
         indices.data(), 
         sizeof(uint32_t) * indices.size()
@@ -361,26 +398,28 @@ void Renderer::setIndexBuffer(BufferHandle handle) {
 }
 
 void Renderer::bindBuffers() {
+    if(state.pass == Renderer::RenderPass::SKYBOX) {
+        sg_apply_pipeline(state.offscreen.skyboxPip);
+    } else {
+        //NOTE: get index in our pipeline array based if its boudle sided material or not
+        size_t piplineIdx = state.material.isDoubleSided ? 0 : 1;
+        switch (state.material.kind) {
+            case MaterialKind::BILLBOARD: {
+                sg_apply_pipeline(state.offscreen.billboardPip[piplineIdx]);
+            } break;
 
-    //NOTE: get index in our pipeline array based if its boudle sided material or not
-    size_t piplineIdx = state.material.isDoubleSided ? 0 : 1;
+            case MaterialKind::ENV: {
+                sg_apply_pipeline(state.offscreen.envPip[piplineIdx]);
+            } break;
 
-    switch (state.material.kind) {
-        case MaterialKind::BILLBOARD: {
-            sg_apply_pipeline(state.offscreen.billboardPip[piplineIdx]);
-        } break;
+            case MaterialKind::CUTOUT: {
+                sg_apply_pipeline(state.offscreen.cutoutPip[piplineIdx]);
+            } break;
 
-        case MaterialKind::ENV: {
-            sg_apply_pipeline(state.offscreen.envPip[piplineIdx]);
-        } break;
-
-        case MaterialKind::CUTOUT: {
-            sg_apply_pipeline(state.offscreen.cutoutPip[piplineIdx]);
-        } break;
-
-        default: {
-            sg_apply_pipeline(state.offscreen.pip[piplineIdx]);
-        } break;
+            default: {
+                sg_apply_pipeline(state.offscreen.pip[piplineIdx]);
+            } break;
+        }
     }
 
     sg_apply_bindings(&state.offscreen.bind);
@@ -391,6 +430,23 @@ void Renderer::setModel(const glm::mat4& model) {
 }
 
 void Renderer::applyUniforms() {
+
+    if(state.pass == Renderer::RenderPass::SKYBOX) {
+        skybox_vs_params_t vertexUniforms{
+            state.model,
+            state.view,
+            state.proj
+        };
+
+        sg_range uniformsRange{
+            &vertexUniforms,
+            sizeof(skybox_vs_params_t)
+        };
+
+        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, &uniformsRange);
+        return;
+    }
+
     switch(state.material.kind) {
         case MaterialKind::BILLBOARD: {
             //NOTE: apply vertex stage uniforms
@@ -411,7 +467,6 @@ void Renderer::applyUniforms() {
         } break;
 
         case MaterialKind::ENV: {
-
             //NOTE: apply vertex stage uniforms
             {
                 env_vs_params_t vsUniforms{
@@ -481,13 +536,13 @@ void Renderer::draw(int baseElement, int numElements, int numInstances) {
     sg_draw(baseElement, numElements, numInstances);
 }
 
-TextureHandle Renderer::getRenderTargetTexture() {
+Renderer::TextureHandle Renderer::getRenderTargetTexture() {
     assert(state.offscreen.colorImg.id != SG_INVALID_ID);
     return { state.offscreen.colorImg.id };
 }
 
-void Renderer::guiHandleSokolInput(const sapp_event* e) {
-    simgui_handle_event(e);
+void Renderer::guiHandleSokolInput(const sapp_event* e) { 
+    simgui_handle_event(e); 
 }
 
 int Renderer::getWidth() { return sapp_width(); }

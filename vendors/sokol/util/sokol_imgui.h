@@ -1653,7 +1653,7 @@ SOKOL_API_IMPL void simgui_setup(const simgui_desc_t* desc) {
         //NOTE: add font awesome
         static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
         ImFontConfig icons_config; icons_config.MergeMode = true; icons_config.PixelSnapH = true;
-        io->Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges );
+        io->Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 13.0f, &icons_config, icons_ranges );
 
     #else
         igCreateContext(NULL);

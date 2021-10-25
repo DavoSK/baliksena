@@ -77,12 +77,12 @@
     if (hasDiffuse) {
         material->setHasTransparencyKey(hasTransparencyKey);
         material->createDiffuseTexture(mafiaMaterial.mDiffuseMapName);
-        material->setKind(hasTransparencyKey ? MaterialKind::CUTOUT : MaterialKind::DIFFUSE);
+        material->setKind(hasTransparencyKey ? Renderer::MaterialKind::CUTOUT : Renderer::MaterialKind::DIFFUSE);
     }
 
     if (hasAlpha) {
         material->createAlphaTexture(mafiaMaterial.mAlphaMapName);
-        material->setKind(MaterialKind::ALPHA);
+        material->setKind(Renderer::MaterialKind::ALPHA);
     }
 
     if (isDiffuseAnimated) {
@@ -106,22 +106,22 @@
 
     if (hasEnvMap) {
         if (normalBlending) {
-            material->setTextureBlending(TextureBlending::NORMAL);
+            material->setTextureBlending(Renderer::TextureBlending::NORMAL);
             if (hasEnvMap) {
                 material->setEnvRatio(mafiaMaterial.mEnvRatio);
             }
         }
 
         if (mulBlending) {
-            material->setTextureBlending(TextureBlending::MUL);
+            material->setTextureBlending(Renderer::TextureBlending::MUL);
         }
 
         if (addBlending) {
-            material->setTextureBlending(TextureBlending::ADD);
+            material->setTextureBlending(Renderer::TextureBlending::ADD);
         }
 
         material->createEnvTexture(mafiaMaterial.mEnvMapName);
-        material->setKind(MaterialKind::ENV);
+        material->setKind(Renderer::MaterialKind::ENV);
     }
 
     material->setTransparency(mafiaMaterial.mTransparency);
@@ -181,9 +181,9 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
 
     // NOTE: get vertices from lod
     {
-        std::vector<Vertex> vertices;
+        std::vector<Renderer::Vertex> vertices;
         for (const auto& mafiaVertex : lod.mVertices) {
-            Vertex vertex{};
+            Renderer::Vertex vertex{};
             vertex.p = { mafiaVertex.mPos.x, mafiaVertex.mPos.y, mafiaVertex.mPos.z };
             vertex.n = { mafiaVertex.mNormal.x, mafiaVertex.mNormal.y, mafiaVertex.mNormal.z };
             vertex.uv = { mafiaVertex.mUV.x, mafiaVertex.mUV.y * -1.0f };
@@ -209,7 +209,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
                 
                 //NOTE: set material kind to billboard
                 if (newMesh->getType() == FrameType::BILLBOARD) {
-                    loadedMat->setKind(MaterialKind::BILLBOARD);
+                    loadedMat->setKind(Renderer::MaterialKind::BILLBOARD);
                 }
 
                 faceGroup->setMaterial(std::move(loadedMat));

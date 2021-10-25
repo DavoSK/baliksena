@@ -65,7 +65,7 @@ void renderInspectWidget(Frame* frame) {
     ImGui::Text("Frame owner: %s", frame->getOwner() != nullptr ? frame->getOwner()->getName().c_str() : nullptr);
     ImGui::Text("Frame type: %d", frame->getType());
 
-    static bool isFrameOn = frame->isOn();
+    bool isFrameOn = frame->isOn();
     if(ImGui::Checkbox("Frame ON", &isFrameOn)) {
         frame->setOn(isFrameOn);
     }
@@ -122,6 +122,35 @@ void renderTerminalWidget() {
     for(const auto& msg : gLogBuffer[currentLogLevel]) {
         ImGui::TextAnsiUnformatted(msg.c_str(), nullptr);
     }
+}
+
+
+void renderSceneWidget(Scene* scene) {
+  
+    static char fileBuff[250] = "TUTORIAL";
+    ImGui::InputText("###model", fileBuff, 250);
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_COMPACT_DISC)) {
+       if (strlen(fileBuff)) {
+           scene->load(fileBuff);
+       }
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button(ICON_FA_TRASH)) {
+       gSelectedNode = nullptr;
+       scene->clear();
+    }
+
+    if (ImGui::InputText(ICON_FA_SEARCH, gNodeSearchText, 32)) {
+        gNodeSearchTexLen = strnlen(gNodeSearchText, 32);
+    }
+
+    ImGui::Separator();
+
+    gButtonIdCnt = 0;
+    renderNodeRecursively(scene);
 }
 
 void Gui::render() {
@@ -188,12 +217,7 @@ void Gui::render() {
 
     // NOTE: scene section
     ImGui::Begin("Scene");
-    if (ImGui::InputText("Search", gNodeSearchText, 32)) {
-        gNodeSearchTexLen = strnlen(gNodeSearchText, 32);
-    }
-
-    gButtonIdCnt = 0;
-    renderNodeRecursively(scene);
+    renderSceneWidget(scene);
     ImGui::End();
 
     // NOTE: terminal
@@ -210,7 +234,6 @@ void Gui::render() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("View");
     ImGui::BeginChild("GameRender");
-
     ImVec2 wsize = ImGui::GetWindowSize();
     if (wsize.x != lastWsize.x || wsize.y != lastWsize.y) {
         const auto width = static_cast<int>(wsize.x);
@@ -239,22 +262,6 @@ void Gui::render() {
 
     ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
     ImGui::Separator();
-
-    // NOTE: scene section
-    if (ImGui::Button("Clear Scene")) {
-       //gSelectedNode = nullptr;
-       scene->clear();
-    }
-
-    static char fileBuff[250] = "TUTORIAL";
-    ImGui::InputText("###model", fileBuff, 250);
-    ImGui::SameLine();
-    if (ImGui::Button("Load scene")) {
-       if (strlen(fileBuff)) {
-           scene->load(fileBuff);
-       }
-    }
-
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 }

@@ -41,6 +41,7 @@ public:
     glm::mat4 getViewMatrix();
 
     [[nodiscard]] const glm::mat4& getProjMatrix() const { return mProjMatrix; }
+    [[nodiscard]] const glm::mat4& getSkyboxProjMatrix() const { return mProjSkyboxMatrix; }
     [[nodiscard]] const glm::vec3& getPos() const { return Position; }
     [[nodiscard]] const glm::vec3& getRight() const { return Right; }
     [[nodiscard]] float getFOV() const { return Zoom; }
@@ -55,6 +56,7 @@ private:
     void updateCameraVectors();
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
+    glm::mat4 mProjSkyboxMatrix;
     glm::vec3 mPosDelta;
     glm::vec2 mDirDelta;
 };

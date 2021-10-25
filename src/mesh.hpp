@@ -38,8 +38,8 @@ class Mesh : public Frame {
 public:
     FrameType getType() const override { return FrameType::MESH; }
 
-    void setVertices(std::vector<Vertex> vertices);
-    [[nodiscard]] const std::vector<Vertex>& getVertices () { return mVertices; }
+    void setVertices(std::vector<Renderer::Vertex> vertices);
+    [[nodiscard]] const std::vector<Renderer::Vertex>& getVertices () { return mVertices; }
 
     void addFaceGroup(std::unique_ptr<FaceGroup> faceGroup) { mFaceGroups.push_back(std::move(faceGroup)); }
     [[nodiscard]] const std::vector<std::unique_ptr<FaceGroup>>& getFaceGroups() { return mFaceGroups; }
@@ -49,7 +49,7 @@ public:
     void setStatic(bool isStatic) { mStatic = isStatic; }
     [[nodiscard]] bool isStatic() { return mStatic; }
 private:
-    std::vector<Vertex> mVertices;
+    std::vector<Renderer::Vertex> mVertices;
     std::vector<std::unique_ptr<FaceGroup>> mFaceGroups;
     bool mStatic = true;
 };

@@ -46,7 +46,7 @@ public:
     void removeChild(std::shared_ptr<Frame> frame);
     const std::vector<std::shared_ptr<Frame>>& getChilds() { return mChilds; };
 
-    void clear() { mChilds.clear(); }
+    void removeChilds() { mChilds.clear(); }
     
     const glm::mat4& getWorldMatrix();
     const glm::mat4& getMatrix() { return mTransform; }

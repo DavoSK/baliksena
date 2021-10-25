@@ -8,6 +8,8 @@
 #include "logger.hpp"
 #include "sector.hpp"
 #include "vfs.hpp"
+#include "input.hpp"
+#include "app.hpp"
 
 #include "mafia/parser_cachebin.hpp"
 #include "mafia/parser_scene2bin.hpp"
@@ -66,6 +68,8 @@ void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>&
 std::vector<std::string> split(std::string const& original, char separator);
 
 void Scene::load(const std::string& missionName) {
+    clear();
+
     Logger::get().info("loading mission {}", missionName);
     setName(missionName);
 
@@ -251,6 +255,11 @@ void Scene::load(const std::string& missionName) {
     }
 
     //NOTE: load cachus binus
+    std::shared_ptr<Sector> nearSector = std::make_shared<Sector>();
+    nearSector->setName("Near sector");
+    mNearSector = nearSector;
+    addChild(nearSector);
+
     std::string sceneCacheBin = missionFolder + "\\cache.bin";
     MFFormat::DataFormatCacheBIN cacheBin;
     auto cacheBinFile = Vfs::getFile(sceneCacheBin);
@@ -261,7 +270,7 @@ void Scene::load(const std::string& missionName) {
                 auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName);
                 if(model != nullptr) {
                     model->setMatrix(getMatrixFromInstance(instance));
-                    addChild(std::move(model));
+                    mNearSector->addChild(std::move(model));
                 }
             }
         }
@@ -271,6 +280,67 @@ void Scene::load(const std::string& missionName) {
     init();
 }
 
+void Scene::clear() {
+    mPrimarySector = nullptr;
+    mNearSector = nullptr;
+    mBackdropSector = nullptr;
+    removeChilds();
+    
+    mIndices.clear();
+    mVertices.clear();
+
+    if(mIndexBuffer.id != Renderer::InvalidHandle && 
+       mVertexBuffer.id != Renderer::InvalidHandle) {
+        Renderer::destroyBuffer(mIndexBuffer);
+        Renderer::destroyBuffer(mVertexBuffer);
+    }
+}
+
 void Scene::render() {
-    Model::render();
+    if(!isOn()) return;
+
+    const auto deltaTime = 16.0f;
+
+    //NOTE: update camera & render
+    if(auto* cam = getActiveCamera()) {
+        auto input = App::get()->getInput();
+        if(input->isMouseLocked()) {
+            cam->setDirDelta(input->getMouseDelta());
+            cam->setPosDelta(input->getMoveDir());
+            cam->update(deltaTime);
+        }
+
+        input->clearDeltas();
+        Renderer::setViewMatrix(cam->getViewMatrix());
+        Renderer::setViewPos(cam->Position);
+    }
+
+    //NOTE: bind buffers
+    if (mVertexBuffer.id != Renderer::InvalidHandle && 
+        mIndexBuffer.id != Renderer::InvalidHandle) {
+        Renderer::setVertexBuffer(mVertexBuffer);
+        Renderer::setIndexBuffer(mIndexBuffer);
+    }
+
+    //NOTE: skybox pass -> render Backdrop sector first
+    Renderer::setPass(Renderer::RenderPass::SKYBOX);
+    Renderer::setProjMatrix(mActiveCamera->getSkyboxProjMatrix());
+    
+    if(mBackdropSector != nullptr) {
+        mBackdropSector->render();
+    }
+
+    //NOTE: normal pass -> render normal objects
+    Renderer::setPass(Renderer::RenderPass::NORMAL);
+    Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
+
+    if(mPrimarySector != nullptr) {
+        mPrimarySector->render();
+    }
+
+    if(mNearSector != nullptr) {
+        mNearSector->render();
+    }
+    
+    //TODO: transparency pass, alpha blending, sorting, etc ...
 }

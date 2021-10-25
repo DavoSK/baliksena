@@ -19,7 +19,7 @@ void FaceGroup::render() const {
     Mesh
 */
 
-void Mesh::setVertices(std::vector<Vertex> vertices) {
+void Mesh::setVertices(std::vector<Renderer::Vertex> vertices) {
     mVertices = std::move(vertices);
 
     // NOTE: build AABB bounding box
@@ -41,7 +41,10 @@ void Mesh::render() {
     if (mStatic || mVertices.empty() || !isOn()) return;
     
     const auto& worldBBOX = getWorldBBOX();
-    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
+
+    //NOTE: cull only objects in Primary sector
+    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second) && 
+        Renderer::getPass() != Renderer::RenderPass::SKYBOX) {
         return;
     }
 
