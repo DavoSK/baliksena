@@ -6,7 +6,7 @@
 #include "input.hpp"
 
 glm::mat4 Camera::createProjMatrix(int width, int height) {
-    mProjMatrix = glm::perspectiveLH(glm::radians(getFOV()), (float)width / (float)height, 0.1f, 2000.0f);
+    mProjMatrix = glm::perspectiveLH(glm::radians(getFOV()), (float)width / (float)height, 0.1f, 900.0f);
     return mProjMatrix;
 }
 

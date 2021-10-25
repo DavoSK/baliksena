@@ -33,18 +33,20 @@ static struct {
         sg_pass_action passAction;
     } display;
 
+    //NOTE: we have array of 2 piplines
+    //for backface culling and double sided materials
     struct {
         sg_shader shader;
-        sg_pipeline pip;
+        sg_pipeline pip[2];
 
         sg_shader cutoutShader;
-        sg_pipeline cutoutPip;
+        sg_pipeline cutoutPip[2];
 
         sg_shader envShader;
-        sg_pipeline envPip;
+        sg_pipeline envPip[2];
 
         sg_shader billboardShader;
-        sg_pipeline billboardPip;
+        sg_pipeline billboardPip[2];
 
         sg_bindings bind;
         sg_pass pass;
@@ -146,9 +148,14 @@ void Renderer::init() {
         pipelineDesc.layout             = layoutDesc;
         pipelineDesc.depth              = depthState;
         pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
         pipelineDesc.label              = "diffuse-pipeline";
-        state.offscreen.pip             = sg_make_pipeline(&pipelineDesc);
+        state.offscreen.pip[0]          = sg_make_pipeline(&pipelineDesc);
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "diffuse-pipeline-backfaceculled";
+        state.offscreen.pip[1]          = sg_make_pipeline(&pipelineDesc);
     }
 
     //NOTE: cutout shader
@@ -162,10 +169,14 @@ void Renderer::init() {
         pipelineDesc.layout             = layoutDesc;
         pipelineDesc.depth              = depthState;
         pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
         pipelineDesc.label              = "cutout-pipeline";
-       
-        state.offscreen.cutoutPip       = sg_make_pipeline(&pipelineDesc);
+        state.offscreen.cutoutPip[0]    = sg_make_pipeline(&pipelineDesc);
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "cutout-pipeline-backfaceculled";
+        state.offscreen.cutoutPip[1]    = sg_make_pipeline(&pipelineDesc);
     }
 
     //NOTE: env shader
@@ -184,10 +195,14 @@ void Renderer::init() {
         pipelineDesc.layout             = envLayoutDesc;
         pipelineDesc.depth              = depthState;
         pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
         pipelineDesc.label              = "env-pipeline";
-        
-        state.offscreen.envPip          = sg_make_pipeline(&pipelineDesc);
+        state.offscreen.envPip[0]       = sg_make_pipeline(&pipelineDesc);
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "env-pipeline-backfaceculled";
+        state.offscreen.envPip[1]       = sg_make_pipeline(&pipelineDesc);
     }
 
     //NOTE: billboard shader
@@ -201,26 +216,31 @@ void Renderer::init() {
         pipelineDesc.layout             = layoutDesc;
         pipelineDesc.depth              = depthState;
         pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
         pipelineDesc.label              = "billboard-pipeline";
-        state.offscreen.billboardPip    = sg_make_pipeline(&pipelineDesc);
+        state.offscreen.billboardPip[0] = sg_make_pipeline(&pipelineDesc);
+
+        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+        pipelineDesc.label              = "billboard-pipeline-backfaceculled";
+        state.offscreen.billboardPip[1] = sg_make_pipeline(&pipelineDesc);
     }
 
     Gui::init();
 }
 
 void Renderer::destroy() {
-    sg_destroy_pipeline(state.offscreen.pip);
     sg_destroy_shader(state.offscreen.shader);
-
-    sg_destroy_pipeline(state.offscreen.cutoutPip);
     sg_destroy_shader(state.offscreen.cutoutShader);
-
-    sg_destroy_pipeline(state.offscreen.envPip);
     sg_destroy_shader(state.offscreen.envShader);
-
-    sg_destroy_pipeline(state.offscreen.billboardPip);
     sg_destroy_shader(state.offscreen.billboardShader);
+
+    for(size_t i = 0; i < 2; i++) {
+        sg_destroy_pipeline(state.offscreen.pip[i]);
+        sg_destroy_pipeline(state.offscreen.cutoutPip[i]);
+        sg_destroy_pipeline(state.offscreen.envPip[i]);
+        sg_destroy_pipeline(state.offscreen.billboardPip[i]);
+    }
 
     sg_shutdown();
 }
@@ -341,21 +361,25 @@ void Renderer::setIndexBuffer(BufferHandle handle) {
 }
 
 void Renderer::bindBuffers() {
+
+    //NOTE: get index in our pipeline array based if its boudle sided material or not
+    size_t piplineIdx = state.material.isDoubleSided ? 0 : 1;
+
     switch (state.material.kind) {
         case MaterialKind::BILLBOARD: {
-            sg_apply_pipeline(state.offscreen.billboardPip);
+            sg_apply_pipeline(state.offscreen.billboardPip[piplineIdx]);
         } break;
 
         case MaterialKind::ENV: {
-            sg_apply_pipeline(state.offscreen.envPip);
+            sg_apply_pipeline(state.offscreen.envPip[piplineIdx]);
         } break;
 
         case MaterialKind::CUTOUT: {
-            sg_apply_pipeline(state.offscreen.cutoutPip);
+            sg_apply_pipeline(state.offscreen.cutoutPip[piplineIdx]);
         } break;
 
         default: {
-            sg_apply_pipeline(state.offscreen.pip);
+            sg_apply_pipeline(state.offscreen.pip[piplineIdx]);
         } break;
     }
 

@@ -15,7 +15,7 @@ App::App() {
 }
 
 void App::init() {
-    Vfs::init("C:\\Mafia\\");
+    Vfs::init("/home/david/dev/Mafia/");
     Renderer::init();
 
     //NOTE: create main camera

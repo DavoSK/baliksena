@@ -134,6 +134,7 @@
         material->setDiffuse({mafiaMaterial.mDiffuse.x, mafiaMaterial.mDiffuse.y, mafiaMaterial.mDiffuse.z});
     }
 
+    material->init();
     return material;
 }
 

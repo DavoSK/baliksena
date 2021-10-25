@@ -21,18 +21,18 @@ std::unordered_map<size_t, DtaFileEntry> gFileMap;
 std::vector<DTAFile> mFilesToFetchVer2 = {
     { "a8.dta", 0x6A63FA71, 0x0EC45D8CE },
     //{ "b8.dta", 0x79E21CDB, 0x0B60F823F },
-    { "a2.dta", 0x1417D340, 0x0B6399E19 },
-    { "a6.dta", 0x728E2DB9, 0x5055DA68 },
-    { "a0.dta", 0x7F3D9B74, 0x0EC48FE17 },
-    { "a1.dta", 0x0E7375F59, 0x900210E },
-    { "a3.dta", 0x0A94B8D3C, 0x771F3888 },
-    { "ac.dta", 0x0A94B8D3C, 0x771F3888 },
-    { "a4.dta", 0x0A94B8D3C, 0x771F3888 },
-    { "aa.dta", 0x0D4AD90C6, 0x67DA216E },
-    { "a5.dta", 0x4F4BB0C6, 0x0EA340420 },
-    { "a7.dta", 0x0F4F03A72, 0x0E266FE62 },
-    { "a9.dta", 0x959D1117, 0x5B763446 },
-    { "ab.dta", 0x7F3D9B74, 0x0EC48FE17 }
+    { "A2.dta", 0x1417D340, 0x0B6399E19 },
+    { "A6.dta", 0x728E2DB9, 0x5055DA68 },
+    { "A0.dta", 0x7F3D9B74, 0x0EC48FE17 },
+    { "A1.dta", 0x0E7375F59, 0x900210E },
+    { "A3.dta", 0x0A94B8D3C, 0x771F3888 },
+    { "AC.dta", 0x0A94B8D3C, 0x771F3888 },
+    { "A4.dta", 0x0A94B8D3C, 0x771F3888 },
+    { "AA.dta", 0x0D4AD90C6, 0x67DA216E },
+    { "A5.dta", 0x4F4BB0C6, 0x0EA340420 },
+    { "A7.dta", 0x0F4F03A72, 0x0E266FE62 },
+    { "A9.dta", 0x959D1117, 0x5B763446 },
+    { "AB.dta", 0x7F3D9B74, 0x0EC48FE17 }
 };
 
 void Vfs::init(const std::string& rootDir) {

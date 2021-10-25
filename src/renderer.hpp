@@ -43,13 +43,14 @@ struct RendererMaterial {
     std::optional<TextureHandle> envTexture;
     TextureBlending envTextureBlending;
     float envTextureBlendingRatio;
-    bool isDoubleSided;
-    bool hasTransparencyKey;
     float transparency;
     glm::vec3 ambient;
     glm::vec3 diffuse;
     glm::vec3 emission;
     MaterialKind kind;
+    bool isDoubleSided;
+    bool isColored;
+    bool hasTransparencyKey;
 };
 
 struct BufferHandle {

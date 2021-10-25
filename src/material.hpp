@@ -15,15 +15,10 @@ enum TextureSlots { DIFFUSE = 0, ALPHA, ENV, ANIMATED, USER_END };
 class Texture;
 class Material {
 public:
-    Material() {
-    }
-
-    ~Material() { 
-    }
-
     void bind();
     void createTextureForSlot(unsigned int slot, const std::string& path);
     void appendAnimatedTexture(const std::string& path);
+    void init();
 
     bool hasTexture(size_t textureIndex) const {
         return (textureIndex < TextureSlots::USER_END - 1 && mTextures[textureIndex] != nullptr);
@@ -52,16 +47,16 @@ public:
 
     bool isTransparent() const { return mTransparency < 1.0f || hasTexture(TextureSlots::ALPHA); }
 
-    void setDoubleSided(bool val) { mIsDoubleSided = val; }
-    bool isDoubleSided() const { return mIsDoubleSided; }
+    void setDoubleSided(bool val) { mRenderMaterial.isDoubleSided = val; }
+    bool isDoubleSided() const { return mRenderMaterial.isDoubleSided; }
 
-    void setColored(bool val) { mIsColored = val; }
+    void setColored(bool val) { mRenderMaterial.isColored = val; }
 
-    void setTextureBlending(TextureBlending blending) { mBlending = blending; }
-    TextureBlending getTextureBlending() const { return mBlending; }
+    void setTextureBlending(TextureBlending blending) { mRenderMaterial.envTextureBlending = blending; }
+    TextureBlending getTextureBlending() const { return mRenderMaterial.envTextureBlending; }
 
-    void setHasTransparencyKey(bool hasKey) { mHasTransparencyKey = hasKey; }
-    bool hasTransparencyKey() const { return mHasTransparencyKey; }
+    void setHasTransparencyKey(bool hasKey) { mRenderMaterial.hasTransparencyKey = hasKey; }
+    bool hasTransparencyKey() const { return mRenderMaterial.hasTransparencyKey; }
 
     void setAnimated(bool animated, uint32_t framePeriod) {
         mIsAnimated = animated;
@@ -74,20 +69,22 @@ public:
     MaterialKind getKind() const { return mRenderMaterial.kind; }
 private:
     RendererMaterial mRenderMaterial{};
-    std::array<Texture*, TextureSlots::USER_END> mTextures{nullptr, nullptr, nullptr, nullptr};
+    //std::array<Texture*, TextureSlots::USER_END> mTextures{nullptr, nullptr, nullptr, nullptr};
     std::vector<Texture*> mAnimatedTextures;
-    glm::vec3 mAmbient                  = {0.0f, 0.0f, 0.0f};
-    glm::vec3 mDiffuse                  = {0.0f, 0.0f, 0.0f};
-    glm::vec3 mEmission                 = {0.0f, 0.0f, 0.0f};
-    float mEnvRatio                     = 0.0f;
-    float mTransparency                 = 1.0f;
+
+    //glm::vec3 mAmbient                  = {0.0f, 0.0f, 0.0f};
+    //glm::vec3 mDiffuse                  = {0.0f, 0.0f, 0.0f};
+    //glm::vec3 mEmission                 = {0.0f, 0.0f, 0.0f};
+    //float mEnvRatio                     = 0.0f;
+    //float mTransparency                 = 1.0f;
     uint32_t mAnimationPeriod           = 0;
     size_t mCurrentAnimatedDiffuseIdx   = 0;
     uint64_t mLastUpdatedAnimTex        = 0;
-    bool mAditiveMixing                 = false;
+    
+    //bool mAditiveMixing                 = false;
     bool mIsAnimated                    = false;
-    bool mIsDoubleSided                 = false;
-    bool mIsColored                     = false;
-    bool mHasTransparencyKey            = false;
-    TextureBlending mBlending           = TextureBlending::NORMAL;
+    //bool mIsDoubleSided                 = false;
+    ///bool mIsColored                     = false;
+    //bool mHasTransparencyKey            = false;
+    //TextureBlending mBlending           = TextureBlending::NORMAL;
 };

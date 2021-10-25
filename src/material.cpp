@@ -34,8 +34,6 @@ void Material::createTextureForSlot(unsigned int slot, const std::string& path) 
 
          case TextureSlots::ENV: {
              mRenderMaterial.envTexture = texture->getTextureHandle();
-             mRenderMaterial.envTextureBlending = this->getTextureBlending();
-             mRenderMaterial.envTextureBlendingRatio = this->getEnvRatio();
          } break;
 
         default: 
@@ -47,4 +45,11 @@ void Material::createTextureForSlot(unsigned int slot, const std::string& path) 
 
 void Material::appendAnimatedTexture(const std::string& path) {
     mAnimatedTextures.push_back(Texture::loadFromFile(path, mHasTransparencyKey));
+}
+
+void Material::init() {
+    mRenderMaterial.envTextureBlending = this->getTextureBlending();
+    mRenderMaterial.envTextureBlendingRatio = this->getEnvRatio();
+    mRenderMaterial.isDoubleSided = mIsDoubleSided;
+    mRenderMaterial.transparency = mTransparency;
 }
