@@ -14,8 +14,7 @@ class Texture;
 class Material {
 public:
     void bind();
-    //void init();
-
+    
     void createDiffuseTexture(const std::string& path);
     [[nodiscard]] std::optional<Renderer::TextureHandle> getDiffuseTexture() const { return mRenderMaterial.diffuseTexture; }
 

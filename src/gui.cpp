@@ -6,6 +6,7 @@
 #include "stats.hpp"
 #include "imgui_ansi.hpp"
 #include "imgui/IconsFontAwesome5.h"
+#include "vfs.hpp"
 
 #include <string>
 #include <vector>
@@ -124,23 +125,49 @@ void renderTerminalWidget() {
     }
 }
 
+namespace ImGui
+{
+    static auto vector_getter = [](void* vec, int idx, const char** out_text)
+    {
+        auto& vector = *static_cast<std::vector<std::string>*>(vec);
+        if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+        *out_text = vector.at(idx).c_str();
+        return true;
+    };
+
+    bool Combo(const char* label, int* currIndex, std::vector<std::string>& values)
+    {
+        if (values.empty()) { return false; }
+        return Combo(label, currIndex, vector_getter,
+            static_cast<void*>(&values), values.size());
+    }
+
+    bool ListBox(const char* label, int* currIndex, std::vector<std::string>& values)
+    {
+        if (values.empty()) { return false; }
+        return ListBox(label, currIndex, vector_getter,
+            static_cast<void*>(&values), values.size());
+    }
+};
 
 void renderSceneWidget(Scene* scene) {
-  
-    static char fileBuff[250] = "TUTORIAL";
-    ImGui::InputText("###model", fileBuff, 250);
+    auto& missionList = Vfs::getMissionsList();
+    static int currentMissionIdx = 0;  
+    ImGui::Combo("##missionscombo", &currentMissionIdx, missionList); 
+
     ImGui::SameLine();
+
     if (ImGui::Button(ICON_FA_COMPACT_DISC)) {
-       if (strlen(fileBuff)) {
-           scene->load(fileBuff);
-       }
+        if (!missionList[currentMissionIdx].empty()) {
+            scene->load(missionList[currentMissionIdx]);
+        }
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button(ICON_FA_TRASH)) {
-       gSelectedNode = nullptr;
-       scene->clear();
+        gSelectedNode = nullptr;
+        scene->clear();
     }
 
     if (ImGui::InputText(ICON_FA_SEARCH, gNodeSearchText, 32)) {

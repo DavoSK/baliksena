@@ -162,9 +162,9 @@ void Scene::load(const std::string& missionName) {
 
     std::string sceneBinPath = missionFolder + "\\scene2.bin";
     auto sceneBinFile = Vfs::getFile(sceneBinPath);
-    if (sceneBinFile.size()) {
+    if (sceneBinFile.has_value()) {
         MFFormat::DataFormatScene2BIN sceneBin;
-        if (sceneBin.load(sceneBinFile)) {
+        if (sceneBin.load(sceneBinFile.value())) {
             for (auto& [objName, obj] : sceneBin.getObjects()) {
                 //NOTE: check if node is patch
                 if(obj.mIsPatch) {
@@ -263,7 +263,7 @@ void Scene::load(const std::string& missionName) {
     std::string sceneCacheBin = missionFolder + "\\cache.bin";
     MFFormat::DataFormatCacheBIN cacheBin;
     auto cacheBinFile = Vfs::getFile(sceneCacheBin);
-    if(cacheBinFile.size() && cacheBin.load(cacheBinFile)) {
+    if(cacheBinFile.has_value() && cacheBin.load(cacheBinFile.value())) {
         for(const auto& obj : cacheBin.getObjects()) {
             for(const auto& instance : obj.mInstances) {
 

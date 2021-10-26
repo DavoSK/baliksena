@@ -2,6 +2,9 @@
 #include "mafia/parser_dta.hpp"
 #include "logger.hpp"
 
+#include <filesystem>
+#include <map>
+
 struct DtaFileEntry 
 {
     std::shared_ptr<std::ifstream> file;
@@ -16,7 +19,8 @@ struct DTAFile
     uint32_t fileKey2; 
 };
 
-std::unordered_map<size_t, DtaFileEntry> gFileMap;
+static std::unordered_map<size_t, DtaFileEntry> gFileMap;
+static std::vector<std::string> gMissionsList;
 
 std::vector<DTAFile> mFilesToFetchVer2 = {
     { "a8.dta", 0x6A63FA71, 0x0EC45D8CE },
@@ -35,8 +39,15 @@ std::vector<DTAFile> mFilesToFetchVer2 = {
     { "AB.dta", 0x7F3D9B74, 0x0EC48FE17 }
 };
 
+std::vector<std::string>& Vfs::getMissionsList() {
+    return gMissionsList;
+}
+
 void Vfs::init(const std::string& rootDir) {
     
+    //NOTE: open file descriptor for each DTA file
+    //and create mapping helper that can map to opened file descriptor based on needed filename
+    //note each file will be store in unoreder map as hash
     for(const auto& dtaFile : mFilesToFetchVer2) {    
         auto filePathToOpen = rootDir + dtaFile.fileName;
         auto dtaFileSteam = std::make_shared<std::ifstream>(filePathToOpen, std::ifstream::binary);
@@ -44,8 +55,21 @@ void Vfs::init(const std::string& rootDir) {
             auto currentDtaParser = std::make_shared<MFFormat::DataFormatDTA >();
             currentDtaParser->setDecryptKeys(dtaFile.fileKey1, dtaFile.fileKey2);
             if(currentDtaParser->load(*dtaFileSteam)) {
-                for(unsigned int i = 0; i < currentDtaParser->getNumFiles(); i++) {
+                for(auto i = 0; i < currentDtaParser->getNumFiles(); i++) {
                     auto fileName = MFUtil::strToLower(currentDtaParser->getFileName(i));
+
+                    //NOTE: create list of missions
+                    //missions are only in A1 dta file
+                    if(dtaFile.fileName == "A1.dta") {
+                        auto splitedPath = MFUtil::strSplit(fileName, '\\');
+                        if(splitedPath.size() == 3) {
+                            auto missionName = splitedPath[1];
+                            if(std::find(gMissionsList.begin(), gMissionsList.end(), missionName) == gMissionsList.end()) {
+                                gMissionsList.push_back(missionName);
+                            }
+                        }
+                    }
+
                     std::hash<std::string> hasher;
                     gFileMap[hasher(fileName)] = { 
                         dtaFileSteam,
@@ -58,10 +82,15 @@ void Vfs::init(const std::string& rootDir) {
             Logger::get().error("unable to open DTA: {}", filePathToOpen);
         }
     }
+
+    //NOTE: sort mission list alphabetically
+    auto cmpFunc = [](std::string a, std::string b) { return a < b; };
+    std::sort(gMissionsList.begin(),gMissionsList.end(), cmpFunc);
+
     Logger::get().info("VFS mounted");
 }
 
-MFUtil::ScopedBuffer Vfs::getFile(const std::string& filePath) {
+std::optional<MFUtil::ScopedBuffer> Vfs::getFile(const std::string& filePath) {
     std::hash<std::string> hasher;
     auto lowerFilePath = MFUtil::strToLower(filePath);
     const auto fileHash = hasher(lowerFilePath);
@@ -72,7 +101,7 @@ MFUtil::ScopedBuffer Vfs::getFile(const std::string& filePath) {
     }
 
     Logger::get().error("VFS unable to get file {}", filePath);
-    return { 0 };
+    return {};
 }
 
 void Vfs::destroy() {

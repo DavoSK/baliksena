@@ -266,13 +266,13 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
 
 std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) { 
     auto modelFile = Vfs::getFile(path);
-    if (!modelFile.size()) {
+    if (!modelFile.has_value()) {
         Logger::get().error("unable to load model {}", path);
         return nullptr;
     }
 
     MFFormat::DataFormat4DS modelParser;
-    if (!modelParser.load(modelFile)) {
+    if (!modelParser.load(modelFile.value())) {
         Logger::get().error("unable to load model {}", path);
         return nullptr;
     }
