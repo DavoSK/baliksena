@@ -9,7 +9,7 @@ struct DtaFileEntry
 {
     std::shared_ptr<std::ifstream> file;
     std::shared_ptr<MFFormat::DataFormatDTA> parser;
-    unsigned int fleIdx;
+    uint32_t fleIdx;
 };
 
 struct DTAFile
@@ -55,7 +55,7 @@ void Vfs::init(const std::string& rootDir) {
             auto currentDtaParser = std::make_shared<MFFormat::DataFormatDTA >();
             currentDtaParser->setDecryptKeys(dtaFile.fileKey1, dtaFile.fileKey2);
             if(currentDtaParser->load(*dtaFileSteam)) {
-                for(auto i = 0; i < currentDtaParser->getNumFiles(); i++) {
+                for(uint32_t i = 0; i < currentDtaParser->getNumFiles(); i++) {
                     auto fileName = MFUtil::strToLower(currentDtaParser->getFileName(i));
 
                     //NOTE: create list of missions

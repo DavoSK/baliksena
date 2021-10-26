@@ -17,7 +17,7 @@
 
 #include <filesystem>
 
-[[nodiscard]] glm::mat4 getMatrixFromMesh(MFFormat::DataFormat4DS::Mesh& mesh) {
+/*void getMatrixFromMesh(MFFormat::DataFormat4DS::Mesh& mesh) {
     glm::vec3 meshPos = { mesh.mPos.x, mesh.mPos.y, mesh.mPos.z };
     glm::vec3 meshScale = { mesh.mScale.x, mesh.mScale.y, mesh.mScale.z };
     glm::quat meshRot;
@@ -32,7 +32,7 @@
     const auto rot = glm::mat4(1.f) * glm::toMat4(meshRot);
     const auto world = translation * rot * scale;
     return world;
-}
+}*/
 
 [[nodiscard]] std::vector<std::string> makeAnimationNames(const std::string& baseFileName, unsigned int frames) {
     std::vector<std::string> result;
@@ -170,9 +170,19 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     }
 
     newMesh->setName(mesh.mMeshName);
-    newMesh->setMatrix(getMatrixFromMesh(mesh));
     newMesh->setStatic(isStaticMesh);
 
+    newMesh->setPos({mesh.mPos.x, mesh.mPos.y, mesh.mPos.z});
+    newMesh->setScale({mesh.mScale.x, mesh.mScale.y, mesh.mScale.z});
+
+    //NOTE: flip quaterion ( ls3d retardness )
+    glm::quat meshRot;
+    meshRot.w = mesh.mRot.w;
+    meshRot.x = mesh.mRot.x;
+    meshRot.y = mesh.mRot.y;
+    meshRot.z = mesh.mRot.z;
+    newMesh->setRot(meshRot);
+    
     if (!lods || lods->size() <= 0) {
         return newMesh;
     }
@@ -224,7 +234,17 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
 [[nodiscard]] std::shared_ptr<Dummy> loadDummy(MFFormat::DataFormat4DS::Mesh& mesh) {
     auto newMesh = std::make_shared<Dummy>();
     newMesh->setName(mesh.mMeshName);
-    newMesh->setMatrix(getMatrixFromMesh(mesh));
+    newMesh->setPos({mesh.mPos.x, mesh.mPos.y, mesh.mPos.z});
+    newMesh->setScale({mesh.mScale.x, mesh.mScale.y, mesh.mScale.z});
+
+    //NOTE: flip quaterion ( ls3d retardness )
+    glm::quat meshRot;
+    meshRot.w = mesh.mRot.w;
+    meshRot.x = mesh.mRot.x;
+    meshRot.y = mesh.mRot.y;
+    meshRot.z = mesh.mRot.z;
+    newMesh->setRot(meshRot);
+    
     auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mDummy.mMinBox.x, mesh.mDummy.mMinBox.y, mesh.mDummy.mMinBox.z},
                                                                {mesh.mDummy.mMaxBox.x, mesh.mDummy.mMaxBox.y, mesh.mDummy.mMaxBox.z});
     newMesh->setBBOX(bbox);
@@ -234,7 +254,17 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
 [[nodiscard]] std::shared_ptr<Sector> loadSector(MFFormat::DataFormat4DS::Mesh& mesh) {
     auto newMesh = std::make_shared<Sector>();
     newMesh->setName(mesh.mMeshName);
-    newMesh->setMatrix(getMatrixFromMesh(mesh));
+    newMesh->setPos({mesh.mPos.x, mesh.mPos.y, mesh.mPos.z});
+    newMesh->setScale({mesh.mScale.x, mesh.mScale.y, mesh.mScale.z});
+
+    //NOTE: flip quaterion ( ls3d retardness )
+    glm::quat meshRot;
+    meshRot.w = mesh.mRot.w;
+    meshRot.x = mesh.mRot.x;
+    meshRot.y = mesh.mRot.y;
+    meshRot.z = mesh.mRot.z;
+    newMesh->setRot(meshRot);
+
     auto bbox = std::make_pair<glm::vec3, glm::vec3>({mesh.mSector.mMinBox.x, mesh.mSector.mMinBox.y, mesh.mSector.mMinBox.z},
                                                     {mesh.mSector.mMaxBox.x, mesh.mSector.mMaxBox.y, mesh.mSector.mMaxBox.z});
     newMesh->setBBOX(bbox);

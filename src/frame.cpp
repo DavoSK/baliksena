@@ -1,5 +1,5 @@
 #include "frame.hpp"
-#include <glm/ext.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 void Frame::render() {
     if (!mOn) return;
@@ -91,4 +91,27 @@ std::shared_ptr<Frame> Frame::findNodeMaf(const std::string& path) const {
     }
 
     return findNode(path);
+}
+
+void Frame::setPos(const glm::vec3& pos) {
+    mPos = pos;
+    updateTransform();
+}
+
+void Frame::setRot(const glm::quat& rot) {
+    mRot = rot;
+    updateTransform();
+}
+
+void Frame::setScale(const glm::vec3& scale) {
+    mScale = scale;
+    updateTransform();
+}
+
+void Frame::updateTransform() {
+    const auto translation = glm::translate(glm::mat4(1.f), mPos);
+    const auto scale = glm::scale(glm::mat4(1.f), mScale);
+    const auto rot = glm::mat4(1.f) * glm::toMat4(mRot);
+    const auto world = translation * rot * scale;
+    setMatrix(world);
 }

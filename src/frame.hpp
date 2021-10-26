@@ -3,6 +3,10 @@
 #include "stats.hpp"
 
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
+#include <glm/gtc/matrix_transform.hpp> 
+#include <glm/gtx/quaternion.hpp>
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -68,7 +72,17 @@ public:
 
     std::shared_ptr<Frame> findNode(const std::string& name) const;
     std::shared_ptr<Frame> findNodeMaf(const std::string& path) const;
+
+    void setPos(const glm::vec3& pos);
+    [[nodiscard]] const glm::vec3& getPos() const { return mPos; }
+
+    void setRot(const glm::quat& rot);
+    [[nodiscard]] const glm::quat& getRot() const { return mRot; }
+
+    void setScale(const glm::vec3& scale);
+    [[nodiscard]] const glm::vec3& getScale() const { return mScale; }
 private:
+    void updateTransform();
     void updateAABBWorld();
     std::pair<glm::vec3, glm::vec3> mAABB;
     std::pair<glm::vec3, glm::vec3> mABBBWorld;
@@ -76,6 +90,9 @@ private:
     bool mIsTransformDirty;
     bool mOn;
     std::string mName;
+    glm::vec3 mScale;
+    glm::vec3 mPos;
+    glm::quat mRot;
     glm::mat4 mTransform;
     glm::mat4 mCachedTransform;
     Frame* mOwner;

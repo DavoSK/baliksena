@@ -192,48 +192,28 @@ void Scene::load(const std::string& missionName) {
                     }
                 }
             }
-
+            
             for(const auto& obj : patchObjects) {
                 auto nodeToPatch = this->findNodeMaf(obj.mName);
                 if(nodeToPatch) {
-                    glm::vec3 origScale;
-                    glm::quat origRotation;
-                    glm::vec3 origTranslation;
-                    glm::vec3 origSkew;
-                    glm::vec4 origPerspective;
-                    glm::decompose(nodeToPatch->getMatrix(), origScale, origRotation, origTranslation, origSkew, origPerspective);
-
-                    glm::vec3 meshPos {};
-                    glm::vec3 meshScale {};
-                    glm::quat meshRot {};
+                
+                    if(obj.mIsPosPatched) {
+                        nodeToPatch->setPos({obj.mPos.x, obj.mPos.y, obj.mPos.z});
+                    }
                     
-                    if( obj.mIsPosPatched ) {
-                        meshPos = {obj.mPos.x, obj.mPos.y, obj.mPos.z};
-                    } else {
-                        meshPos = origTranslation;
-                    } 
-                    
-                    if( obj.mIsScalePatched ) {
-                        meshScale = {obj.mScale.x, obj.mScale.y, obj.mScale.z};
-                    } else {
-                        meshScale = origScale;
+                    if(obj.mIsScalePatched) {
+                        nodeToPatch->setScale({obj.mScale.x, obj.mScale.y, obj.mScale.z});
                     }
 
                     if(obj.mIsRotPatched) {
+                        glm::quat meshRot {};
                         meshRot.w = obj.mRot.w;
                         meshRot.x = obj.mRot.x;
                         meshRot.y = obj.mRot.y;
                         meshRot.z = obj.mRot.z;
-                    } else {
-                        meshRot = origRotation;
+                        nodeToPatch->setRot(meshRot);
                     }
 
-                    const auto translation = glm::translate(glm::mat4(1.f), meshPos);
-                    const auto scale = glm::scale(glm::mat4(1.f), meshScale);
-                    const auto rot =  glm::mat4(1.f) * glm::toMat4(meshRot);
-                    const auto world = translation * rot * scale;
-
-                    nodeToPatch->setMatrix(world);
                     nodeToPatch->setOn(!obj.mIsHidden);      
 
                     //NOTE: if current parent its not same as patch parent
