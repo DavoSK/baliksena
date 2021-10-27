@@ -132,6 +132,7 @@ void Scene::load(const std::string& missionName) {
 
     // NOTE: load scene2 bin
     std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup;
+    std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup2;
 
     auto getParentNameForObject = [this](MFFormat::DataFormatScene2BIN::Object& obj) -> std::string {
         auto nodeName = std::string(obj.mName.c_str());
@@ -188,7 +189,7 @@ void Scene::load(const std::string& missionName) {
                     }
                 } else {
                     for (auto node : nodes) {
-                        Logger::get().warn("unable to get parrent: {} for: {}", parentName, node->getName());
+                        parentingGroup2[parentName].push_back(std::move(node));
                     }
                 }
             }
@@ -231,6 +232,20 @@ void Scene::load(const std::string& missionName) {
                     Logger::get().warn("unable to find node: {} for patching !", obj.mName);
                 }
             }
+
+            for (auto [parentName, nodes] : parentingGroup2) {
+                auto parent = this->findNodeMaf(parentName);
+                if (parent != nullptr) {
+                    for (auto node : nodes) {
+                        parent->addChild(std::move(node));
+                    }
+                } else {
+                    for (auto node : nodes) {
+                        Logger::get().error("unable to get parrent: {} for: {}", parentName, node->getName());
+                    }
+                }
+            }
+            //Logger::get().warn("unable to get parrent: {} for: {}", parentName, node->getName());
         }
     }
 

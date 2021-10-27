@@ -49,9 +49,12 @@ void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
 
 void Frame::updateAABBWorld() {
     const auto currentWorld = getWorldMatrix();
-    const auto min = glm::translate(currentWorld, mAABB.first);
-    const auto max = glm::translate(currentWorld, mAABB.second);
-    mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
+    // const auto min = glm::translate(currentWorld, mAABB.first);
+    // const auto max = glm::translate(currentWorld, mAABB.second);
+    // mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
+    const auto min = currentWorld * glm::vec4(mAABB.first, 1.0f);
+    const auto max = currentWorld * glm::vec4(mAABB.second, 1.0f);
+    mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min, max);
 }
 
 std::vector<std::string> split(std::string const& original, char separator) {
@@ -69,7 +72,7 @@ std::vector<std::string> split(std::string const& original, char separator) {
 }
 
 std::shared_ptr<Frame> Frame::findNode(const std::string& name) const {
-    auto res = std::find_if(mChilds.begin(), mChilds.end(), [&name](const auto& a) { return a->getName().compare(name) == 0; });
+    auto res = std::find_if(mChilds.begin(), mChilds.end(), [&name](const auto& a) { return a->getName() == name; });
     if (res != mChilds.end())
         return *res;
 
