@@ -180,6 +180,27 @@ void renderSceneWidget(Scene* scene) {
     renderNodeRecursively(scene);
 }
 
+glm::vec3 createRay() {
+    
+    auto* cam = App::get()->getScene()->getActiveCamera();
+    ImGuiIO& io = ImGui::GetIO();
+    // these positions must be in range [-1, 1] (!!!), not [0, width] and [0, height]
+    float mouseX = io.MousePos.x / (lastWsize.x  * 0.5f) - 1.0f;
+    float mouseY = io.MousePos.y / (lastWsize.y * 0.5f) - 1.0f;
+
+    glm::mat4 proj = glm::perspective(cam->getFOV(), cam->Aspect, cam->Near, cam->Far);
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f), cam->Front, cam->Up);
+
+    glm::mat4 invVP = glm::inverse(proj * view);
+    glm::vec4 screenPos = glm::vec4(mouseX, -mouseY, 1.0f, 1.0f);
+    glm::vec4 worldPos = invVP * screenPos;
+
+    glm::vec3 dir = glm::normalize(glm::vec3(worldPos));
+
+    return dir;
+}
+
+
 void Gui::render() {
     auto* scene = App::get()->getScene();
     auto* cam = scene->getActiveCamera();
@@ -261,6 +282,11 @@ void Gui::render() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("View");
     ImGui::BeginChild("GameRender");
+    if(io.MouseClicked)  {
+        auto ray = createRay();
+        printf("%f %f %f\n", ray.x, ray.y, ray.z);
+    }
+
     ImVec2 wsize = ImGui::GetWindowSize();
     if (wsize.x != lastWsize.x || wsize.y != lastWsize.y) {
         const auto width = static_cast<int>(wsize.x);

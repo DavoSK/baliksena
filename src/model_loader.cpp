@@ -281,6 +281,10 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
             return loadSector(mesh);
         } break;
         
+        /*case MFFormat::DataFormat4DS::MeshType::MESHTYPE_BONE: {
+            return loadBone(mesh);
+        } break;*/
+
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_COLLISION:
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_DUMMY: {
             return loadDummy(mesh);

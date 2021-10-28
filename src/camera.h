@@ -32,6 +32,9 @@ public:
     float MovementSpeed = SPEED;
     float MouseSensitivity = SENSITIVITY;
     float Zoom = ZOOM;
+    float Aspect = 0.0f;
+    float Near = 0.0f;
+    float Far = 0.0f;
 
     Camera() {
         updateCameraVectors();
