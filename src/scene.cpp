@@ -21,27 +21,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-[[nodiscard]] glm::mat4 getMatrixFromPosScaleRot(const MFMath::Vec3& mpos, const MFMath::Vec3& mscale, const MFMath::Quat& mrot) {
-    glm::vec3 meshPos = {mpos.x, mpos.y, mpos.z};
-    glm::vec3 meshScale = {mscale.x, mscale.y, mscale.z};
-    glm::quat meshRot;
-
-    meshRot.w = mrot.w;
-    meshRot.x = mrot.x;
-    meshRot.y = mrot.y;
-    meshRot.z = mrot.z;
-
-    const auto translation = glm::translate(glm::mat4(1.f), meshPos);
-    const auto scale = glm::scale(glm::mat4(1.f), meshScale);
-    const auto rot = glm::mat4(1.f) * glm::toMat4(meshRot);
-    const auto world = translation * rot * scale;
-    return world;
-}
-
-[[nodiscard]] glm::mat4 getMatrixFromInstance(const MFFormat::DataFormatCacheBIN::Instance& instance) {
-    return getMatrixFromPosScaleRot(instance.mPos, instance.mScale, instance.mRot);
-}
-
 void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector) {    
     if (!node) return;
 
@@ -132,8 +111,7 @@ void Scene::load(const std::string& missionName) {
 
     // NOTE: load scene2 bin
     std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup;
-    std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup2;
-
+ 
     auto getParentNameForObject = [this](MFFormat::DataFormatScene2BIN::Object& obj) -> std::string {
         auto nodeName = std::string(obj.mName.c_str());
         auto parentName = std::string(obj.mParentName.c_str());
@@ -175,29 +153,42 @@ void Scene::load(const std::string& missionName) {
 
                 //NOTE: is not patch
                 std::shared_ptr<Frame> loadedNode = objectFactory(objName.c_str(), obj);
-                loadedNode->setName(obj.mName.c_str());
-                loadedNode->setMatrix(getMatrixFromPosScaleRot(obj.mPos, obj.mScale, obj.mRot));
+                loadedNode->setName(obj.mName);
+                loadedNode->setPos({obj.mPos.x, obj.mPos.y, obj.mPos.z});
+                loadedNode->setScale({obj.mScale.x, obj.mScale.y, obj.mScale.z});
+
+                glm::quat meshRot {};
+                meshRot.w = obj.mRot.w;
+                meshRot.x = obj.mRot.x;
+                meshRot.y = obj.mRot.y;
+                meshRot.z = obj.mRot.z;
+                loadedNode->setRot(meshRot);
                 loadedNode->setOn(!obj.mIsHidden);
                 parentingGroup[getParentNameForObject(obj)].push_back(std::move(loadedNode));
             }
 
-            for (auto [parentName, nodes] : parentingGroup) {
-                auto parent = this->findNodeMaf(parentName);
-                if (parent != nullptr) {
-                    for (auto node : nodes) {
-                        parent->addChild(std::move(node));
-                    }
-                } else {
-                    for (auto node : nodes) {
-                        parentingGroup2[parentName].push_back(std::move(node));
+            //NOTE: multiple times cuz nodes are not sorted by dependecies of parents
+            for(size_t i = 0; i < 5; i++) {
+                for (auto& [parentName, nodes] : parentingGroup) {
+                    auto parent = this->findNodeMaf(parentName);
+                    if (parent != nullptr) {
+                        for (auto node : nodes) {
+                            parent->addChild(std::move(node));
+                        }
+                        nodes.clear();
+                    } else {
+                        if(i == 4) {
+                            for (auto node : nodes) {
+                                Logger::get().error("unable to get parrent: {} for: {}", parentName, node->getName());
+                            }
+                        }
                     }
                 }
             }
-            
+
             for(const auto& obj : patchObjects) {
                 auto nodeToPatch = this->findNodeMaf(obj.mName);
                 if(nodeToPatch) {
-                
                     if(obj.mIsPosPatched) {
                         nodeToPatch->setPos({obj.mPos.x, obj.mPos.y, obj.mPos.z});
                     }
@@ -229,42 +220,34 @@ void Scene::load(const std::string& missionName) {
                         }
                     }
                 } else {
-                    Logger::get().warn("unable to find node: {} for patching !", obj.mName);
+                    Logger::get().warn("[PATCH] unable to find node: {} for !", obj.mName);
                 }
             }
-
-            for (auto [parentName, nodes] : parentingGroup2) {
-                auto parent = this->findNodeMaf(parentName);
-                if (parent != nullptr) {
-                    for (auto node : nodes) {
-                        parent->addChild(std::move(node));
-                    }
-                } else {
-                    for (auto node : nodes) {
-                        Logger::get().error("unable to get parrent: {} for: {}", parentName, node->getName());
-                    }
-                }
-            }
-            //Logger::get().warn("unable to get parrent: {} for: {}", parentName, node->getName());
         }
     }
 
     //NOTE: load cachus binus
-    std::shared_ptr<Sector> nearSector = std::make_shared<Sector>();
-    nearSector->setName("Near sector");
-    mNearSector = nearSector;
-    addChild(nearSector);
+    std::shared_ptr<Sector> cacheBin = std::make_shared<Sector>();
+    cacheBin->setName("Cache bin");
+    mNearSector = cacheBin;
+    addChild(cacheBin);
 
     std::string sceneCacheBin = missionFolder + "\\cache.bin";
-    MFFormat::DataFormatCacheBIN cacheBin;
+    MFFormat::DataFormatCacheBIN cacheBinFormat;
     auto cacheBinFile = Vfs::getFile(sceneCacheBin);
-    if(cacheBinFile.has_value() && cacheBin.load(cacheBinFile.value())) {
-        for(const auto& obj : cacheBin.getObjects()) {
+    if(cacheBinFile.has_value() && cacheBinFormat.load(cacheBinFile.value())) {
+        for(const auto& obj : cacheBinFormat.getObjects()) {
             for(const auto& instance : obj.mInstances) {
-
                 auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName);
                 if(model != nullptr) {
-                    model->setMatrix(getMatrixFromInstance(instance));
+                    model->setPos({instance.mPos.x, instance.mPos.y, instance.mPos.z});
+                    model->setScale({instance.mScale.x, instance.mScale.y, instance.mScale.z});
+                    glm::quat meshRot {};
+                    meshRot.w = instance.mRot.w;
+                    meshRot.x = instance.mRot.x;
+                    meshRot.y = instance.mRot.y;
+                    meshRot.z = instance.mRot.z;
+                    model->setRot(meshRot);
                     mNearSector->addChild(std::move(model));
                 }
             }

@@ -91,6 +91,18 @@ std::shared_ptr<Frame> Frame::findNodeMaf(const std::string& path) const {
         auto splitedPath = split(path, '.');
         auto parentNode = findNode(splitedPath[0]);
         return parentNode != nullptr ? parentNode->findNode(splitedPath[1]) : nullptr;
+        /*if(!parentNode) {
+            return nullptr;
+        }
+        
+        for(size_t i = 1; i < splitedPath.size() - 1; i++) {
+            parentNode = parentNode->findNode(splitedPath[i]);
+            if(parentNode == nullptr) {
+                return nullptr;
+            }
+        }
+
+        return parentNode;*/
     }
 
     return findNode(path);

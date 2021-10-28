@@ -20,6 +20,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
     desc.sample_count       = 4;
     desc.window_title       = "Senko";
     desc.gl_force_gles2     = true;
+    desc.enable_clipboard   = true;
     desc.icon.sokol_default = false;
     return desc;
 }
