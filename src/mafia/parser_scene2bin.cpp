@@ -102,45 +102,152 @@ void DataFormatScene2BIN::readHeader(MFUtil::ScopedBuffer& srcFile, Header* head
     }
 }
 
-void DataFormatScene2BIN::readLm(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
-    // int lmLevel = 1;
-    // uint8_t unk1;
-    // read(srcFile, &unk1);
-
-    // if (!unk1)
-    //     return;
-
-    // uint32_t v6 = 0;
-    // uint32_t v7 = 1;
-    // uint32_t v8 = 8;
-
-    // do
-    // {
-    //     if ( ((unsigned __int8)v7 & unk1) != 0 )
-    //     ++v6;
-    //     v7 *= 2;
-    //     --v8;
-    // }
-    // while ( v8 );
-
-    // unk1 = v6;
-
-    // if ( !v6 )
-    //     return;
-
-    // struct LMStruct {
-    //     uint8_t data[15];
-    // };
-
-    // while( 1 ) 
-    // {
-    //     LMStruct lm {};
-    //     read(srcFile, &lm);
-
-
-    // }
-    // Logger::get().info("[LM] count: {}", v6);
+int countSetBits(uint8_t n)
+{
+    if (n == 0)
+        return 0;
+    else
+        return (n & 1) + countSetBits(n >> 1);
 }
+
+DataFormatScene2BIN::VertexLightmap DataFormatScene2BIN::readLmVertexData(MFUtil::ScopedBuffer& srcFile) {
+    VertexLightmap vertexLm{};
+    read(srcFile, &vertexLm.mNumVertices);
+    for(size_t i = 0; i < vertexLm.mNumVertices; i++) {
+        uint32_t vertex;
+        read(srcFile, &vertex);
+        vertexLm.mData.push_back(vertex);
+    }
+
+    return vertexLm;
+}
+
+DataFormatScene2BIN::Bitmap DataFormatScene2BIN::readLmBitmap(MFUtil::ScopedBuffer& srcFile, BitmapType type) {
+    Bitmap bitmap{};
+    read(srcFile, &bitmap.mWidth);
+    read(srcFile, &bitmap.mHeight);
+
+    if(type == BitmapType::Bitmap) {
+        std::vector<BitmapPixel> pixels;
+        for(size_t i = 0; i < bitmap.mWidth * bitmap.mHeight; i++) {
+            BitmapPixel pixel;
+            read(srcFile, &pixel);
+            pixels.push_back(pixel);
+           
+        }
+
+        bitmap.mData = pixels;
+    }
+    return bitmap;
+}
+
+DataFormatScene2BIN::BitmapGroup DataFormatScene2BIN::readLmBitmapGroup(MFUtil::ScopedBuffer& srcFile) {
+    BitmapGroup bitmapGroup{};
+    read(srcFile, &bitmapGroup.mType);
+
+    if(bitmapGroup.mType == BitmapType::SingleColor) {
+        uint32_t color = 0x0;
+        read(srcFile, &color);
+        bitmapGroup.mColor = color;
+    }
+
+    read(srcFile, &bitmapGroup.mNumBitmaps);
+
+    for(size_t i = 0; i < bitmapGroup.mNumBitmaps; i++) {
+        bitmapGroup.mBitmaps.push_back(readLmBitmap(srcFile, bitmapGroup.mType));
+    }
+
+    return bitmapGroup;
+}
+
+DataFormatScene2BIN::BitmapLightmap DataFormatScene2BIN::readLmBitmapData(MFUtil::ScopedBuffer& srcFile) {
+    BitmapLightmap bitmapLm{};
+    read(srcFile, &bitmapLm.mNumBitmapGroups);
+    read(srcFile, &bitmapLm.mNumFaceGroups);
+
+    for(size_t i = 0; i < bitmapLm.mNumBitmapGroups; i++) {
+        bitmapLm.mBitmapGroups.push_back(readLmBitmapGroup(srcFile));
+    }
+
+    read(srcFile, &bitmapLm.mNumVertices);
+    for(size_t i = 0; i < bitmapLm.mNumVertices; i++) {
+        BitmapLightmapVertex vertex {};
+        read(srcFile, &vertex);
+        bitmapLm.mVertices.push_back(vertex);
+    }
+
+    for(size_t i = 0; i < bitmapLm.mNumVertices; i++) {
+        uint32_t groupTable;
+        read(srcFile, &groupTable);
+        bitmapLm.mVertexBitmapGroupTable.push_back(groupTable);
+    }
+
+    read(srcFile, &bitmapLm.mNumIndices);
+
+    for(size_t i = 0; i < bitmapLm.mNumIndices; i++) {
+        uint16_t indice;
+        read(srcFile, &indice);
+        bitmapLm.mIndices.push_back(indice);
+    }
+
+    for(size_t i = 0; i < bitmapLm.mNumFaceGroups; i++) {
+        FaceGroup faceGroup{};
+        read(srcFile, &faceGroup.mNumFaces);
+        for(size_t j = 0; j < faceGroup.mNumFaces; j++) {
+            uint16_t fgroupIndice;
+            read(srcFile, &fgroupIndice);
+            faceGroup.mBitmapIndices.push_back(fgroupIndice);
+        }
+        bitmapLm.mFaceGroups.push_back(faceGroup);
+    }
+
+    return bitmapLm;
+}
+
+DataFormatScene2BIN::LodLevel DataFormatScene2BIN::readLmLodLevel(MFUtil::ScopedBuffer& srcFile, uint8_t flags) {
+    LodLevel lodLevel{};
+    read(srcFile, &lodLevel.mNumVertices);
+
+    if (flags & LM_VERTEX) {
+        lodLevel.mVertexLightmapData = readLmVertexData(srcFile);
+    }
+    else if (flags & LM_BITMAP){
+         lodLevel.mBitmapLightmapData = readLmBitmapData(srcFile);
+    }
+
+    return lodLevel;
+}
+
+DataFormatScene2BIN::LightmapLevel DataFormatScene2BIN::readLmLevel(MFUtil::ScopedBuffer& srcFile) {
+    LightmapLevel level{};  
+    read(srcFile, &level.mVersion);
+    if(level.mVersion != 33) {
+        int test = 0;
+        test++;
+    }
+
+    read(srcFile, &level.mFlags);
+    read(srcFile, &level.mNumLods);
+    read(srcFile, &level.mResolution);
+    read(srcFile, &level.mUnk);
+    read(srcFile, &level.mLevel);
+    
+    for(size_t i = 0; i < level.mNumLods; i++) {
+        level.mLodLevels.push_back(readLmLodLevel(srcFile, (uint8_t)level.mFlags));
+    }
+
+    return level;
+}
+
+void DataFormatScene2BIN::readLm(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
+    Lightmap lightMap = {};
+    read(srcFile, &lightMap.mLightmapLevels);
+
+    const auto lmLevels = countSetBits(lightMap.mLightmapLevels);
+    for(size_t i = 0; i < lmLevels; i++) {
+        lightMap.mLevels.push_back(readLmLevel(srcFile));
+    }
+}  
 
 void DataFormatScene2BIN::readObject(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object, uint32_t offset) {
     switch (header->mType) {

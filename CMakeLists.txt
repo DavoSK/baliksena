@@ -20,6 +20,8 @@ include_directories(vendors
     src
     shaders/include
     vendors/spdlog/include
+    vendors/imgui
+    vendors/imguizmo
 )
 
 add_executable(baliksena 
@@ -48,10 +50,17 @@ add_executable(baliksena
     src/texture.cpp 
     src/material.cpp
     src/logger.cpp
+
     vendors/imgui/imgui.cpp
     vendors/imgui/imgui_draw.cpp
     vendors/imgui/imgui_tables.cpp
     vendors/imgui/imgui_widgets.cpp
+
+    vendors/imguizmo/ImGuizmo.cpp
+    vendors/imguizmo/ImSequencer.cpp
+    vendors/imguizmo/ImGradient.cpp
+    vendors/imguizmo/ImCurveEdit.cpp
+    vendors/imguizmo/GraphEditor.cpp
  )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

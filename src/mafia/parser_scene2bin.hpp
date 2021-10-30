@@ -2,6 +2,8 @@
 #define FORMAT_PARSERS_SCENE2_BIN_H
 
 #include <cstring>
+#include <optional>
+
 #include "math.hpp"
 #include "base_parser.hpp"
 #include "utils.hpp"
@@ -92,6 +94,101 @@ public:
     } Header;
     #pragma pack(pop)
 
+    //NOTE: lmap structs
+    enum class BitmapType : uint8_t
+    {
+        Bitmap      = 0,
+        SingleColor = 1,
+    };
+
+    typedef enum : uint8_t
+    {
+        LM_VERTEX = 1 << 0,
+        LM_BITMAP = 1 << 1,
+        LM_BUILD = 1 << 2,
+    } LightmapLevelFlags;
+
+    struct VertexLightmap
+    {
+        uint32_t mNumVertices;
+        std::vector<uint32_t> mData;
+    };
+
+    struct BitmapPixel
+    {
+        uint8_t mData[3];
+    };
+
+    struct Bitmap
+    {
+        uint32_t mWidth;
+        uint32_t mHeight;
+        //NOTE: optional field depends on type
+        //if single color no data is used
+        std::optional<std::vector<BitmapPixel>> mData;
+    };
+
+    struct BitmapGroup
+    {
+        BitmapType mType;
+        //NOTE: optional field depends on type
+        std::optional<uint32_t> mColor;
+        uint32_t mNumBitmaps;
+        std::vector<Bitmap> mBitmaps;
+    };
+
+    struct BitmapLightmapVertex
+    {
+        float mU;
+        float mV;
+    };
+
+    struct FaceGroup
+    {
+        uint32_t mNumFaces;
+        std::vector<uint16_t> mBitmapIndices;
+    };
+
+    struct BitmapLightmap
+    {
+        uint16_t mNumBitmapGroups;
+        uint16_t mNumFaceGroups;
+        std::vector<BitmapGroup> mBitmapGroups; //NumBitmapGroups
+        uint32_t mNumVertices;
+        std::vector<BitmapLightmapVertex> mVertices; //NumVertices
+        std::vector<uint32_t> mVertexBitmapGroupTable; //NumVertices
+        uint32_t mNumIndices;
+        std::vector<uint16_t> mIndices; //NumIndices
+        std::vector<FaceGroup> mFaceGroups; //NumFaceGroups
+    };
+    
+    struct LodLevel
+    {
+        uint16_t mNumVertices;
+        std::optional<VertexLightmap> mVertexLightmapData;
+        std::optional<BitmapLightmap> mBitmapLightmapData;
+    };
+
+    struct LightmapLevel
+    {
+        //NOTE: always 0x21
+        uint8_t mVersion;
+        LightmapLevelFlags mFlags;
+        //NOTE: should match the associated mesh's lod count
+        uint32_t mNumLods;
+        float mResolution;
+        float mUnk;
+        uint8_t mLevel;
+        std::vector<LodLevel> mLodLevels; //NumLods
+    };
+
+    struct Lightmap
+    {
+        //NOTE: bitmap indicating the lightmap levels covered by this lightmap
+        uint8_t mLightmapLevels;
+        std::vector<LightmapLevel> mLevels; //num_set_bits(mLightmapLevels)
+    };
+
     typedef struct _Object
     {
         bool mIsPatch = true;
@@ -152,6 +249,14 @@ private:
     void readHeader(MFUtil::ScopedBuffer&srcFile, Header* header, uint32_t offset);
     void readObject(MFUtil::ScopedBuffer&srcFile, Header* header, Object* object, uint32_t offset);
     void readLight (MFUtil::ScopedBuffer&srcFile, Header* header, Object* object);
+
+    VertexLightmap readLmVertexData(MFUtil::ScopedBuffer& srcFile);
+
+    Bitmap readLmBitmap(MFUtil::ScopedBuffer& srcFile, BitmapType type);
+    BitmapGroup readLmBitmapGroup(MFUtil::ScopedBuffer& srcFile);
+    BitmapLightmap readLmBitmapData(MFUtil::ScopedBuffer& srcFile);
+    LodLevel readLmLodLevel(MFUtil::ScopedBuffer& srcFile, uint8_t flags);
+    LightmapLevel readLmLevel(MFUtil::ScopedBuffer& srcFile);
     void readLm(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object);
     
     std::unordered_map<std::string, Object> mObjects;

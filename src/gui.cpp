@@ -4,9 +4,17 @@
 #include "scene.hpp"
 #include "camera.h"
 #include "stats.hpp"
-#include "imgui_ansi.hpp"
-#include "imgui/IconsFontAwesome5.h"
 #include "vfs.hpp"
+#include "logger.hpp"
+
+#include "imgui_ansi.hpp"
+#include "IconsFontAwesome5.h"
+
+#include "ImGuizmo.h"
+#include "ImSequencer.h"
+#include "ImZoomSlider.h"
+#include "ImCurveEdit.h"
+#include "GraphEditor.h"
 
 #include <string>
 #include <vector>
@@ -14,12 +22,49 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+namespace ImGui
+{
+    static auto vector_getter = [](void* vec, int idx, const char** out_text)
+    {
+        auto& vector = *static_cast<std::vector<std::string>*>(vec);
+        if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+        *out_text = vector.at(idx).c_str();
+        return true;
+    };
+
+    bool Combo(const char* label, int* currIndex, std::vector<std::string>& values)
+    {
+        if (values.empty()) { return false; }
+        return Combo(label, currIndex, vector_getter,
+            static_cast<void*>(&values), values.size());
+    }
+
+    bool ListBox(const char* label, int* currIndex, std::vector<std::string>& values)
+    {
+        if (values.empty()) { return false; }
+        return ListBox(label, currIndex, vector_getter,
+            static_cast<void*>(&values), values.size());
+    }
+};
+
 static char gNodeSearchText[32] = {};
 static size_t gNodeSearchTexLen = 0;
 static std::unordered_map<uint32_t, std::vector<std::string>> gLogBuffer;
 static Frame* gSelectedNode = nullptr;
 static int gButtonIdCnt = 0;
 static ImVec2 lastWsize;
+
+struct {
+    ImGuizmo::OPERATION mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+    ImGuizmo::MODE mCurrentGizmoMode = ImGuizmo::WORLD;
+
+    bool useSnap = false;
+    float snap[3] = { 1.f, 1.f, 1.f };
+    float bounds[6] = { -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f };
+    float boundsSnap[3] = { 0.1f, 0.1f, 0.1f };
+    bool boundSizing = false;
+    bool boundSizingSnap = false;
+} gizmo;
 
 bool doesContainChildNode(Frame* frame, const char* frameName) {
     if (!frame) return false;
@@ -73,20 +118,28 @@ void renderInspectWidget(Frame* frame) {
 
     ImGui::Separator();
 
-    glm::vec3 origScale;
-    glm::quat origRotation;
-    glm::vec3 origTranslation;
-    glm::vec3 origSkew;
-    glm::vec4 origPerspective;
-    glm::decompose(frame->getMatrix(), origScale, origRotation, origTranslation, origSkew, origPerspective);
+    //NOTE: render guizmo controlls
+    auto frameMatrix = frame->getMatrix();
+    if (ImGui::RadioButton("Translate",  gizmo.mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+         gizmo.mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Rotate", gizmo.mCurrentGizmoOperation == ImGuizmo::ROTATE))
+         gizmo.mCurrentGizmoOperation = ImGuizmo::ROTATE;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Scale",  gizmo.mCurrentGizmoOperation == ImGuizmo::SCALE))
+         gizmo.mCurrentGizmoOperation = ImGuizmo::SCALE;
 
-    ImGui::Text("Pos: %f %f %f", origTranslation.x, origTranslation.y, origTranslation.z);
-    ImGui::Text("Rot: %f %f %f %f", origRotation.x, origRotation.y, origRotation.z, origRotation.w);
-    ImGui::Text("Scale: %f %f %f", origScale.x, origScale.y, origScale.z);
-
+    float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+    ImGuizmo::DecomposeMatrixToComponents(reinterpret_cast<const float*>(&frameMatrix), matrixTranslation, matrixRotation, matrixScale);
+    ImGui::InputFloat3("Transl", matrixTranslation);
+    ImGui::InputFloat3("Rotation", matrixRotation);
+    ImGui::InputFloat3("Scale", matrixScale);
+    
+    //NOTE: teleport button
     if(ImGui::Button("Teleport")) {
         if(auto* cam = App::get()->getScene()->getActiveCamera()) {
-            cam->Position = origTranslation;
+            auto worldMat = gSelectedNode->getWorldMatrix();
+            cam->Position = glm::vec3(worldMat[3]);
         }
     }
 }
@@ -120,39 +173,17 @@ void renderTerminalWidget() {
         gLogBuffer.clear();
     }
 
+    ImGui::BeginChild("##scrolling");
     for(const auto& msg : gLogBuffer[currentLogLevel]) {
         ImGui::TextAnsiUnformatted(msg.c_str(), nullptr);
     }
+    ImGui::SetScrollHereY();
+    ImGui::EndChild();
 }
-
-namespace ImGui
-{
-    static auto vector_getter = [](void* vec, int idx, const char** out_text)
-    {
-        auto& vector = *static_cast<std::vector<std::string>*>(vec);
-        if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
-        *out_text = vector.at(idx).c_str();
-        return true;
-    };
-
-    bool Combo(const char* label, int* currIndex, std::vector<std::string>& values)
-    {
-        if (values.empty()) { return false; }
-        return Combo(label, currIndex, vector_getter,
-            static_cast<void*>(&values), values.size());
-    }
-
-    bool ListBox(const char* label, int* currIndex, std::vector<std::string>& values)
-    {
-        if (values.empty()) { return false; }
-        return ListBox(label, currIndex, vector_getter,
-            static_cast<void*>(&values), values.size());
-    }
-};
 
 void renderSceneWidget(Scene* scene) {
     auto& missionList = Vfs::getMissionsList();
-    static int currentMissionIdx = 0;  
+    static int currentMissionIdx = 49;  
     ImGui::Combo("##missionscombo", &currentMissionIdx, missionList); 
 
     ImGui::SameLine();
@@ -180,26 +211,133 @@ void renderSceneWidget(Scene* scene) {
     renderNodeRecursively(scene);
 }
 
-glm::vec3 createRay() {
-    
-    auto* cam = App::get()->getScene()->getActiveCamera();
-    ImGuiIO& io = ImGui::GetIO();
-    // these positions must be in range [-1, 1] (!!!), not [0, width] and [0, height]
-    float mouseX = io.MousePos.x / (lastWsize.x  * 0.5f) - 1.0f;
-    float mouseY = io.MousePos.y / (lastWsize.y * 0.5f) - 1.0f;
-
-    glm::mat4 proj = glm::perspective(cam->getFOV(), cam->Aspect, cam->Near, cam->Far);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f), cam->Front, cam->Up);
-
-    glm::mat4 invVP = glm::inverse(proj * view);
-    glm::vec4 screenPos = glm::vec4(mouseX, -mouseY, 1.0f, 1.0f);
-    glm::vec4 worldPos = invVP * screenPos;
-
-    glm::vec3 dir = glm::normalize(glm::vec3(worldPos));
-
-    return dir;
+void editTransform(float* cameraView, float* cameraProjection, float* matrix, float* deltaMat) {
+    ImGuizmo::SetDrawlist();
+    auto windowWidth  = (float)ImGui::GetWindowWidth();
+    auto windowHeight = (float)ImGui::GetWindowHeight();
+    ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
+    ImGuizmo::Manipulate(cameraView, 
+        cameraProjection, 
+        gizmo.mCurrentGizmoOperation, 
+        gizmo.mCurrentGizmoMode, 
+        matrix, 
+        deltaMat, 
+        gizmo.useSnap ? &gizmo.snap[0] : nullptr, 
+        gizmo.boundSizing ? gizmo.bounds : nullptr, 
+        gizmo.boundSizingSnap ? gizmo.boundsSnap : nullptr
+    );
 }
 
+glm::vec2 getNormalizedCoords() {
+    ImGuiIO& io = ImGui::GetIO();
+    auto windowPos = ImGui::GetWindowPos();
+    auto windowSize = ImGui::GetWindowSize();
+    float x = -((windowSize.x - (io.MousePos.x - windowPos.x)) / windowSize.x - 0.5f) * 2.0f;
+    float y = ((windowSize.y - (io.MousePos.y - windowPos.y)) / windowSize.y - 0.5f) * 2.0f;
+    return {x, y};
+}
+
+glm::vec4 toEyeCoords(glm::vec4 clipCoords, const glm::mat4& projection) {
+    glm::vec4 invertedProjection = glm::inverse(projection) * clipCoords;
+    return glm::vec4(invertedProjection.x, invertedProjection.y, 1.0f, 0.0f);
+}
+
+glm::vec3 toWorldCoords(glm::vec4 eyeCoords, const glm::mat4& view) {
+    glm::vec3 rayWorld = glm::vec3(glm::inverse(view) * eyeCoords);
+    glm::vec3 mouseRay = glm::vec3(rayWorld.x, rayWorld.y, rayWorld.z);
+    return glm::normalize(rayWorld);
+}
+
+glm::vec3 createRay(Camera* cam) {
+    auto normalizedCoords = getNormalizedCoords();
+    glm::vec4 clipCoords = glm::vec4(normalizedCoords.x, normalizedCoords.y, -1.0f, 1.0f);
+    glm::vec4 eyeCoords = toEyeCoords(clipCoords, cam->getProjMatrix());
+    glm::vec3 worldRay = toWorldCoords(eyeCoords, cam->getViewMatrix());
+    return worldRay;
+}
+
+bool wasClickedInViewport() {
+    ImGuiIO& io = ImGui::GetIO();
+    const auto windowPos = ImGui::GetWindowPos();
+    const auto windowSize = ImGui::GetWindowSize();
+    const auto x = io.MousePos.x - windowPos.x;
+    const auto y = io.MousePos.y - windowPos.y;
+    return ImGui::IsMouseClicked(ImGuiMouseButton_Left, true) && 
+           !ImGuizmo::IsUsing() && 
+           !ImGuizmo::IsOver() && ( x >= 0.0f && x <= windowSize.x && 
+        y >= 0.0f && y <= windowSize.y);
+}
+
+void getNearesetFrame(const glm::vec3& pos, Frame* node, float* dist, std::optional<Frame*>& foundFrame) {    
+    if (!node) return;
+
+    const auto isPointInsideAABB = [](const glm::vec3& point, const glm::vec3& min, const glm::vec3& max) -> bool {
+        return (point.x >= min.x && point.x <= max.x) && (point.y >= min.y && point.y <= max.y) && (point.z >= min.z && point.z <= max.z);
+    };
+
+    // const auto& wmat = node->getWorldBBOX();
+    // if(glm::length(wmat.first) > 0.0f && 
+    //    glm::length(wmat.second) > 0.0f && isPointInsideAABB(pos, wmat.first, wmat.second)) {
+        
+    //     glm::vec3 center = glm::vec3((wmat.first.x + wmat.second.x) / 2.0f, ( wmat.first.y + wmat.second.y) /2, ( wmat.first.z + wmat.second.z ) / 2);
+    //     float distLen = glm::length(center - pos);
+    //     if(distLen < *dist) {
+    //         *dist = distLen;
+    //         foundFrame = node;
+    //     }
+    // }
+
+    const auto& wmat = node->getWorldMatrix();
+    const auto meshPos = glm::vec3(wmat[3]);
+    if(glm::length(meshPos) > 0.0f) {
+        const auto distLen = glm::length(meshPos - pos);
+        if(distLen < *dist) {
+            *dist = distLen;
+            foundFrame = node;
+        }
+    }
+
+    for (const auto& node : node->getChilds()) {
+        getNearesetFrame(pos, node.get(), dist, foundFrame);
+    }
+};
+
+void renderImGuizmo(Scene* scene) {
+    if(auto* cam = scene->getActiveCamera()) {
+        //NOTE: do raycast for frame picking
+        if(wasClickedInViewport()) {
+            constexpr float toAdd  = 0.15f;
+            auto rayDir = createRay(cam);
+            auto rayStart = cam->Position;
+
+            float someDistance = toAdd;
+            std::optional<Frame*> pickedFrame;
+            float dist = std::numeric_limits<float>::max();
+            for(size_t i = 0; i < 1000; i++) {
+                glm::vec3 currentPoint = rayStart + (rayDir * someDistance);
+                getNearesetFrame(currentPoint, scene, &dist, pickedFrame);
+                 someDistance += toAdd;
+            }
+
+            if(pickedFrame.has_value()) {
+                gSelectedNode = pickedFrame.value();
+            }
+        }
+
+        if(gSelectedNode == nullptr) return;
+        glm::mat4 view = cam->getViewMatrix();
+        glm::mat4 proj = cam->getProjMatrix();
+        glm::mat4 nodeWorld = gSelectedNode->getWorldMatrix();
+        glm::mat4 deltaMat = glm::mat4(1.0f);
+        editTransform(reinterpret_cast<float*>(&view), 
+                        reinterpret_cast<float*>(&proj), 
+                        reinterpret_cast<float*>(&nodeWorld), 
+                        reinterpret_cast<float*>(&deltaMat));
+        if(ImGuizmo::IsUsing()) {
+            gSelectedNode->setMatrix(gSelectedNode->getMatrix() * deltaMat);
+        }
+    }
+}
 
 void Gui::render() {
     auto* scene = App::get()->getScene();
@@ -282,10 +420,6 @@ void Gui::render() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("View");
     ImGui::BeginChild("GameRender");
-    if(io.MouseClicked)  {
-        auto ray = createRay();
-        printf("%f %f %f\n", ray.x, ray.y, ray.z);
-    }
 
     ImVec2 wsize = ImGui::GetWindowSize();
     if (wsize.x != lastWsize.x || wsize.y != lastWsize.y) {
@@ -301,6 +435,7 @@ void Gui::render() {
     }
 
     ImGui::Image((ImTextureID)(Renderer::getRenderTargetTexture().id), wsize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+    renderImGuizmo(scene);
     ImGui::EndChild();
     ImGui::End();
     ImGui::PopStyleVar();

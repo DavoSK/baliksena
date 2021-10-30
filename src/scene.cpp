@@ -145,6 +145,12 @@ void Scene::load(const std::string& missionName) {
         MFFormat::DataFormatScene2BIN sceneBin;
         if (sceneBin.load(sceneBinFile.value())) {
             for (auto& [objName, obj] : sceneBin.getObjects()) {
+                if(obj.mName.find("trezor") != std::string::npos) {
+                    std::cout << obj.mName << std::endl;
+                    int test = 0;
+                    test++;
+                }
+
                 //NOTE: check if node is patch
                 if(obj.mIsPatch) {
                     patchObjects.push_back(obj);
