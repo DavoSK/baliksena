@@ -16,6 +16,7 @@ enum class FrameType
     ALL = -1,
     FRAME, 
     MESH,
+    MODEL,
     DUMMY,
     SECTOR,
     BILLBOARD,
@@ -70,8 +71,7 @@ public:
     void setOn(bool on) { mOn = on; }
     bool isOn() const { return mOn; }
 
-    std::shared_ptr<Frame> findNode(const std::string& name) const;
-    std::shared_ptr<Frame> findNodeMaf(const std::string& path) const;
+    std::shared_ptr<Frame> findFrame(const std::string& name) const;
 
     void setPos(const glm::vec3& pos);
     [[nodiscard]] const glm::vec3& getPos() const { return mPos; }

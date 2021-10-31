@@ -60,7 +60,7 @@ void Scene::load(const std::string& missionName) {
     std::string scenePath = missionFolder + "\\scene.4ds";
     std::shared_ptr<Sector> primarySector = std::make_shared<Sector>();
     
-    auto loadedModel = ModelLoader::loadModel(scenePath.c_str());
+    auto loadedModel = ModelLoader::loadModel(scenePath.c_str(), "scene");
     for (auto childNode : loadedModel->getChilds()) {
         primarySector->addChild(childNode);
     }
@@ -80,7 +80,7 @@ void Scene::load(const std::string& missionName) {
 
     auto loadSceneModel = [modelsFolder](const std::string& objpath, MFFormat::DataFormatScene2BIN::Object& object) -> std::shared_ptr<Frame> {
         auto modelPath = modelsFolder + std::string(object.mModelName.c_str());
-        return ModelLoader::loadModel(modelPath.c_str());
+        return ModelLoader::loadModel(modelPath.c_str(), object.mName);
     };
 
     auto loadSector = [&](const std::string& objPath, MFFormat::DataFormatScene2BIN::Object& object) -> std::shared_ptr<Sector> {
@@ -176,7 +176,7 @@ void Scene::load(const std::string& missionName) {
             //NOTE: multiple times cuz nodes are not sorted by dependecies of parents
             for(size_t i = 0; i < 5; i++) {
                 for (auto& [parentName, nodes] : parentingGroup) {
-                    auto parent = this->findNodeMaf(parentName);
+                    auto parent = this->findFrame(parentName);
                     if (parent != nullptr) {
                         for (auto node : nodes) {
                             parent->addChild(std::move(node));
@@ -193,7 +193,7 @@ void Scene::load(const std::string& missionName) {
             }
 
             for(const auto& obj : patchObjects) {
-                auto nodeToPatch = this->findNodeMaf(obj.mName);
+                auto nodeToPatch = this->findFrame(obj.mName);
                 if(nodeToPatch) {
                     if(obj.mIsPosPatched) {
                         nodeToPatch->setPos({obj.mPos.x, obj.mPos.y, obj.mPos.z});
@@ -214,21 +214,20 @@ void Scene::load(const std::string& missionName) {
 
                     nodeToPatch->setOn(!obj.mIsHidden);      
 
-                    //NOTE: if current parent its not same as patch parent
-                    //we need to reparent our node
-                    if(!obj.mParentName.empty()) {
-                        if(nodeToPatch->getOwner()->getName() != obj.mParentName) {
-                            auto patchedNodeParent = this->findNodeMaf(obj.mParentName);
-                            if(patchedNodeParent) {
-                                nodeToPatch->getOwner()->removeChild(nodeToPatch);
-                                patchedNodeParent->addChild(std::move(nodeToPatch));
-                            }
+                    //NOTE: look if we need to reparent
+                    if(obj.mIsParentPatched) {
+                        auto patchedNodeParent = this->findFrame(obj.mParentName);
+                        if(patchedNodeParent) {
+                            nodeToPatch->getOwner()->removeChild(nodeToPatch);
+                            patchedNodeParent->addChild(std::move(nodeToPatch));
                         }
                     }
                 } else {
                     Logger::get().warn("[PATCH] unable to find node: {} for !", obj.mName);
                 }
             }
+
+            invalidateTransformRecursively();
         }
     }
 
@@ -244,7 +243,7 @@ void Scene::load(const std::string& missionName) {
     if(cacheBinFile.has_value() && cacheBinFormat.load(cacheBinFile.value())) {
         for(const auto& obj : cacheBinFormat.getObjects()) {
             for(const auto& instance : obj.mInstances) {
-                auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName);
+                auto model = ModelLoader::loadModel(modelsFolder + instance.mModelName, obj.mObjectName);
                 if(model != nullptr) {
                     model->setPos({instance.mPos.x, instance.mPos.y, instance.mPos.z});
                     model->setScale({instance.mScale.x, instance.mScale.y, instance.mScale.z});

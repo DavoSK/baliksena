@@ -71,41 +71,19 @@ std::vector<std::string> split(std::string const& original, char separator) {
     return results;
 }
 
-std::shared_ptr<Frame> Frame::findNode(const std::string& name) const {
+std::shared_ptr<Frame> Frame::findFrame(const std::string& name) const {
     auto res = std::find_if(mChilds.begin(), mChilds.end(), [&name](const auto& a) { return a->getName() == name; });
     if (res != mChilds.end())
         return *res;
 
-    std::shared_ptr<Frame> foundNode = nullptr;
-    for (const auto& node : mChilds) {
-        foundNode = node->findNode(name);
-        if (foundNode != nullptr) 
-            return foundNode;
+    std::shared_ptr<Frame> foundFrame = nullptr;
+    for (const auto& frame : mChilds) {
+        foundFrame = frame->findFrame(name);
+        if (foundFrame != nullptr) 
+            return foundFrame;
     }
 
     return nullptr;
-}
-
-std::shared_ptr<Frame> Frame::findNodeMaf(const std::string& path) const {
-    if(path.find(".") != std::string::npos) {
-        auto splitedPath = split(path, '.');
-        auto parentNode = findNode(splitedPath[0]);
-        return parentNode != nullptr ? parentNode->findNode(splitedPath[1]) : nullptr;
-        /*if(!parentNode) {
-            return nullptr;
-        }
-        
-        for(size_t i = 1; i < splitedPath.size() - 1; i++) {
-            parentNode = parentNode->findNode(splitedPath[i]);
-            if(parentNode == nullptr) {
-                return nullptr;
-            }
-        }
-
-        return parentNode;*/
-    }
-
-    return findNode(path);
 }
 
 void Frame::setPos(const glm::vec3& pos) {

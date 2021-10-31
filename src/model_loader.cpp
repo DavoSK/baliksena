@@ -298,7 +298,7 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
     return nullptr;
 }
 
-std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) { 
+std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path, const std::string& modelName) { 
     auto modelFile = Vfs::getFile(path);
     if (!modelFile.has_value()) {
         Logger::get().error("unable to load model {}", path);
@@ -312,7 +312,7 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     }
 
     auto parserModel = modelParser.getModel();
-    auto modelName = std::filesystem::path(path).filename().string();
+    //auto modelName = std::filesystem::path(path).filename().replace_extension("").string();
     auto model = std::make_shared<Model>();
     model->setName(modelName);
 
@@ -329,6 +329,10 @@ std::shared_ptr<Model> ModelLoader::loadModel(const std::string& path) {
     for (size_t i = 0; i < loadedMeshes.size(); i++) {
         auto currentMesh = loadedMeshes[i];
         auto currentMafiaMesh = parserModel.mMeshes[i];
+
+        if(modelName.find("scene") == std::string::npos) {
+            currentMesh->setName(modelName + "." + currentMesh->getName());
+        }
 
         if (currentMafiaMesh.mParentID > 0) {
             auto parentNode = loadedMeshes[currentMafiaMesh.mParentID - 1];

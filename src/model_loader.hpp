@@ -5,5 +5,5 @@
 class Model;
 class ModelLoader {
 public: 
-	static std::shared_ptr<Model> loadModel(const std::string& path);
+	static std::shared_ptr<Model> loadModel(const std::string& path, const std::string& modelName);
 };

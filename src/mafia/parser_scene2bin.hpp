@@ -95,11 +95,11 @@ public:
     #pragma pack(pop)
 
     //NOTE: lmap structs
-    enum class BitmapType : uint8_t
+    typedef enum BitmapType : uint8_t
     {
-        Bitmap      = 0,
-        SingleColor = 1,
-    };
+        LM_BITMAP_TYPE_BITMAP = 0,
+        LM_BITMAP_TYPE_COLOR = 1,
+    } BitmapType;
 
     typedef enum : uint8_t
     {
@@ -230,6 +230,8 @@ public:
             float mWeight;
             int32_t mSound;
         } mSpecialProps;
+
+        std::optional<Lightmap> mLightMap;
     } Object;
 
     virtual bool load(MFUtil::ScopedBuffer&srcFile);

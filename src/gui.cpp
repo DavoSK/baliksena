@@ -451,15 +451,6 @@ void Gui::render() {
     ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
     ImGui::Separator();
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    
-    static char test[40] = {0};
-    ImGui::InputText("Find node", test, 40);
-    if(ImGui::Button("Find")) {
-        if(auto node = scene->findNodeMaf(test)) {
-            printf("%s\n", node->getName().c_str());
-        }
-    }
-
     ImGui::End();
 }
 

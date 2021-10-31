@@ -102,14 +102,6 @@ void DataFormatScene2BIN::readHeader(MFUtil::ScopedBuffer& srcFile, Header* head
     }
 }
 
-int countSetBits(uint8_t n)
-{
-    if (n == 0)
-        return 0;
-    else
-        return (n & 1) + countSetBits(n >> 1);
-}
-
 DataFormatScene2BIN::VertexLightmap DataFormatScene2BIN::readLmVertexData(MFUtil::ScopedBuffer& srcFile) {
     VertexLightmap vertexLm{};
     read(srcFile, &vertexLm.mNumVertices);
@@ -127,7 +119,7 @@ DataFormatScene2BIN::Bitmap DataFormatScene2BIN::readLmBitmap(MFUtil::ScopedBuff
     read(srcFile, &bitmap.mWidth);
     read(srcFile, &bitmap.mHeight);
 
-    if(type == BitmapType::Bitmap) {
+    if(type == LM_BITMAP_TYPE_BITMAP) {
         std::vector<BitmapPixel> pixels;
         for(size_t i = 0; i < bitmap.mWidth * bitmap.mHeight; i++) {
             BitmapPixel pixel;
@@ -145,7 +137,7 @@ DataFormatScene2BIN::BitmapGroup DataFormatScene2BIN::readLmBitmapGroup(MFUtil::
     BitmapGroup bitmapGroup{};
     read(srcFile, &bitmapGroup.mType);
 
-    if(bitmapGroup.mType == BitmapType::SingleColor) {
+    if(bitmapGroup.mType == LM_BITMAP_TYPE_COLOR) {
         uint32_t color = 0x0;
         read(srcFile, &color);
         bitmapGroup.mColor = color;
@@ -221,11 +213,7 @@ DataFormatScene2BIN::LodLevel DataFormatScene2BIN::readLmLodLevel(MFUtil::Scoped
 DataFormatScene2BIN::LightmapLevel DataFormatScene2BIN::readLmLevel(MFUtil::ScopedBuffer& srcFile) {
     LightmapLevel level{};  
     read(srcFile, &level.mVersion);
-    if(level.mVersion != 33) {
-        int test = 0;
-        test++;
-    }
-
+    assert(level.mVersion == 33); 
     read(srcFile, &level.mFlags);
     read(srcFile, &level.mNumLods);
     read(srcFile, &level.mResolution);
@@ -239,6 +227,13 @@ DataFormatScene2BIN::LightmapLevel DataFormatScene2BIN::readLmLevel(MFUtil::Scop
     return level;
 }
 
+int countSetBits(uint8_t n){
+    if (n == 0)
+        return 0;
+    else
+        return (n & 1) + countSetBits(n >> 1);
+}
+
 void DataFormatScene2BIN::readLm(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
     Lightmap lightMap = {};
     read(srcFile, &lightMap.mLightmapLevels);
@@ -247,6 +242,8 @@ void DataFormatScene2BIN::readLm(MFUtil::ScopedBuffer& srcFile, Header* header, 
     for(size_t i = 0; i < lmLevels; i++) {
         lightMap.mLevels.push_back(readLmLevel(srcFile));
     }
+
+    object->mLightMap = lightMap;    
 }  
 
 void DataFormatScene2BIN::readObject(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object, uint32_t offset) {
