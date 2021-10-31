@@ -13,13 +13,14 @@
 
 enum class FrameType
 {
-    ALL = -1,
-    FRAME, 
-    MESH,
-    MODEL,
-    DUMMY,
-    SECTOR,
-    BILLBOARD,
+    All = -1,
+    Frame, 
+    Mesh,
+    Model,
+    Dummy,
+    Light,
+    Sector,
+    Billboard,
 };
 
 class Frame {
@@ -38,7 +39,7 @@ public:
         gStats.framesInUse--;
     }
 
-    virtual constexpr FrameType getType() const { return FrameType::FRAME; }
+    virtual constexpr FrameType getFrameType() const { return FrameType::Frame; }
     virtual void render();
 
     void setOwner(Frame* frame) { mOwner = frame; }
@@ -81,7 +82,7 @@ public:
 
     void setScale(const glm::vec3& scale);
     [[nodiscard]] const glm::vec3& getScale() const { return mScale; }
-private:
+protected:
     void updateTransform();
     void updateAABBWorld();
     std::pair<glm::vec3, glm::vec3> mAABB;

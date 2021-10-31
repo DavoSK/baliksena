@@ -8,14 +8,13 @@
 class Mesh;
 class Material;
 
-//NOTE: verties that share's same material
 class FaceGroup {
 public:
-    explicit FaceGroup(std::vector<uint16_t> indices, 
-		       std::weak_ptr<Mesh> mesh) :
-        mIndices(std::move(indices)),
-        mMesh(mesh) {
-        
+    explicit FaceGroup(
+        std::vector<uint16_t> indices, 
+		std::weak_ptr<Mesh> mesh) :
+            mIndices(std::move(indices)),
+            mMesh(mesh) {
         mIndicesCount = mIndices.size();
     }
 
@@ -36,7 +35,7 @@ private:
 
 class Mesh : public Frame {
 public:
-    FrameType getType() const override { return FrameType::MESH; }
+    [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Mesh; }
 
     void setVertices(std::vector<Renderer::Vertex> vertices);
     [[nodiscard]] const std::vector<Renderer::Vertex>& getVertices () { return mVertices; }

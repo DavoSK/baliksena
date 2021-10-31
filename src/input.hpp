@@ -6,8 +6,6 @@
 
 class Input {
 public:
-    Input() {}
-    ~Input()  {}
     void updateFromSokolEvent(const sapp_event* e);
     bool isKeyDown(sapp_keycode keyCode) { return mKeysState[keyCode]; }
     const glm::vec2& getMouseDelta() const { return mMouseDelta; }
@@ -19,5 +17,5 @@ private:
     glm::vec2 mMouseDelta = {0.0f, 0.0f};
     glm::vec3 mMoveDir = {0.0f, 0.0f, 0.0f};
     std::unordered_map<sapp_keycode, bool> mKeysState;
-    bool mIsMouseLocked { false };
+    bool mIsMouseLocked{ false };
 };

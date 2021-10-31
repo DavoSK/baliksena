@@ -41,6 +41,8 @@ add_executable(baliksena
     src/mesh.cpp
     src/billboard.cpp
     src/model.cpp
+    src/light.cpp
+    src/lit_object.cpp
     src/bmp_loader.cpp
     src/model_loader.cpp
     src/renderer.cpp

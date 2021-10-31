@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include "frame.hpp"
+#include "light.hpp"
 #include "app.hpp"
 #include "scene.hpp"
 #include "camera.h"
@@ -103,13 +104,38 @@ void renderNodeRecursively(Frame* frame) {
     }
 }
 
+void renderLightWidget(Light* light) {
+    glm::vec3 diffuse = light->getDiffuse();
+    if(ImGui::ColorPicker3("Diffuse", (float*)&diffuse)) {
+        light->setDiffuse(diffuse);
+    }
+
+    ImGui::Separator();
+
+    switch(light->getType()){
+        case LightType::Dir: {
+            glm::vec3 dir = light->getDir();
+            if(ImGui::InputFloat3("Dir", (float*)&dir)) {
+                light->setDir(dir);
+            }
+        } break;
+        case LightType::Point: {
+            glm::vec3 pos = light->getPos();
+            if(ImGui::InputFloat3("Pos", (float*)&pos)) {
+                light->setPos(pos);
+            }
+        } break;
+        default:
+            break;
+    }
+}
 void renderInspectWidget(Frame* frame) {
     if(frame == nullptr)
         return;
 
     ImGui::Text("Frame name: %s", frame->getName().c_str());
     ImGui::Text("Frame owner: %s", frame->getOwner() != nullptr ? frame->getOwner()->getName().c_str() : nullptr);
-    ImGui::Text("Frame type: %d", frame->getType());
+    ImGui::Text("Frame type: %d", frame->getFrameType());
 
     bool isFrameOn = frame->isOn();
     if(ImGui::Checkbox("Frame ON", &isFrameOn)) {
@@ -141,6 +167,10 @@ void renderInspectWidget(Frame* frame) {
             auto worldMat = gSelectedNode->getWorldMatrix();
             cam->Position = glm::vec3(worldMat[3]);
         }
+    }
+
+    if(gSelectedNode->getFrameType() == FrameType::Light) {
+        renderLightWidget(dynamic_cast<Light*>(gSelectedNode));
     }
 }
 

@@ -7,6 +7,6 @@ public:
     Billboard() { gStats.billboardsInUse++; }
     ~Billboard() { gStats.billboardsInUse--; }
 
-    FrameType getType() const override { return FrameType::BILLBOARD; }
+    [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Billboard; }
     void render() override;
 };

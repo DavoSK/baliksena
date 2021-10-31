@@ -10,9 +10,8 @@
 #include "vfs.hpp"
 #include "input.hpp"
 #include "app.hpp"
-
-#include "mafia/parser_cachebin.hpp"
-#include "mafia/parser_scene2bin.hpp"
+#include "light.hpp"
+#include "mafia/utils.hpp"
 
 #include <functional>
 #include <memory>
@@ -21,14 +20,14 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector) {    
+void Scene::getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector) {    
     if (!node) return;
 
     const auto isPointInsideAABB = [](const glm::vec3& point, const glm::vec3& min, const glm::vec3& max) -> bool {
         return (point.x >= min.x && point.x <= max.x) && (point.y >= min.y && point.y <= max.y) && (point.z >= min.z && point.z <= max.z);
     };
 
-    if (node->getType() == FrameType::SECTOR) {
+    if (node->getFrameType() == FrameType::Sector) {
         const auto& sectorBBox = node->getBBOX();
         const auto& mat = node->getWorldMatrix();
         const auto min = glm::translate(mat, sectorBBox.first);
@@ -36,7 +35,7 @@ void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>&
 
         if (isPointInsideAABB(pos, min[3], max[3])) {
             foundSector = reinterpret_cast<Sector*>(node);
-        } else return;
+        }
     }
 
     for (const auto& node : node->getChilds()) {
@@ -44,10 +43,74 @@ void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>&
     }
 };
 
-std::vector<std::string> split(std::string const& original, char separator);
+std::unordered_map<std::string, std::vector<std::shared_ptr<Light>>> gLightsParenting;
+
+std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Object& object) {
+    auto light = std::make_shared<Light>();
+
+    //NOTE: skip this light ( dunno why )
+    if (!(object.mLightFlags & (1 << 0))) 
+        return light;
+
+    switch (object.mLightType) {
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_DIRECTIONAL: {
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            light->setType(LightType::Dir);
+            light->setDiffuse(glm::normalize(color * object.mLightPower));
+            light->setDir(glm::normalize(glm::vec3({object.mPos.x, object.mPos.y, object.mPos.z})));
+            //Logger::get().info("dir light: {}", object.mName);
+        } break;
+        
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
+            //Logger::get().info("amb light: {}", object.mName);
+            return light;
+        } break;
+
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_POINT: {
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            light->setType(LightType::Point);
+            light->setPos({object.mPos2.x, object.mPos2.y, object.mPos2.z});
+            light->setDiffuse(color * object.mLightPower);
+            light->setRange(object.mLightFar);
+            Logger::get().info("point light: {}", object.mName);
+        } break;
+
+        default: {
+            return light;
+        } break;
+    }
+
+    //NOTE: second check light sectors, only
+    //if we have light type implemented
+    if(!object.mParentName.empty()) {
+        if (gLightsParenting.find(object.mParentName) == gLightsParenting.end()) {
+            gLightsParenting[object.mParentName].push_back(light);
+        }
+    } else {
+        gLightsParenting["x"].push_back(light);
+    }
+
+    auto splitedSectors = std::string(object.mLightSectors);
+    for(auto splitedString : MFUtil::strSplit(splitedSectors, ',')) {
+        if (gLightsParenting.find(splitedString) == gLightsParenting.end()) {
+            gLightsParenting[splitedString].push_back(light);
+        }
+    }
+
+    return light;
+}
+
+std::shared_ptr<Sector> Scene::loadSector(const MFFormat::DataFormatScene2BIN::Object& object) {
+    return std::make_shared<Sector>();
+}
+
+std::shared_ptr<Model> Scene::loadModel(const MFFormat::DataFormatScene2BIN::Object& object) {
+    return ModelLoader::loadModel("MODELS\\" + object.mModelName, object.mName);
+}
 
 void Scene::load(const std::string& missionName) {
     clear();
+    gLightsParenting.clear();
 
     Logger::get().info("loading mission {}", missionName);
     setName(missionName);
@@ -78,43 +141,30 @@ void Scene::load(const std::string& missionName) {
     mBackdropSector = backdropSector;
     addChild(backdropSector);
 
-    auto loadSceneModel = [modelsFolder](const std::string& objpath, MFFormat::DataFormatScene2BIN::Object& object) -> std::shared_ptr<Frame> {
-        auto modelPath = modelsFolder + std::string(object.mModelName.c_str());
-        return ModelLoader::loadModel(modelPath.c_str(), object.mName);
-    };
-
-    auto loadSector = [&](const std::string& objPath, MFFormat::DataFormatScene2BIN::Object& object) -> std::shared_ptr<Sector> {
-        std::shared_ptr<Sector> parent = std::make_shared<Sector>();
-        parent->setName( object.mName.c_str());
-        return parent;
-    };
-
-    auto objectFactory = [&](const std::string& objName, MFFormat::DataFormatScene2BIN::Object& obj) -> std::shared_ptr<Frame> {
+    auto objectFactory = [&](MFFormat::DataFormatScene2BIN::Object& obj) -> std::shared_ptr<Frame> {
         switch (obj.mType) {
-            // case MFFormat::DataFormatScene2BIN::ObjectType::OBJECT_TYPE_LIGHT: {
-            //     return loadSceneLight(objName, obj);
-            // } break;
+            case MFFormat::DataFormatScene2BIN::ObjectType::OBJECT_TYPE_LIGHT: {
+                return loadLight(obj);
+            } break;
 
             case MFFormat::DataFormatScene2BIN::ObjectType::OBJECT_TYPE_MODEL: {
-                return loadSceneModel(objName, obj);
+                return loadModel(obj);
             } break;
 
             case MFFormat::DataFormatScene2BIN::ObjectType::OBJECT_TYPE_SECTOR: {
-                return loadSector(objName, obj);
+                return loadSector(obj);
             } break;
         }
 
-        auto dummyFrame = std::make_shared<Frame>();
-        dummyFrame->setName(objName);
-        return dummyFrame;
+        return std::make_shared<Frame>();
     };
 
     // NOTE: load scene2 bin
     std::unordered_map<std::string, std::vector<std::shared_ptr<Frame>>> parentingGroup;
  
     auto getParentNameForObject = [this](MFFormat::DataFormatScene2BIN::Object& obj) -> std::string {
-        auto nodeName = std::string(obj.mName.c_str());
-        auto parentName = std::string(obj.mParentName.c_str());
+        auto nodeName = obj.mName;
+        auto parentName = obj.mParentName;
 
         if (parentName.length() == 0) {
             glm::vec3 worldPosOfSector = { obj.mPos2.x, obj.mPos2.y, obj.mPos2.z };
@@ -145,12 +195,6 @@ void Scene::load(const std::string& missionName) {
         MFFormat::DataFormatScene2BIN sceneBin;
         if (sceneBin.load(sceneBinFile.value())) {
             for (auto& [objName, obj] : sceneBin.getObjects()) {
-                if(obj.mName.find("trezor") != std::string::npos) {
-                    std::cout << obj.mName << std::endl;
-                    int test = 0;
-                    test++;
-                }
-
                 //NOTE: check if node is patch
                 if(obj.mIsPatch) {
                     patchObjects.push_back(obj);
@@ -158,7 +202,7 @@ void Scene::load(const std::string& missionName) {
                 }
 
                 //NOTE: is not patch
-                std::shared_ptr<Frame> loadedNode = objectFactory(objName.c_str(), obj);
+                std::shared_ptr<Frame> loadedNode = objectFactory(obj);
                 loadedNode->setName(obj.mName);
                 loadedNode->setPos({obj.mPos.x, obj.mPos.y, obj.mPos.z});
                 loadedNode->setScale({obj.mScale.x, obj.mScale.y, obj.mScale.z});
@@ -224,6 +268,27 @@ void Scene::load(const std::string& missionName) {
                     }
                 } else {
                     Logger::get().warn("[PATCH] unable to find node: {} for !", obj.mName);
+                }
+            }
+
+            for(const auto& [lightSector, lights] : gLightsParenting) {
+                if(lightSector == "x") {
+                    for(auto lightToPush : lights) {
+                        std::optional<Sector*> foundSector;
+                        glm::vec3 worldPos = lightToPush->getPos();
+                        getSectorOfPoint(worldPos, this, foundSector);
+                        if (foundSector.has_value()) {
+                            foundSector.value()->pushLight(lightToPush);
+                        }
+                    }
+                } else {
+                
+                    auto foundSector = findFrame(lightSector);
+                    if (foundSector != nullptr && foundSector->getFrameType() == FrameType::Sector) {
+                        for(auto lightToPush : lights) {
+                            (std::dynamic_pointer_cast<Sector>(foundSector))->pushLight(lightToPush);
+                        }
+                    }
                 }
             }
 

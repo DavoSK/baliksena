@@ -46,6 +46,21 @@ public:
         bool hasTransparencyKey;
     };
 
+    struct DirLight {
+        glm::vec3 direction;
+        glm::vec3 ambient;
+        glm::vec3 diffuse;
+        glm::vec3 specular;
+    };
+
+    struct PointLight {
+        glm::vec3 position;
+        glm::vec3 ambient;
+        glm::vec3 diffuse;
+        glm::vec3 specular;
+        float range;
+    };
+
     struct Vertex {
         glm::vec3 p;
         glm::vec3 n;
@@ -73,6 +88,9 @@ public:
     static void bindBuffers();
 
     static void setModel(const glm::mat4& model);
+    static void setDirLight(const DirLight& light);
+    static void setPointLights(const std::vector<PointLight>& lights);
+
     static void applyUniforms();
 
     static void setViewMatrix(const glm::mat4& view);

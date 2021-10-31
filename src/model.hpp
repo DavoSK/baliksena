@@ -15,7 +15,7 @@ class Model : public Frame {
 public:
     Model() { gStats.modelsInUse++; }
     ~Model() { gStats.modelsInUse--; }
-    constexpr FrameType getType() const override { return FrameType::MODEL; }
+    constexpr FrameType getFrameType() const override { return FrameType::Model; }
 
     void render() override;
     void init();

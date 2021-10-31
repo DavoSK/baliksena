@@ -20,10 +20,11 @@
 #include <glm/gtx/transform.hpp>
 
 //NOTE: shaders
-#include "shader_basic.h"
+/*#include "shader_basic.h"
 #include "shader_cutout.h" 
 #include "shader_billboard.h" 
-#include "shader_env.h"
+#include "shader_env.h"*/
+#include "shader_universal.h"
 #include "shader_skybox.h"
 
 #include "renderer.hpp"
@@ -40,7 +41,7 @@ static struct {
         sg_shader shader;
         sg_pipeline pip[2];
 
-        sg_shader cutoutShader;
+    /*    sg_shader cutoutShader;
         sg_pipeline cutoutPip[2];
 
         sg_shader envShader;
@@ -48,6 +49,7 @@ static struct {
 
         sg_shader billboardShader;
         sg_pipeline billboardPip[2];
+    */
 
         //NOTE: skybox will have backface culling always on
         //why not ?
@@ -62,12 +64,19 @@ static struct {
         sg_image colorImg;
     }  offscreen;
 
+    sg_image emptyTexture;
+
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
     glm::vec3 viewPos;
+
     Renderer::Material material;
     Renderer::RenderPass pass;
+
+    //NOTE: lights
+    Renderer::DirLight dirLight;
+    std::vector<Renderer::PointLight> pointLights;
 } state;
 
 void Renderer::createRenderTarget(int width, int height) {
@@ -131,6 +140,20 @@ void Renderer::init() {
     /* a render pass with one color- and one depth-attachment image */
     createRenderTarget(sapp_width(), sapp_height());
 
+    /* create empty texture */
+    sg_image_desc imageDesc {};
+    imageDesc.width         = 1;
+    imageDesc.height        = 1;
+    imageDesc.pixel_format  = SG_PIXELFORMAT_RGBA8;
+    imageDesc.wrap_u        = SG_WRAP_REPEAT;
+    imageDesc.wrap_v        = SG_WRAP_REPEAT;
+    imageDesc.min_filter    = SG_FILTER_LINEAR;
+    imageDesc.mag_filter    = SG_FILTER_LINEAR;
+
+    uint32_t pixel = 0xFFFFFFFF;
+    imageDesc.data = { (void*)&pixel, static_cast<size_t>(4) };
+    state.emptyTexture = sg_make_image(&imageDesc);
+
     /* depth buffer stuff */
     sg_depth_state depthState{};
     depthState.compare = SG_COMPAREFUNC_LESS_EQUAL;
@@ -139,15 +162,15 @@ void Renderer::init() {
 
     /* create layout for ofscreen pipelines */
     sg_layout_desc layoutDesc{};
-    layoutDesc.attrs[ATTR_basic_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
-    layoutDesc.attrs[ATTR_basic_vs_aNormal].format      = SG_VERTEXFORMAT_FLOAT3;
-    layoutDesc.attrs[ATTR_basic_vs_aTexCoord].format    = SG_VERTEXFORMAT_FLOAT2;
+    layoutDesc.attrs[ATTR_universal_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
+    layoutDesc.attrs[ATTR_universal_vs_aNormal].format      = SG_VERTEXFORMAT_FLOAT3;
+    layoutDesc.attrs[ATTR_universal_vs_aTexCoord].format    = SG_VERTEXFORMAT_FLOAT2;
 
     constexpr int OFFSCREEN_SAMPLE_COUNT = 4;
 
-    //NOTE: basic shader
+    //NOTE: universal shader
     {
-        state.offscreen.shader          = sg_make_shader(basic_simple_shader_desc(sg_query_backend()));
+        state.offscreen.shader          = sg_make_shader(universal_universal_shader_desc(sg_query_backend()));
 
         sg_pipeline_desc pipelineDesc   = {};
         pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
@@ -158,16 +181,16 @@ void Renderer::init() {
         pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
 
         pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
-        pipelineDesc.label              = "diffuse-pipeline";
+        pipelineDesc.label              = "universal-pipeline";
         state.offscreen.pip[0]          = sg_make_pipeline(&pipelineDesc);
 
         pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
-        pipelineDesc.label              = "diffuse-pipeline-backfaceculled";
+        pipelineDesc.label              = "universal-pipeline-backfaceculled";
         state.offscreen.pip[1]          = sg_make_pipeline(&pipelineDesc);
     }
 
     //NOTE: cutout shader
-    {
+    /*{
         state.offscreen.cutoutShader    = sg_make_shader(cutout_cutout_shader_desc(sg_query_backend()));
 
         sg_pipeline_desc pipelineDesc   = {};
@@ -232,7 +255,7 @@ void Renderer::init() {
         pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
         pipelineDesc.label              = "billboard-pipeline-backfaceculled";
         state.offscreen.billboardPip[1] = sg_make_pipeline(&pipelineDesc);
-    }
+    }*/
 
     //NOTE: skybox shader
     {
@@ -254,16 +277,17 @@ void Renderer::init() {
 }
 
 void Renderer::destroy() {
+    sg_destroy_image(state.emptyTexture);
     sg_destroy_shader(state.offscreen.shader);
-    sg_destroy_shader(state.offscreen.cutoutShader);
+    /*sg_destroy_shader(state.offscreen.cutoutShader);
     sg_destroy_shader(state.offscreen.envShader);
-    sg_destroy_shader(state.offscreen.billboardShader);
+    sg_destroy_shader(state.offscreen.billboardShader);*/
 
     for(size_t i = 0; i < 2; i++) {
         sg_destroy_pipeline(state.offscreen.pip[i]);
-        sg_destroy_pipeline(state.offscreen.cutoutPip[i]);
+        /*sg_destroy_pipeline(state.offscreen.cutoutPip[i]);
         sg_destroy_pipeline(state.offscreen.envPip[i]);
-        sg_destroy_pipeline(state.offscreen.billboardPip[i]);
+        sg_destroy_pipeline(state.offscreen.billboardPip[i]);*/
     }
 
     sg_destroy_shader(state.offscreen.skyboxShader);
@@ -334,15 +358,22 @@ void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
 
 void Renderer::bindMaterial(const Material& material) {
     if(material.diffuseTexture.has_value()) {
-        bindTexture(material.diffuseTexture.value(), SLOT_basic_texture1);
+        bindTexture(material.diffuseTexture.value(), SLOT_universal_diffuseSampler);
+    } else {
+        bindTexture({state.emptyTexture.id}, SLOT_universal_diffuseSampler);
+    }
+
+    if(state.pass == RenderPass::SKYBOX) {
+        bindTexture({SG_INVALID_ID}, SLOT_universal_envSampler);
+        return;
     }
 
     if (material.envTexture.has_value()) {
-        bindTexture(material.envTexture.value(), SLOT_env_envSampler);
+        bindTexture(material.envTexture.value(), SLOT_universal_envSampler);
     } else {
-        bindTexture({SG_INVALID_ID}, SLOT_env_envSampler);
+        bindTexture({state.emptyTexture.id}, SLOT_universal_envSampler);
     }
-
+    
     state.material = material;
 }
 
@@ -401,25 +432,7 @@ void Renderer::bindBuffers() {
     if(state.pass == Renderer::RenderPass::SKYBOX) {
         sg_apply_pipeline(state.offscreen.skyboxPip);
     } else {
-        //NOTE: get index in our pipeline array based if its boudle sided material or not
-        size_t piplineIdx = state.material.isDoubleSided ? 0 : 1;
-        switch (state.material.kind) {
-            case MaterialKind::BILLBOARD: {
-                sg_apply_pipeline(state.offscreen.billboardPip[piplineIdx]);
-            } break;
-
-            case MaterialKind::ENV: {
-                sg_apply_pipeline(state.offscreen.envPip[piplineIdx]);
-            } break;
-
-            case MaterialKind::CUTOUT: {
-                sg_apply_pipeline(state.offscreen.cutoutPip[piplineIdx]);
-            } break;
-
-            default: {
-                sg_apply_pipeline(state.offscreen.pip[piplineIdx]);
-            } break;
-        }
+        sg_apply_pipeline(state.offscreen.pip[state.material.isDoubleSided ? 0 : 1]);
     }
 
     sg_apply_bindings(&state.offscreen.bind);
@@ -429,8 +442,15 @@ void Renderer::setModel(const glm::mat4& model) {
     state.model = model;
 }
 
-void Renderer::applyUniforms() {
+void Renderer::setDirLight(const DirLight& light) {    
+    state.dirLight = light;
+}
 
+void Renderer::setPointLights(const std::vector<PointLight>& lights) {
+    state.pointLights = lights;   
+}
+
+void Renderer::applyUniforms() {
     if(state.pass == Renderer::RenderPass::SKYBOX) {
         skybox_vs_params_t vertexUniforms{
             state.model,
@@ -447,73 +467,75 @@ void Renderer::applyUniforms() {
         return;
     }
 
-    switch(state.material.kind) {
-        case MaterialKind::BILLBOARD: {
-            //NOTE: apply vertex stage uniforms
-            {
-                billboard_vs_params_t vsUniforms {
-                    state.model,
-                    state.view,
-                    state.proj
-                };
+    //NOTE: apply vertex stage uniforms
+    {
+        //NOTE since sokol uses only floating point uniforms
+        //we need to stick with that :/
+        const auto isBillboard = state.material.kind == MaterialKind::BILLBOARD ? 1.0f : 0.0f;
+        universal_vs_params_t vertexUniforms{
+            state.model,
+            state.view,
+            state.proj,
+            state.viewPos,
+            isBillboard
+        };
 
-                sg_range vsUniformsRange{
-                    &vsUniforms,
-                    sizeof(billboard_vs_params_t)
-                };
+        sg_range uniformsRange{
+            &vertexUniforms,
+            sizeof(universal_vs_params_t)
+        };
 
-                sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &vsUniformsRange);
+        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_universal_vs_params, &uniformsRange);
+    }
+
+    //NOTE: apply fragment state uniforms
+    {
+        universal_fs_params_t fsUniforms{};
+        fsUniforms.pointLightsCount = (float)state.pointLights.size();
+        fsUniforms.envMode = state.material.envTexture.has_value() ? static_cast<float>(state.material.envTextureBlending) : 3.0f;
+        fsUniforms.envRatio = state.material.envTextureBlendingRatio;
+    
+        sg_range fsUniformsRange{
+            &fsUniforms,
+            sizeof(universal_fs_params_t)
+        };
+
+        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_params, &fsUniformsRange);
+
+        //NOTE: apply dir light uniform
+        universal_fs_dir_light_t fsDirLight = {};
+        fsDirLight.direction = state.dirLight.direction;
+        fsDirLight.ambient = state.dirLight.ambient;
+        fsDirLight.diffuse = state.dirLight.diffuse;
+        fsDirLight.specular = state.dirLight.specular;
+
+        sg_range fsDirLighRange{
+            &fsDirLight,
+            sizeof(universal_fs_dir_light_t)
+        };
+        
+        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_dir_light, &fsDirLighRange);
+
+        //NOTE: apply point lights uniform
+        universal_fs_point_lights_t fsPointLights = {};
+        memset(&fsPointLights, 0, sizeof(universal_fs_point_lights_t));
+
+        for(size_t i = 0; i < 30; i++) {
+            if(i < state.pointLights.size()) {
+                fsPointLights.position[i] = glm::vec4(state.pointLights[i].position, 1.0f);
+                fsPointLights.ambient[i] = glm::vec4(state.pointLights[i].ambient, 1.0f);
+                fsPointLights.diffuse[i] = glm::vec4(state.pointLights[i].diffuse, 1.0f);
+                fsPointLights.specular[i] = glm::vec4(state.pointLights[i].specular,1.0f);
+                fsPointLights.range[i].x = state.pointLights[i].range;
             }
-        } break;
+        }
 
-        case MaterialKind::ENV: {
-            //NOTE: apply vertex stage uniforms
-            {
-                env_vs_params_t vsUniforms{
-                    state.model,
-                    state.view,
-                    state.proj,
-                    state.viewPos
-                };
-
-                sg_range vsUniformsRange{
-                    &vsUniforms,
-                    sizeof(env_vs_params_t)
-                };
-
-                sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &vsUniformsRange);
-            }
-
-            //NOTE: apply fragment state uniforms
-            {
-                env_fs_params_t fsUniforms{
-                    static_cast<float>(state.material.envTextureBlending),
-                    state.material.envTextureBlendingRatio
-                };
-
-                sg_range fsUniformsRange{
-                   &fsUniforms,
-                   sizeof(env_fs_params_t)
-                };
-
-                sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_env_fs_params, &fsUniformsRange);
-            }
-        } break;
-
-        default: {
-            basic_vs_params_t vertexUniforms{
-                 state.model,
-                 state.view,
-                 state.proj
-            };
-
-            sg_range uniformsRange{
-                &vertexUniforms,
-                sizeof(basic_vs_params_t)
-            };
-
-            sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_basic_vs_params, &uniformsRange);
-        } break;
+        sg_range fsPointLighsRange{
+            &fsPointLights,
+            sizeof(universal_fs_point_lights_t)
+        };
+        
+        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_point_lights, &fsPointLighsRange);
     }
 }
 

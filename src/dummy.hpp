@@ -2,5 +2,5 @@
 
 class Dummy : public Frame {
 public:
-	FrameType getType() const override { return FrameType::DUMMY; }
+	[[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Dummy; }
 };

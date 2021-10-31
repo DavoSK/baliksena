@@ -1,6 +1,13 @@
 #include "frame.hpp"
+#include <vector>
 
+class Light;
 class Sector : public Frame {
 public:
-    FrameType getType() const override { return FrameType::SECTOR; }
+    [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Sector; }
+    void render() override;
+    void pushLight(std::shared_ptr<Light> light) { mSectorLights.push_back(light); }
+private:
+    void renderLights();
+    std::vector<std::shared_ptr<Light>> mSectorLights;
 };

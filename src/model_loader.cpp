@@ -218,7 +218,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
                 auto loadedMat = loadMaterial(materials[mafiaFaceGroup.mMaterialID - 1]);
                 
                 //NOTE: set material kind to billboard
-                if (newMesh->getType() == FrameType::BILLBOARD) {
+                if (newMesh->getFrameType() == FrameType::Billboard) {
                     loadedMat->setKind(Renderer::MaterialKind::BILLBOARD);
                 }
 
