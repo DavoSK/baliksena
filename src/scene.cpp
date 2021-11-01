@@ -290,7 +290,6 @@ void Scene::load(const std::string& missionName) {
                         }
                     }
                 } else {
-                
                     auto foundSector = findFrame(lightSector);
                     if (foundSector != nullptr && foundSector->getFrameType() == FrameType::Sector) {
                         for(auto lightToPush : lights) {

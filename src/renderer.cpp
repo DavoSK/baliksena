@@ -477,13 +477,13 @@ void Renderer::applyUniforms() {
         //NOTE since sokol uses only floating point uniforms
         //we need to stick with that :/
         const auto isBillboard = state.material.kind == MaterialKind::BILLBOARD ? 1.0f : 0.0f;
-        universal_vs_params_t vertexUniforms{
-            state.model,
-            state.view,
-            state.proj,
-            state.viewPos,
-            isBillboard
-        };
+        universal_vs_params_t vertexUniforms{};
+        vertexUniforms.model = state.model;
+        vertexUniforms.view = state.view;
+        vertexUniforms.projection = state.proj;
+        vertexUniforms.viewPos = state.viewPos;
+        vertexUniforms.billboard = isBillboard;
+        vertexUniforms.pointLightsCount = (float)state.pointLights.size();
 
         sg_range uniformsRange{
             &vertexUniforms,
@@ -491,40 +491,24 @@ void Renderer::applyUniforms() {
         };
 
         sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_universal_vs_params, &uniformsRange);
-    }
-
-    //NOTE: apply fragment state uniforms
-    {
-        universal_fs_params_t fsUniforms{};
-        fsUniforms.pointLightsCount = (float)state.pointLights.size();
-        fsUniforms.envMode = state.material.envTexture.has_value() ? static_cast<float>(state.material.envTextureBlending) : 3.0f;
-        fsUniforms.envRatio = state.material.envTextureBlendingRatio;
-        fsUniforms.ambientLight = state.ambLight.diffuse;
-
-        sg_range fsUniformsRange{
-            &fsUniforms,
-            sizeof(universal_fs_params_t)
-        };
-
-        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_params, &fsUniformsRange);
 
         //NOTE: apply dir light uniform
-        universal_fs_dir_light_t fsDirLight = {};
-        fsDirLight.direction = state.dirLight.direction;
-        fsDirLight.ambient = state.dirLight.ambient;
-        fsDirLight.diffuse = state.dirLight.diffuse;
-        fsDirLight.specular = state.dirLight.specular;
+        universal_vs_dir_light_t vsDirLight = {};
+        vsDirLight.direction = state.dirLight.direction;
+        vsDirLight.ambient = state.dirLight.ambient;
+        vsDirLight.diffuse = state.dirLight.diffuse;
+        vsDirLight.specular = state.dirLight.specular;
 
-        sg_range fsDirLighRange{
-            &fsDirLight,
-            sizeof(universal_fs_dir_light_t)
+        sg_range vsDirLighRange{
+            &vsDirLight,
+            sizeof(universal_vs_dir_light_t)
         };
         
-        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_dir_light, &fsDirLighRange);
+        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_universal_vs_dir_light, &vsDirLighRange);
 
         //NOTE: apply point lights uniform
-        universal_fs_point_lights_t fsPointLights = {};
-        memset(&fsPointLights, 0, sizeof(universal_fs_point_lights_t));
+        universal_vs_point_lights_t fsPointLights = {};
+        memset(&fsPointLights, 0, sizeof(universal_vs_point_lights_t));
 
         for(size_t i = 0; i < 30; i++) {
             if(i < state.pointLights.size()) {
@@ -536,12 +520,27 @@ void Renderer::applyUniforms() {
             }
         }
 
-        sg_range fsPointLighsRange{
+        sg_range vsPointLighsRange{
             &fsPointLights,
-            sizeof(universal_fs_point_lights_t)
+            sizeof(universal_vs_point_lights_t)
         };
         
-        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_point_lights, &fsPointLighsRange);
+        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_universal_vs_point_lights, &vsPointLighsRange);
+    }
+
+    //NOTE: apply fragment state uniforms
+    {
+        universal_fs_params_t fsUniforms{};
+        fsUniforms.envMode = state.material.envTexture.has_value() ? static_cast<float>(state.material.envTextureBlending) : 3.0f;
+        fsUniforms.envRatio = state.material.envTextureBlendingRatio;
+        fsUniforms.ambientLight = state.ambLight.diffuse;
+
+        sg_range fsUniformsRange{
+            &fsUniforms,
+            sizeof(universal_fs_params_t)
+        };
+
+        sg_apply_uniforms(SG_SHADERSTAGE_FS, SLOT_universal_fs_params, &fsUniformsRange);
     }
 }
 

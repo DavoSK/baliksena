@@ -41,16 +41,14 @@ void Mesh::setVertices(std::vector<Renderer::Vertex> vertices) {
 
 void Mesh::render() {
     Frame::render();
-
     if (mStatic || mVertices.empty() || !isOn()) return;
     
-    const auto& worldBBOX = getWorldBBOX();
-
     //NOTE: cull only objects in Primary sector
-    // if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second) && 
-    //     Renderer::getPass() != Renderer::RenderPass::SKYBOX) {
-    //     return;
-    // }
+    const auto& worldBBOX = getWorldBBOX();
+    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second) && 
+        Renderer::getPass() != Renderer::RenderPass::SKYBOX) {
+        return;
+    }
 
     if(mUpdateLights) {
         updateLights();
