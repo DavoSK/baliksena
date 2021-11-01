@@ -48,7 +48,10 @@ public:
     void setStatic(bool isStatic) { mStatic = isStatic; }
     [[nodiscard]] bool isStatic() { return mStatic; }
 private:
+    void updateLights();
+    std::vector<Renderer::PointLight> mLights;
     std::vector<Renderer::Vertex> mVertices;
     std::vector<std::unique_ptr<FaceGroup>> mFaceGroups;
     bool mStatic = true;
+    bool mUpdateLights = true;
 };

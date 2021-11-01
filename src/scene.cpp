@@ -20,6 +20,15 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+Sector* Scene::getCameraSector() {
+    if(mActiveCamera != nullptr) {
+        std::optional<Sector*> foundSector;
+        getSectorOfPoint(mActiveCamera->Position, this, foundSector);
+        return foundSector.value_or(mPrimarySector.get());
+    }
+    return nullptr;
+}
+
 void Scene::getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector) {    
     if (!node) return;
 
@@ -62,8 +71,10 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
         } break;
         
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
-            //Logger::get().info("amb light: {}", object.mName);
-            return light;
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            light->setType(LightType::Ambient);
+            light->setAmbient(color * object.mLightPower);
+            Logger::get().info("amb light: {}, {} {} {}", object.mName, object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
         } break;
 
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_POINT: {
@@ -72,7 +83,6 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
             light->setPos({object.mPos2.x, object.mPos2.y, object.mPos2.z});
             light->setDiffuse(color * object.mLightPower);
             light->setRange(object.mLightFar);
-            Logger::get().info("point light: {}", object.mName);
         } break;
 
         default: {
@@ -83,18 +93,14 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
     //NOTE: second check light sectors, only
     //if we have light type implemented
     if(!object.mParentName.empty()) {
-        if (gLightsParenting.find(object.mParentName) == gLightsParenting.end()) {
-            gLightsParenting[object.mParentName].push_back(light);
-        }
+        gLightsParenting[object.mParentName].push_back(light);
     } else {
         gLightsParenting["x"].push_back(light);
     }
 
     auto splitedSectors = std::string(object.mLightSectors);
     for(auto splitedString : MFUtil::strSplit(splitedSectors, ',')) {
-        if (gLightsParenting.find(splitedString) == gLightsParenting.end()) {
-            gLightsParenting[splitedString].push_back(light);
-        }
+        gLightsParenting[splitedString].push_back(light);        
     }
 
     return light;
@@ -279,6 +285,8 @@ void Scene::load(const std::string& missionName) {
                         getSectorOfPoint(worldPos, this, foundSector);
                         if (foundSector.has_value()) {
                             foundSector.value()->pushLight(lightToPush);
+                        } else {
+                            mPrimarySector->pushLight(lightToPush);
                         }
                     }
                 } else {
@@ -297,11 +305,6 @@ void Scene::load(const std::string& missionName) {
     }
 
     //NOTE: load cachus binus
-    std::shared_ptr<Sector> cacheBin = std::make_shared<Sector>();
-    cacheBin->setName("Cache bin");
-    mNearSector = cacheBin;
-    addChild(cacheBin);
-
     std::string sceneCacheBin = missionFolder + "\\cache.bin";
     MFFormat::DataFormatCacheBIN cacheBinFormat;
     auto cacheBinFile = Vfs::getFile(sceneCacheBin);
@@ -318,7 +321,7 @@ void Scene::load(const std::string& missionName) {
                     meshRot.y = instance.mRot.y;
                     meshRot.z = instance.mRot.z;
                     model->setRot(meshRot);
-                    mNearSector->addChild(std::move(model));
+                    mPrimarySector->addChild(std::move(model));
                 }
             }
         }
@@ -330,7 +333,6 @@ void Scene::load(const std::string& missionName) {
 
 void Scene::clear() {
     mPrimarySector = nullptr;
-    mNearSector = nullptr;
     mBackdropSector = nullptr;
     removeChilds();
     
@@ -385,10 +387,5 @@ void Scene::render() {
     if(mPrimarySector != nullptr) {
         mPrimarySector->render();
     }
-
-    if(mNearSector != nullptr) {
-        mNearSector->render();
-    }
-    
     //TODO: transparency pass, alpha blending, sorting, etc ...
 }

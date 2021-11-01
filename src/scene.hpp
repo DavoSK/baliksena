@@ -16,8 +16,13 @@ class Sector;
 
 class Scene : public Model {
 public:
-    Camera* getActiveCamera() { return mActiveCamera.get(); }
+    [[nodiscard]] Camera* getActiveCamera() { return mActiveCamera.get(); }
     void setActiveCamera(std::shared_ptr<Camera> cam) { mActiveCamera = cam; }
+
+    [[nodiscard]] Sector* getCurrentSector() { return mCurrentSector; }
+    void setCurrentSector(Sector* sector) { mCurrentSector = sector; }
+    
+    [[nodiscard]]Sector* getCameraSector();
     void load(const std::string& mission);
     void clear();
     void render();
@@ -28,6 +33,6 @@ private:
     std::shared_ptr<Model> loadModel(const MFFormat::DataFormatScene2BIN::Object& object);
     std::shared_ptr<Sector> mPrimarySector{ nullptr };
     std::shared_ptr<Sector> mBackdropSector{ nullptr };
-    std::shared_ptr<Sector> mNearSector{ nullptr };
     std::shared_ptr<Camera> mActiveCamera{ nullptr };
+    Sector* mCurrentSector{ nullptr };
 };

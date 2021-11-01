@@ -46,6 +46,10 @@ public:
         bool hasTransparencyKey;
     };
 
+    struct AmbientLight {
+        glm::vec3 diffuse;
+    };
+
     struct DirLight {
         glm::vec3 direction;
         glm::vec3 ambient;
@@ -89,6 +93,7 @@ public:
 
     static void setModel(const glm::mat4& model);
     static void setDirLight(const DirLight& light);
+    static void setAmbientLight(const AmbientLight& light);
     static void setPointLights(const std::vector<PointLight>& lights);
 
     static void applyUniforms();

@@ -76,6 +76,7 @@ static struct {
 
     //NOTE: lights
     Renderer::DirLight dirLight;
+    Renderer::AmbientLight ambLight;
     std::vector<Renderer::PointLight> pointLights;
 } state;
 
@@ -357,6 +358,8 @@ void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
 }
 
 void Renderer::bindMaterial(const Material& material) {
+    state.material = material;
+    
     if(material.diffuseTexture.has_value()) {
         bindTexture(material.diffuseTexture.value(), SLOT_universal_diffuseSampler);
     } else {
@@ -373,8 +376,6 @@ void Renderer::bindMaterial(const Material& material) {
     } else {
         bindTexture({state.emptyTexture.id}, SLOT_universal_envSampler);
     }
-    
-    state.material = material;
 }
 
 Renderer::BufferHandle Renderer::createVertexBuffer(const std::vector<Vertex>& vertices) {
@@ -446,6 +447,10 @@ void Renderer::setDirLight(const DirLight& light) {
     state.dirLight = light;
 }
 
+void Renderer::setAmbientLight(const AmbientLight& light) {
+    state.ambLight = light;
+}
+
 void Renderer::setPointLights(const std::vector<PointLight>& lights) {
     state.pointLights = lights;   
 }
@@ -494,7 +499,8 @@ void Renderer::applyUniforms() {
         fsUniforms.pointLightsCount = (float)state.pointLights.size();
         fsUniforms.envMode = state.material.envTexture.has_value() ? static_cast<float>(state.material.envTextureBlending) : 3.0f;
         fsUniforms.envRatio = state.material.envTextureBlendingRatio;
-    
+        fsUniforms.ambientLight = state.ambLight.diffuse;
+
         sg_range fsUniformsRange{
             &fsUniforms,
             sizeof(universal_fs_params_t)

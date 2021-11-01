@@ -1,15 +1,17 @@
 #include "sector.hpp"
 #include "light.hpp"
 #include "renderer.hpp"
+#include "scene.hpp"
+#include "app.hpp"
 
 void Sector::renderLights() {
      //NOTE: clear dir light for this sector
     Renderer::DirLight defaultDirLight{};
     Renderer::setDirLight(defaultDirLight);
 
-    //NOTE: if any dir light will be in sector it will be replaced
-    //in following lopp
-    std::vector<Renderer::PointLight> pointLights;
+    Renderer::AmbientLight defaultAmbLight{};
+    Renderer::setAmbientLight(defaultAmbLight);
+
     for(const auto& light : mSectorLights) {
          switch(light->getType()) {
             case LightType::Dir: {
@@ -22,28 +24,21 @@ void Sector::renderLights() {
                 Renderer::setDirLight(dirLight);
             } break;
 
-            case LightType::Point: {
-                Renderer::PointLight pointLight = {
-                    light->getPos(),
-                    light->getAmbient(),
-                    light->getDiffuse(),
-                    light->getSpecular(),
-                    light->getRange()
+            case LightType::Ambient: {
+                Renderer::AmbientLight ambLight = {
+                    light->getAmbient()
                 };
-                pointLights.push_back(pointLight);
+                Renderer::setAmbientLight(ambLight);
             } break;
 
             default: {
             } break;
         }
     }
-
-    Renderer::setPointLights(pointLights);
 }
 
 void Sector::render() {
     if(!mOn) return;
-
     for(const auto& frame : mChilds) {
         if(frame->getFrameType() == FrameType::Sector) {
             frame->render();
@@ -51,10 +46,18 @@ void Sector::render() {
     }
 
     renderLights();
-    
+    App::get()->getScene()->setCurrentSector(this);
+
     for(const auto& frame : mChilds) {
         if(frame->getFrameType() != FrameType::Sector) {
             frame->render();
         }
+    }
+}
+
+void Sector::pushLight(std::shared_ptr<Light> light) {
+    auto it = std::find(mSectorLights.begin(), mSectorLights.end(), light);
+    if(it == mSectorLights.end()) {
+        mSectorLights.push_back(light);
     }
 }

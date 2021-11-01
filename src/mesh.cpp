@@ -1,5 +1,9 @@
 #include "mesh.hpp"
 #include "material.hpp"
+#include "scene.hpp"
+#include "sector.hpp"
+#include "app.hpp"
+#include "light.hpp"
 
 /*
     FaceGroup
@@ -43,14 +47,58 @@ void Mesh::render() {
     const auto& worldBBOX = getWorldBBOX();
 
     //NOTE: cull only objects in Primary sector
-    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second) && 
-        Renderer::getPass() != Renderer::RenderPass::SKYBOX) {
-        return;
+    // if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second) && 
+    //     Renderer::getPass() != Renderer::RenderPass::SKYBOX) {
+    //     return;
+    // }
+
+    if(mUpdateLights) {
+        updateLights();
+        mUpdateLights = false;
     }
 
+    Renderer::setPointLights(mLights);
     Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
         faceGroup->render();
     }
+}
+
+void Mesh::updateLights() {
+    //NOTE: if any dir light will be in sector it will be replaced
+    //in following lopp
+    std::vector<Renderer::PointLight> pointLights;
+    for(const auto& light : App::get()->getScene()->getCurrentSector()->getLights()) {
+         switch(light->getType()) {
+            case LightType::Point: {
+                Renderer::PointLight pointLight = {
+                    light->getPos(),
+                    light->getAmbient(),
+                    light->getDiffuse(),
+                    light->getSpecular(),
+                    light->getRange()
+                };
+                pointLights.push_back(pointLight);
+            } break;
+
+            default: {
+            } break;
+        }
+    }
+
+    //NOTE: take nearest 8 point lights
+    mLights.clear();
+    float minDist = std::numeric_limits<float>::max();
+
+    for(auto pointLight : pointLights) {
+        auto meshPos = glm::vec3(this->getWorldMatrix()[3]);
+        auto dist = glm::length2(meshPos - pointLight.position);
+        if(dist < minDist) {
+            minDist = dist;
+            mLights.push_back(pointLight);
+        }
+    }
+
+    mLights.resize(30);
 }

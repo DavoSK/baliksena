@@ -56,7 +56,6 @@ in vec3 Env;
 in vec3 ViewDir;
 
 #define NR_POINT_LIGHTS 30
-
 struct dir_light_t {
     vec3 direction;
     vec3 ambient;
@@ -91,6 +90,7 @@ uniform fs_params {
     float pointLightsCount;
     float envMode;
     float envRatio;
+    vec3 ambientLight;
 };
 
 uniform sampler2D diffuseSampler, envSampler;
@@ -114,11 +114,11 @@ void main() {
     vec3 light = calcDirLight(getDirLight(), Norm, ViewDir);
 
     //NOTE: point lights
-    for(int i = 0; i < int(pointLightsCount); ++i) {
+    for(int i = 0; i < int(pointLightsCount); i++) {
         light += calcPointLight(getPointLight(i), Norm, FragPos, ViewDir);
     }
 
-    vec4 lightDiffuse = vec4(light, 1.0) * diffuseTexture.rgba;
+    vec4 lightDiffuse = vec4(max(light, ambientLight), 1.0) * diffuseTexture.rgba;
 
     //NOTE: check for env blending
     vec3 envUvStuff = normalize(vec3(Env.x, max((Env.y - 1.0) * 0.65 + 1.0, 0.0), Env.z));
@@ -176,7 +176,7 @@ vec3 calcPointLight(point_light_t light, vec3 normal, vec3 fragPos, vec3 viewDir
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 reflectDir = reflect(-lightDir, normal);
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 - distance / light.range;
+    float attenuation = clamp(1.0 - distance / light.range, 0, 1);
     vec3 ambient = light.ambient;
     vec3 diffuse = light.diffuse * diff;
     ambient *= attenuation;

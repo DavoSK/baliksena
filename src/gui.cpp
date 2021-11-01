@@ -1,6 +1,7 @@
 #include "gui.hpp"
 #include "frame.hpp"
 #include "light.hpp"
+#include "sector.hpp"
 #include "app.hpp"
 #include "scene.hpp"
 #include "camera.h"
@@ -105,6 +106,7 @@ void renderNodeRecursively(Frame* frame) {
 }
 
 void renderLightWidget(Light* light) {
+    ImGui::Separator();
     glm::vec3 diffuse = light->getDiffuse();
     if(ImGui::ColorPicker3("Diffuse", (float*)&diffuse)) {
         light->setDiffuse(diffuse);
@@ -129,6 +131,16 @@ void renderLightWidget(Light* light) {
             break;
     }
 }
+
+void renderSectorWidget(Sector* sector) {
+    ImGui::Separator();
+    ImGui::Text("Sector: %s", sector->getName().c_str());
+    // ImGui::Text("Sector lights:");
+    // for(const auto& sectorLight: sector->getLights()) {
+    //     ImGui::Text(sectorLight->getName().c_str());
+    // }
+}
+
 void renderInspectWidget(Frame* frame) {
     if(frame == nullptr)
         return;
@@ -141,7 +153,7 @@ void renderInspectWidget(Frame* frame) {
     if(ImGui::Checkbox("Frame ON", &isFrameOn)) {
         frame->setOn(isFrameOn);
     }
-
+    
     ImGui::Separator();
 
     //NOTE: render guizmo controlls
@@ -169,8 +181,17 @@ void renderInspectWidget(Frame* frame) {
         }
     }
 
-    if(gSelectedNode->getFrameType() == FrameType::Light) {
-        renderLightWidget(dynamic_cast<Light*>(gSelectedNode));
+    switch(gSelectedNode->getFrameType()) {
+        case FrameType::Light: {
+            renderLightWidget(dynamic_cast<Light*>(gSelectedNode));
+        } break;
+
+        case FrameType::Sector: {
+            renderSectorWidget(dynamic_cast<Sector*>(gSelectedNode));
+        } break;
+
+        default: 
+            break;
     }
 }
 
@@ -479,6 +500,16 @@ void Gui::render() {
     ImGui::Separator();
 
     ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
+    auto sector = scene->getCameraSector();
+    if(sector != nullptr) {
+        ImGui::Text("Camera sector: %s", sector->getName().c_str());
+        // ImGui::Text("Sector lights:");
+        // for(const auto& sectorLight: sector->getLights()) {
+        //     ImGui::Text(sectorLight->getName().c_str());
+        // }
+    }
+
+
     ImGui::Separator();
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
