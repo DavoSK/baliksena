@@ -56,25 +56,39 @@ std::unordered_map<std::string, std::vector<std::shared_ptr<Light>>> gLightsPare
 
 std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Object& object) {
     auto light = std::make_shared<Light>();
-
     //NOTE: skip this light ( dunno why )
     if (!(object.mLightFlags & (1 << 0))) 
         return light;
 
     switch (object.mLightType) {
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_DIRECTIONAL: {
-            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Dir);
-            light->setDiffuse(glm::normalize(color * object.mLightPower));
-            light->setDir(glm::normalize(glm::vec3({object.mPos.x, object.mPos.y, object.mPos.z})));
-            //Logger::get().info("dir light: {}", object.mName);
+            light->setDiffuse(glm::normalize(color));
+
+            glm::quat meshRot {};
+            meshRot.w = object.mRot.w;
+            meshRot.x = object.mRot.x;
+            meshRot.y = object.mRot.y;
+            meshRot.z = object.mRot.z;
+
+            auto mat4 = glm::toMat4(meshRot);
+            auto dir = glm::vec3(mat4[2]);
+            light->setDir(dir);
         } break;
         
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
-            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Ambient);
-            light->setAmbient(color * object.mLightPower);
-            Logger::get().info("amb light: {}, {} {} {}", object.mName, object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            light->setAmbient(glm::normalize(color));
+        } break;
+        
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_SPOT: {
+            // auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
+            // light->setType(LightType::Ambient);
+            // light->setAmbient(glm::normalize(color));
+            Logger::get().info("info spot light {}", object.mName);
+            return light;
         } break;
 
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_POINT: {
@@ -90,16 +104,7 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
         } break;
     }
 
-    //NOTE: second check light sectors, only
-    //if we have light type implemented
-    if(!object.mParentName.empty()) {
-        gLightsParenting[object.mParentName].push_back(light);
-    } else {
-        gLightsParenting["x"].push_back(light);
-    }
-
-    auto splitedSectors = std::string(object.mLightSectors);
-    for(auto splitedString : MFUtil::strSplit(splitedSectors, ',')) {
+    for(const auto& splitedString : object.mLightSectors) {
         gLightsParenting[splitedString].push_back(light);        
     }
 
@@ -278,23 +283,10 @@ void Scene::load(const std::string& missionName) {
             }
 
             for(const auto& [lightSector, lights] : gLightsParenting) {
-                if(lightSector == "x") {
+                auto foundSector = findFrame(lightSector);
+                if (foundSector != nullptr && foundSector->getFrameType() == FrameType::Sector) {
                     for(auto lightToPush : lights) {
-                        std::optional<Sector*> foundSector;
-                        glm::vec3 worldPos = lightToPush->getPos();
-                        getSectorOfPoint(worldPos, this, foundSector);
-                        if (foundSector.has_value()) {
-                            foundSector.value()->pushLight(lightToPush);
-                        } else {
-                            mPrimarySector->pushLight(lightToPush);
-                        }
-                    }
-                } else {
-                    auto foundSector = findFrame(lightSector);
-                    if (foundSector != nullptr && foundSector->getFrameType() == FrameType::Sector) {
-                        for(auto lightToPush : lights) {
-                            (std::dynamic_pointer_cast<Sector>(foundSector))->pushLight(lightToPush);
-                        }
+                        (std::dynamic_pointer_cast<Sector>(foundSector))->pushLight(lightToPush);
                     }
                 }
             }

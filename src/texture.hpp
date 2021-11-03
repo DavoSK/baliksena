@@ -8,7 +8,7 @@ public:
     Texture() { gStats.texturesInUse++; }
     ~Texture() { release(); gStats.texturesInUse--; }
     static void clearCache();
-    static Texture* loadFromFile(const std::string& path, bool useTransparencyKey = false);
+    static Texture* loadFromFile(const std::string& path, bool useTransparencyKey = false, bool mipmaps = false);
     void bind(unsigned int slot) const;
     const std::string& getName() const { return mTextureName; }
     int getWidth() const { return mWidth; }

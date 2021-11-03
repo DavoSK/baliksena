@@ -44,18 +44,18 @@ void Mesh::render() {
     if (mStatic || mVertices.empty() || !isOn()) return;
     
     //NOTE: cull only objects in Primary sector
-    const auto& worldBBOX = getWorldBBOX();
-    if (!Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second) && 
-        Renderer::getPass() != Renderer::RenderPass::SKYBOX) {
-        return;
-    }
+    // const auto& worldBBOX = getWorldBBOX();
+    // if ( Renderer::getPass() != Renderer::RenderPass::SKYBOX && 
+    //     !Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
+    //     return;
+    // }
 
     if(mUpdateLights) {
         updateLights();
         mUpdateLights = false;
     }
 
-    Renderer::setPointLights(mLights);
+    Renderer::setLights(mLights);
     Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
@@ -66,37 +66,52 @@ void Mesh::render() {
 void Mesh::updateLights() {
     //NOTE: if any dir light will be in sector it will be replaced
     //in following lopp
-    std::vector<Renderer::PointLight> pointLights;
+    mLights.clear();
     for(const auto& light : App::get()->getScene()->getCurrentSector()->getLights()) {
          switch(light->getType()) {
-            case LightType::Point: {
-                Renderer::PointLight pointLight = {
-                    light->getPos(),
-                    light->getAmbient(),
-                    light->getDiffuse(),
-                    light->getSpecular(),
-                    light->getRange()
-                };
-                pointLights.push_back(pointLight);
+            case LightType::Dir: {
+                Renderer::Light rLight {};
+                rLight.type = Renderer::LightType::Dir;
+                rLight.position = light->getDir();
+                rLight.ambient  = light->getAmbient();
+                rLight.diffuse  = light->getDiffuse();
+                mLights.push_back(rLight);
             } break;
 
+            case LightType::Point: {
+                Renderer::Light rLight {};
+                rLight.type = Renderer::LightType::Point;
+                rLight.position = light->getPos();
+                rLight.ambient  = light->getAmbient();
+                rLight.diffuse  = light->getDiffuse();
+                rLight.range    = light->getRange();
+                mLights.push_back(rLight);
+            } break;
+
+            case LightType::Ambient: {
+                Renderer::Light rLight {};
+                rLight.type = Renderer::LightType::Ambient;
+                rLight.ambient = light->getAmbient();
+                mLights.push_back(rLight);
+            } break;
             default: {
             } break;
         }
     }
 
-    //NOTE: take nearest 8 point lights
-    mLights.clear();
-    float minDist = std::numeric_limits<float>::max();
-
-    for(auto pointLight : pointLights) {
-        auto meshPos = glm::vec3(this->getWorldMatrix()[3]);
-        auto dist = glm::length2(meshPos - pointLight.position);
-        if(dist < minDist) {
-            minDist = dist;
-            mLights.push_back(pointLight);
+    auto meshPos = glm::vec3(this->getWorldMatrix()[3]);
+    auto rankFromLighType = [this, &meshPos](const Renderer::Light& light) -> float {
+        switch(light.type) {
+            case Renderer::LightType::Ambient:
+                return 1;
+            case Renderer::LightType::Dir:
+                return 2;
+            case Renderer::LightType::Point:
+                return 3.0f + glm::length2(meshPos - light.position);
         }
-    }
+    };
 
-    mLights.resize(30);
+    std::sort(mLights.begin(), mLights.end(), [&](Renderer::Light a, Renderer::Light b) {
+        return rankFromLighType(a) < rankFromLighType(b);
+    });
 }

@@ -378,7 +378,10 @@ void DataFormatScene2BIN::readLight(MFUtil::ScopedBuffer& srcFile, Header* heade
         } break;
 
         case OBJECT_LIGHT_SECTOR: {
-            read(srcFile, object->mLightSectors, header->mSize);
+            char* sectorName = (char*)malloc(header->mSize - 6);
+            read(srcFile, sectorName, header->mSize - 6);
+            object->mLightSectors.push_back(sectorName);
+            free(sectorName);
         } break;
 
         case OBJECT_LIGHT_FLAGS: {

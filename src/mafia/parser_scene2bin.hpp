@@ -79,6 +79,7 @@ public:
 
     typedef enum {
         LIGHT_TYPE_POINT = 0x01,
+        LIGHT_TYPE_SPOT = 0x02,
         LIGHT_TYPE_DIRECTIONAL = 0x03,
         LIGHT_TYPE_AMBIENT = 0x04,
         LIGHT_TYPE_FOG = 0x05,
@@ -217,7 +218,7 @@ public:
         float mLightUnk1;
         float mLightNear;
         float mLightFar;
-        char mLightSectors[5000];
+        std::vector<std::string> mLightSectors;
 
         struct {
             // Physical object properties

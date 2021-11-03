@@ -27,7 +27,7 @@ void Material::appendAnimatedTexture(const std::string& path) {
 }
 
 void Material::createDiffuseTexture(const std::string& path) {
-    if(auto diffuse = Texture::loadFromFile(path, hasTransparencyKey())) {
+    if(auto diffuse = Texture::loadFromFile(path, hasTransparencyKey(), mHasMipmaps)) {
         mRenderMaterial.diffuseTexture = diffuse->getTextureHandle();
     } else {
         Logger::get().error("unable to create diffsue texture: {} for material", path);

@@ -15,70 +15,81 @@ out vec3 Env;
 out vec3 ViewDir;
 out vec3 Light;
 
-#define NR_POINT_LIGHTS 30
-struct dir_light_t {
-    vec3 direction;
+/* material section */
+struct material_t {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
-};  
+};
 
-struct point_light_t {    
+uniform vs_material {
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 emissive;
+} material;
+
+material_t getMaterial();
+
+/* --------------- */
+
+/* lights section */
+#define NUM_LIGHTS 50
+
+const uint LightType_Dir        = 0;
+const uint LightType_Point      = 1;
+const uint LightType_Ambient    = 2;
+const uint LightType_Spot       = 3;
+
+struct light_t {
+    int type;    
     vec3 position;
     vec3 ambient;
     vec3 diffuse;
-    vec3 specular;
     float range;
 };
 
-uniform vs_dir_light {
-    vec3 direction;
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-} dir_light;
+//NOTE: use w as type
+//NOTE: use x as range, y z w resered for spot light
+uniform vs_lights {
+    vec4 position[NUM_LIGHTS];
+    vec4 ambient[NUM_LIGHTS];
+    vec4 diffuse[NUM_LIGHTS];
+    vec4 range[NUM_LIGHTS];
+} lights;
 
-uniform vs_point_lights {
-    vec4 position[NR_POINT_LIGHTS];  
-    vec4 ambient[NR_POINT_LIGHTS];
-    vec4 diffuse[NR_POINT_LIGHTS];
-    vec4 specular[NR_POINT_LIGHTS];
-    vec4 range[NR_POINT_LIGHTS];
-} point_lights;
+light_t getLight(int index);
+vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, material_t mat);
+
+/* --------------- */
 
 uniform vs_params {
     mat4 model;
     mat4 view;
     mat4 projection;
     vec3 viewPos;
+    //vec3 ambientLight;
     float billboard;
-    float pointLightsCount;
+    float lightsCount;
 };
-
-dir_light_t getDirLight();
-point_light_t getPointLight(int index);
-
-vec3 calcDirLight(dir_light_t light, vec3 normal, vec3 viewDir);
-vec3 calcPointLight(point_light_t light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main() {
     FragPos = vec3(model * vec4(aPos, 1.0));
     ViewDir = normalize(FragPos - viewPos);
-    Env = reflect(ViewDir, normalize(aNormal)) * vec3(1.0, 1.0, -1.0);
-    Norm = normalize(mat3(transpose(inverse(model))) * aNormal);
-
+    Env = reflect(ViewDir, normalize(aNormal)) * vec3(1.0, -1.0, 1.0);
+    Norm = normalize(mat3(transpose(inverse(model))) * aNormal);  
     TexCoord = aTexCoord;
 
-    //NOTE: dir light
-    vec3 light = calcDirLight(getDirLight(), Norm, ViewDir);
-
-    //NOTE: point lights
-    for(int i = 0; i < int(pointLightsCount); i++) {
-        light += calcPointLight(getPointLight(i), Norm, FragPos, ViewDir);
+    //NOTE: calculate light
+    vec3 light = vec3(0.0);
+    material_t mat = getMaterial();
+    for(int i = 0; i < int(lightsCount); i++) {
+        light += computeLight(getLight(i), Norm, FragPos, ViewDir, mat);
     }
 
     Light = light;
 
+    //NOTE: billboarding
+    //TODO: lock specific axis
     mat4 modelView = view * model;
     if(billboard > 0.0) {
         modelView[0][0] = length(vec3(model[0]));
@@ -94,57 +105,48 @@ void main() {
     gl_Position = projection * P;
 }
 
-dir_light_t getDirLight() {
-    return dir_light_t(
-        dir_light.direction,
-        dir_light.ambient,
-        dir_light.diffuse,
-        dir_light.specular
+material_t getMaterial() {
+    return material_t( 
+        material.ambient.xyz, 
+        material.diffuse.xyz,
+        material.emissive.xyz
     );
 }
 
-point_light_t getPointLight(int index) {
-    for (int i = 0; i < NR_POINT_LIGHTS; ++i) {
-        if (i == index) {
-            return point_light_t(
-                point_lights.position[i].xyz,
-                point_lights.ambient[i].xyz,
-                point_lights.diffuse[i].xyz,
-                point_lights.specular[i].xyz,
-                point_lights.range[i].x
-            );
+light_t getLight(int index) {
+    return light_t(
+        int(lights.position[index].w),
+        lights.position[index].xyz,
+        lights.ambient[index].xyz,
+        lights.diffuse[index].xyz,
+        lights.range[index].x
+    );
+}
+
+vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, material_t mat) {
+    switch(light.type) {
+        case LightType_Ambient: {
+            return light.ambient;
         }
+        case LightType_Dir: {
+            vec3 lightDir = normalize(-light.position);
+            float intensity = clamp(dot(normalize(normal), normalize(lightDir)), 0.0, 1.0);
+            vec3 diffuse = (light.diffuse * (intensity * mat.diffuse));
+            return diffuse;
+        }
+        case LightType_Point: {
+            float dist = length(light.position - fragPos);
+            float attenuation = clamp(1.0 - dist / light.range, 0.0, 1.0); 
+            return light.diffuse * attenuation;
+        }
+        case LightType_Spot: {
+            
+        }
+        default:
+            return vec3(0.0);
     }
 }
 
-vec3 calcDirLight(dir_light_t light, vec3 normal, vec3 viewDir) {
-    //light.direction.xyz = light.direction.xzy;
-    vec3 lightDir = normalize(-light.direction);
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 reflectDir = reflect(-lightDir, normal);
-    vec3 ambient = light.ambient;
-    vec3 diffuse = light.diffuse * diff;
-    return ambient + diffuse;
-}
-
-vec3 calcPointLight(point_light_t light, vec3 normal, vec3 fragPos, vec3 viewDir) {
-    //NOTE: will be used for attenuation.
-    float distance = length(light.position - fragPos);
-    
-    //NOTE: get a lighting direction vector from the light to the vertex.
-    vec3 lightDir = normalize(light.position - fragPos);
-
-    //NOTE: calculate the dot product of the light vector and vertex normal. If the normal and light vector are
-    // pointing in the same direction then it will get max illumination.
-    float diff = max(dot(normal, lightDir), 0.1);
-    
-    float attenuation = clamp(1.0 - distance / light.range, 0, 1);
-    vec3 ambient = light.ambient;
-    vec3 diffuse = light.diffuse * diff;
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    return (ambient + diffuse);
-}
 @end
 
 @fs fs
@@ -160,21 +162,20 @@ in vec3 Light;
 uniform fs_params {
     float envMode;
     float envRatio;
-    vec3 ambientLight;
 };
 
-uniform sampler2D diffuseSampler, envSampler;
+uniform sampler2D diffuseSampler;
+uniform sampler2D envSampler;
 
 void main() {
     vec4 diffuseTexture = texture(diffuseSampler, TexCoord);
-    
+
     //NOTE: check for cutout
     if(diffuseTexture.a != 1.0)
         discard;
 
     //TODO: check for alpha blending
-    
-    vec4 lightDiffuse = vec4(max(Light, ambientLight), 1.0) * diffuseTexture.rgba;
+    vec4 lightDiffuse = vec4(Light, 1.0) * diffuseTexture.rgba;
 
     //NOTE: check for env blending
     vec3 envUvStuff = normalize(vec3(Env.x, max((Env.y - 1.0) * 0.65 + 1.0, 0.0), Env.z));

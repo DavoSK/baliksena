@@ -59,6 +59,9 @@ public:
     void setAnimationPeriod(uint32_t framePeriod) { mAnimationPeriod = framePeriod; }
     [[nodiscard]] bool isAnimated() const { return mAnimationPeriod > 0; }
     
+    void setMipmaps(bool mipmaps) { mHasMipmaps = mipmaps; }
+    [[nodiscard]] bool hasMipmaps() const { return mHasMipmaps; }
+
     [[nodiscard]] bool isTransparent() const { return mRenderMaterial.transparency < 1.0f || mRenderMaterial.alphaTexture.has_value(); }
 private:
     Renderer::Material mRenderMaterial{};
@@ -66,4 +69,5 @@ private:
     uint32_t mAnimationPeriod           = 0;
     size_t mCurrentAnimatedDiffuseIdx   = 0;
     uint64_t mLastUpdatedAnimTex        = 0;
+    bool mHasMipmaps = false;
 };

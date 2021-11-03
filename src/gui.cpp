@@ -112,12 +112,22 @@ void renderLightWidget(Light* light) {
         light->setDiffuse(diffuse);
     }
 
+    glm::vec3 ambient = light->getAmbient();
+    if(ImGui::ColorPicker3("Ambient", (float*)&ambient)) {
+        light->setAmbient(ambient);
+    }
+
+    glm::vec3 specular = light->getSpecular();
+    if(ImGui::ColorPicker3("Specular", (float*)&specular)) {
+        light->setSpecular(specular);
+    }
+    
     ImGui::Separator();
 
     switch(light->getType()){
         case LightType::Dir: {
             glm::vec3 dir = light->getDir();
-            if(ImGui::InputFloat3("Dir", (float*)&dir)) {
+            if(ImGui::DragFloat3("Dir", (float*)&dir, 0.1f, -1.0f, 1.0f)) {
                 light->setDir(dir);
             }
         } break;
@@ -485,7 +495,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)(Renderer::getRenderTargetTexture().id), wsize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+    ImGui::Image((ImTextureID)(Renderer::getRenderTargetTexture().id), wsize/*, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)*/);
     renderImGuizmo(scene);
     ImGui::EndChild();
     ImGui::End();
@@ -500,12 +510,20 @@ void Gui::render() {
     ImGui::Separator();
 
     ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
+     ImGui::InputFloat3("Camera up", (float*)&cam->Up);
     auto sector = scene->getCameraSector();
     if(sector != nullptr) {
         ImGui::Text("Camera sector: %s", sector->getName().c_str());
         // ImGui::Text("Sector lights:");
         // for(const auto& sectorLight: sector->getLights()) {
-        //     ImGui::Text(sectorLight->getName().c_str());
+        //     if(sectorLight->getType() == LightType::Dir) {
+        //         ImGui::Text("Dir: %s", sectorLight->getName().c_str());
+        //     }else if(sectorLight->getType() == LightType::Ambient) {
+        //         ImGui::Text("Ambient: %s\n", sectorLight->getName().c_str());
+        //     }
+        //     else if(sectorLight->getType() == LightType::Point) {
+        //         ImGui::Text("Point: %s\n", sectorLight->getName().c_str());
+        //     }
         // }
     }
 

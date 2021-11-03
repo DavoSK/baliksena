@@ -72,6 +72,10 @@
     bool mulBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_MULTIPLYTEXTUREBLEND;
     bool addBlending = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVETEXTUREBLEND;
     bool hasTransparencyKey = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_COLORKEY;
+    bool hasMipmaps = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_MIPMAPPING;
+    
+    //NOTE: set mipmaps before we load material texture :)
+    material->setMipmaps(hasMipmaps);
     //bool hasAditiveMixing = mafiaMaterial.mFlags & MFFormat::DataFormat4DS::MaterialFlag::MATERIALFLAG_ADDITIVEMIXING;
 
     if (hasDiffuse) {
@@ -126,11 +130,12 @@
 
     material->setTransparency(mafiaMaterial.mTransparency);
     material->setDoubleSided(isDoubleSided);
+
     //material->setAditiveMixing(hasAditiveMixing);
     material->setAmbient({mafiaMaterial.mAmbient.x, mafiaMaterial.mAmbient.y, mafiaMaterial.mAmbient.z});
     material->setEmission({mafiaMaterial.mEmission.x, mafiaMaterial.mEmission.y, mafiaMaterial.mEmission.z});
-
-    if (!hasDiffuse || isColored) {
+    
+    if(isColored || !hasDiffuse) {
         material->setDiffuse({mafiaMaterial.mDiffuse.x, mafiaMaterial.mDiffuse.y, mafiaMaterial.mDiffuse.z});
     }
 

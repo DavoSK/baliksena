@@ -37,31 +37,21 @@ public:
         TextureBlending envTextureBlending;
         float envTextureBlendingRatio;
         float transparency;
-        glm::vec3 ambient;
-        glm::vec3 diffuse;
-        glm::vec3 emission;
+        glm::vec3 ambient = {1.0f, 1.0f, 1.0f};
+        glm::vec3 diffuse = {1.0f, 1.0f, 1.0f};
+        glm::vec3 emission = {1.0f, 1.0f, 1.0f};
         MaterialKind kind;
         bool isDoubleSided;
         bool isColored;
         bool hasTransparencyKey;
     };
 
-    struct AmbientLight {
-        glm::vec3 diffuse;
-    };
-
-    struct DirLight {
-        glm::vec3 direction;
-        glm::vec3 ambient;
-        glm::vec3 diffuse;
-        glm::vec3 specular;
-    };
-
-    struct PointLight {
+    enum class LightType { Dir, Point, Ambient };
+    struct Light {
+        LightType type;
         glm::vec3 position;
         glm::vec3 ambient;
         glm::vec3 diffuse;
-        glm::vec3 specular;
         float range;
     };
 
@@ -79,7 +69,7 @@ public:
     static void end();
     static void commit();
 
-    static TextureHandle createTexture(uint8_t* data, int width, int height);
+    static TextureHandle createTexture(uint8_t* data, int width, int height, bool mipmaps = false);
     static void destroyTexture(TextureHandle textureHandle);
     static void bindTexture(TextureHandle textureHandle, unsigned int slot);
     static void bindMaterial(const Material& material);
@@ -92,10 +82,7 @@ public:
     static void bindBuffers();
 
     static void setModel(const glm::mat4& model);
-    static void setDirLight(const DirLight& light);
-    static void setAmbientLight(const AmbientLight& light);
-    static void setPointLights(const std::vector<PointLight>& lights);
-
+    static void setLights(const std::vector<Light>& light);
     static void applyUniforms();
 
     static void setViewMatrix(const glm::mat4& view);

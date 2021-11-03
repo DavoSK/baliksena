@@ -23,7 +23,7 @@ void Texture::clearCache() {
     gTextureCache.clear();
 }
 
-Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparencyKey) {
+Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparencyKey, bool mipmaps) {
     auto* texture = gTextureCache[fileName];
     if (texture == nullptr) {
         auto path = "MAPS\\" + fileName;   
@@ -43,7 +43,7 @@ Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparency
             if (!newTexture->mBuffer)
                 return {};
 
-            newTexture->mTextureHandle = Renderer::createTexture(newTexture->mBuffer, newTexture->mWidth, newTexture->mHeight);
+            newTexture->mTextureHandle = Renderer::createTexture(newTexture->mBuffer, newTexture->mWidth, newTexture->mHeight, false);
             return gTextureCache[fileName] = newTexture;
         }
     }

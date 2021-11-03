@@ -1,6 +1,7 @@
 #pragma once
 #include "frame.hpp"
 #include <glm/glm.hpp>
+#include <string>
 
 enum class LightType {
     Dir,

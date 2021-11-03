@@ -5,36 +5,9 @@
 #include "app.hpp"
 
 void Sector::renderLights() {
-     //NOTE: clear dir light for this sector
-    Renderer::DirLight defaultDirLight{};
-    Renderer::setDirLight(defaultDirLight);
-
-    Renderer::AmbientLight defaultAmbLight{};
-    Renderer::setAmbientLight(defaultAmbLight);
-
-    for(const auto& light : mSectorLights) {
-         switch(light->getType()) {
-            case LightType::Dir: {
-                Renderer::DirLight dirLight = {
-                    light->getDir(),
-                    light->getAmbient(),
-                    light->getDiffuse(),
-                    light->getSpecular()
-                };
-                Renderer::setDirLight(dirLight);
-            } break;
-
-            case LightType::Ambient: {
-                Renderer::AmbientLight ambLight = {
-                    light->getAmbient()
-                };
-                Renderer::setAmbientLight(ambLight);
-            } break;
-
-            default: {
-            } break;
-        }
-    }
+    //NOTE: clear lights for this sector
+    std::vector<Renderer::Light> emptyLights;
+    Renderer::setLights(emptyLights);
 }
 
 void Sector::render() {
@@ -56,8 +29,8 @@ void Sector::render() {
 }
 
 void Sector::pushLight(std::shared_ptr<Light> light) {
-    auto it = std::find(mSectorLights.begin(), mSectorLights.end(), light);
-    if(it == mSectorLights.end()) {
+    //auto it = std::find(mSectorLights.begin(), mSectorLights.end(), light);
+    //if(it == mSectorLights.end()) {
         mSectorLights.push_back(light);
-    }
+    //}
 }
