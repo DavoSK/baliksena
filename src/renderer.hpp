@@ -52,7 +52,8 @@ public:
         glm::vec3 position;
         glm::vec3 ambient;
         glm::vec3 diffuse;
-        float range;
+        float rangeFar;
+        float rangeNear;
     };
 
     struct Vertex {

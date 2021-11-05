@@ -33,7 +33,7 @@ material_t getMaterial();
 /* --------------- */
 
 /* lights section */
-#define NUM_LIGHTS 50
+#define NUM_LIGHTS 10
 
 const uint LightType_Dir        = 0;
 const uint LightType_Point      = 1;
@@ -45,7 +45,8 @@ struct light_t {
     vec3 position;
     vec3 ambient;
     vec3 diffuse;
-    float range;
+    float far;
+    float near;
 };
 
 //NOTE: use w as type
@@ -119,7 +120,8 @@ light_t getLight(int index) {
         lights.position[index].xyz,
         lights.ambient[index].xyz,
         lights.diffuse[index].xyz,
-        lights.range[index].x
+        lights.range[index].x,
+        lights.range[index].y
     );
 }
 
@@ -135,9 +137,15 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
             return diffuse;
         }
         case LightType_Point: {
-            float dist = length(light.position - fragPos);
-            float attenuation = clamp(1.0 - dist / light.range, 0.0, 1.0); 
-            return light.diffuse * attenuation;
+            vec3 lightVec = (light.position - fragPos);
+            float dist = length(lightVec);
+            lightVec = normalize(lightVec);
+
+            if(dist <= light.near) dist = 1.0;
+            else if(dist < light.far) dist = (dist - light.near) / (light.far - light.near) * -1.0 + 1.0;
+            else dist = 0.0;
+
+            return light.diffuse * max(dot(lightVec, normalize(normal)), 0.0) * dist;
         }
         case LightType_Spot: {
             

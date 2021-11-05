@@ -22,8 +22,11 @@ public:
     void setPos(const glm::vec3& pos) { mPosition = pos; }
     [[nodiscard]] const glm::vec3& getPos() const { return mPosition; }
 
-    void setRange(float range) { mRange = range; }
-    [[nodiscard]] float getRange() const { return mRange; }
+    void setFar(float newFar) { mFar = newFar; }
+    [[nodiscard]] float getFar() const { return mFar; }
+
+    void setNear(float newNear) { mNear = newNear; }
+    [[nodiscard]] float getNear() const { return mNear; }
 
     void setAmbient(const glm::vec3& ambient) { mAmbient = ambient; }
     [[nodiscard]] const glm::vec3& getAmbient() const { return mAmbient; }
@@ -36,7 +39,8 @@ public:
 
     void render() override;
 private:
-    float mRange = 0.0f;
+    float mFar = 0.0f;
+    float mNear = 0.0f;
     glm::vec3 mDirection = {0.0f, 0.0f, 0.0f};
     glm::vec3 mPosition = {0.0f, 0.0f, 0.0f};
     glm::vec3 mAmbient = {0.0f, 0.0f, 0.0f};

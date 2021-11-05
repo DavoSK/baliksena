@@ -84,7 +84,8 @@ void Mesh::updateLights() {
                 rLight.position = light->getPos();
                 rLight.ambient  = light->getAmbient();
                 rLight.diffuse  = light->getDiffuse();
-                rLight.range    = light->getRange();
+                rLight.rangeFar      = light->getFar();
+                rLight.rangeNear    = light->getNear();
                 mLights.push_back(rLight);
             } break;
 

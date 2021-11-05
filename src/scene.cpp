@@ -64,7 +64,7 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_DIRECTIONAL: {
             auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Dir);
-            light->setDiffuse(glm::normalize(color));
+            light->setDiffuse(color);
 
             glm::quat meshRot {};
             meshRot.w = object.mRot.w;
@@ -77,26 +77,27 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
             light->setDir(dir);
         } break;
         
-        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
-            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
-            light->setType(LightType::Ambient);
-            light->setAmbient(glm::normalize(color));
-        } break;
+        // case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
+        //     auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
+        //     light->setType(LightType::Ambient);
+        //     light->setAmbient(color);
+        // } break;
         
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_SPOT: {
             // auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             // light->setType(LightType::Ambient);
             // light->setAmbient(glm::normalize(color));
-            Logger::get().info("info spot light {}", object.mName);
+            //Logger::get().info("info spot light {}", object.mName);
             return light;
         } break;
 
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_POINT: {
-            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z);
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Point);
             light->setPos({object.mPos2.x, object.mPos2.y, object.mPos2.z});
-            light->setDiffuse(color * object.mLightPower);
-            light->setRange(object.mLightFar);
+            light->setDiffuse(color);
+            light->setFar(object.mLightFar);
+            light->setNear(object.mLightNear);
         } break;
 
         default: {

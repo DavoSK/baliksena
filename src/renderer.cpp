@@ -417,13 +417,13 @@ void Renderer::applyUniforms() {
         universal_vs_lights_t vsLights = {};
         memset(&vsLights, 0, sizeof(universal_vs_lights_t));
 
-        for(size_t i = 0; i < 50; i++) {
+        for(size_t i = 0; i < 10; i++) {
             if( i >= state.lights.size()) break;
             const auto& light = state.lights[i];
             vsLights.position[i]    = glm::vec4(light.position, (float)light.type);
             vsLights.ambient[i]     = glm::vec4(light.ambient, 1.0f);
             vsLights.diffuse[i]     = glm::vec4(light.diffuse, 1.0f);
-            vsLights.range[i]       = glm::vec4(light.range, 0.0f, 0.0f, 0.0f);
+            vsLights.range[i]       = glm::vec4(light.rangeFar, light.rangeNear, 0.0f, 0.0f);
         }
 
         sg_range vsLightRange{
