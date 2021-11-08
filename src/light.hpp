@@ -7,6 +7,7 @@ enum class LightType {
     Dir,
     Point,
     Ambient,
+    Spot
 };
 
 class Light : public Frame {
@@ -22,11 +23,11 @@ public:
     void setPos(const glm::vec3& pos) { mPosition = pos; }
     [[nodiscard]] const glm::vec3& getPos() const { return mPosition; }
 
-    void setFar(float newFar) { mFar = newFar; }
-    [[nodiscard]] float getFar() const { return mFar; }
+    void setRange(const glm::vec2& range) { mRange = range; }
+    [[nodiscard]] const glm::vec2& getRange() const { return mRange; }
 
-    void setNear(float newNear) { mNear = newNear; }
-    [[nodiscard]] float getNear() const { return mNear; }
+    void setCone(float theta, float phi) { mCone = { theta, phi }; }
+    [[nodiscard]] const glm::vec2& getCone() const { return mCone; }
 
     void setAmbient(const glm::vec3& ambient) { mAmbient = ambient; }
     [[nodiscard]] const glm::vec3& getAmbient() const { return mAmbient; }
@@ -34,17 +35,13 @@ public:
     void setDiffuse(const glm::vec3& diffuse) { mDiffuse = diffuse; }
     [[nodiscard]] const glm::vec3& getDiffuse() const { return mDiffuse; }
 
-    void setSpecular(const glm::vec3& spec) { mSpecular = spec; }
-    [[nodiscard]] const glm::vec3& getSpecular() const { return mSpecular; }
-
     void render() override;
 private:
-    float mFar = 0.0f;
-    float mNear = 0.0f;
+    glm::vec2 mRange = {0.0f, 0.0f};
+    glm::vec2 mCone = {0.0f, 0.0f};
     glm::vec3 mDirection = {0.0f, 0.0f, 0.0f};
     glm::vec3 mPosition = {0.0f, 0.0f, 0.0f};
     glm::vec3 mAmbient = {0.0f, 0.0f, 0.0f};
     glm::vec3 mDiffuse = {0.0f, 0.0f, 0.0f};
-    glm::vec3 mSpecular = {0.0f, 0.0f, 0.0f};
     LightType mLightType;
 };

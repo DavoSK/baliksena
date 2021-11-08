@@ -71,8 +71,8 @@ void Mesh::updateLights() {
          switch(light->getType()) {
             case LightType::Dir: {
                 Renderer::Light rLight {};
-                rLight.type = Renderer::LightType::Dir;
-                rLight.position = light->getDir();
+                rLight.type     = Renderer::LightType::Dir;
+                rLight.dir      = light->getDir();
                 rLight.ambient  = light->getAmbient();
                 rLight.diffuse  = light->getDiffuse();
                 mLights.push_back(rLight);
@@ -84,17 +84,28 @@ void Mesh::updateLights() {
                 rLight.position = light->getPos();
                 rLight.ambient  = light->getAmbient();
                 rLight.diffuse  = light->getDiffuse();
-                rLight.rangeFar      = light->getFar();
-                rLight.rangeNear    = light->getNear();
+                rLight.range    = light->getRange();
                 mLights.push_back(rLight);
             } break;
 
             case LightType::Ambient: {
                 Renderer::Light rLight {};
-                rLight.type = Renderer::LightType::Ambient;
-                rLight.ambient = light->getAmbient();
+                rLight.type     = Renderer::LightType::Ambient;
+                rLight.ambient  = light->getAmbient();
                 mLights.push_back(rLight);
             } break;
+
+            case LightType::Spot: {
+                Renderer::Light rLight {};
+                rLight.type         = Renderer::LightType::Spot;
+                rLight.diffuse      = light->getDiffuse();
+                rLight.ambient      = light->getAmbient();
+                rLight.dir          = light->getDir();
+                rLight.position     = light->getPos();
+                rLight.cone         = light->getCone();
+                rLight.range        = light->getRange();
+            } break;
+
             default: {
             } break;
         }
@@ -107,6 +118,7 @@ void Mesh::updateLights() {
                 return 1;
             case Renderer::LightType::Dir:
                 return 2;
+            case Renderer::LightType::Spot:
             case Renderer::LightType::Point:
                 return 3.0f + glm::length2(meshPos - light.position);
         }

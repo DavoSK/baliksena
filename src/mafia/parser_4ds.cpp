@@ -21,7 +21,7 @@ void DataFormat4DS::loadMaterial(Model* model, MFUtil::ScopedBuffer& file) {
 
         read(file, &mat.mDiffuseMapNameLength);
         read(file, mat.mDiffuseMapName, mat.mDiffuseMapNameLength);
-
+        
         if (mat.mFlags & MATERIALFLAG_ALPHATEXTURE) {
             read(file, &mat.mAlphaMapNameLength);
             read(file, mat.mAlphaMapName, mat.mAlphaMapNameLength);

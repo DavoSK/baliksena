@@ -49,7 +49,7 @@ public:
         OBJECT_LIGHT_TYPE = 0x4041,
         OBJECT_LIGHT_COLOUR = 0x0026,
         OBJECT_LIGHT_POWER = 0x4042,
-        OBJECT_LIGHT_UNK_1 = 0x4043,
+        OBJECT_LIGHT_CONE = 0x4043,
         OBJECT_LIGHT_RANGE = 0x4044,
         OBJECT_LIGHT_FLAGS = 0x4045,
         OBJECT_LIGHT_SECTOR= 0x4046,
@@ -214,8 +214,8 @@ public:
         MFMath::Vec3 mLightColour;
         int32_t mLightFlags;
         float mLightPower;           // 1.0 = 100% (can be even over 1.0)
-        float mLightUnk0;
-        float mLightUnk1;
+        float mLightConeTheta;
+        float mLightConePhi;
         float mLightNear;
         float mLightFar;
         std::vector<std::string> mLightSectors;

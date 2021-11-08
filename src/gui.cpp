@@ -117,11 +117,6 @@ void renderLightWidget(Light* light) {
         light->setAmbient(ambient);
     }
 
-    glm::vec3 specular = light->getSpecular();
-    if(ImGui::ColorPicker3("Specular", (float*)&specular)) {
-        light->setSpecular(specular);
-    }
-    
     ImGui::Separator();
 
     switch(light->getType()){
@@ -495,7 +490,7 @@ void Gui::render() {
         lastWsize = wsize;
     }
 
-    ImGui::Image((ImTextureID)(Renderer::getRenderTargetTexture().id), wsize/*, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)*/);
+    ImGui::Image((ImTextureID)(Renderer::getRenderTargetTexture().id), wsize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
     renderImGuizmo(scene);
     ImGui::EndChild();
     ImGui::End();

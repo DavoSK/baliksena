@@ -4,8 +4,8 @@
 #define SOKOL_LOG(X) Logger::get().warn(X);
 #define SOKOL_IMPL
 
-#define SOKOL_D3D11
-//#define SOKOL_GLCORE33
+//#define SOKOL_D3D11
+#define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
@@ -247,7 +247,7 @@ Renderer::TextureHandle Renderer::createTexture(uint8_t* data, int width, int he
     imageDesc.pixel_format      = SG_PIXELFORMAT_RGBA8;
     imageDesc.wrap_u            = SG_WRAP_REPEAT;
     imageDesc.wrap_v            = SG_WRAP_REPEAT;
-    imageDesc.min_filter        = SG_FILTER_LINEAR;
+    imageDesc.min_filter        = mipmaps ? SG_FILTER_LINEAR_MIPMAP_LINEAR : SG_FILTER_LINEAR;
     imageDesc.mag_filter        = SG_FILTER_LINEAR;
     imageDesc.autogen_mipmaps   = mipmaps;
     imageDesc.data.subimage[0][0] = { data, static_cast<size_t>(width * height * 4) };
@@ -413,13 +413,15 @@ void Renderer::applyUniforms() {
         universal_vs_lights_t vsLights = {};
         memset(&vsLights, 0, sizeof(universal_vs_lights_t));
 
-        for(size_t i = 0; i < 10; i++) {
+        for(size_t i = 0; i < 50; i++) {
             if( i >= state.lights.size()) break;
             const auto& light = state.lights[i];
             vsLights.position[i]    = glm::vec4(light.position, (float)light.type);
-            vsLights.ambient[i]     = glm::vec4(light.ambient, 1.0f);
-            vsLights.diffuse[i]     = glm::vec4(light.diffuse, 1.0f);
-            vsLights.range[i]       = glm::vec4(light.rangeFar, light.rangeNear, 0.0f, 0.0f);
+            vsLights.dir[i]         = glm::vec4(light.dir, 0.0f);
+            vsLights.ambient[i]     = glm::vec4(light.ambient, 0.0f);
+            vsLights.diffuse[i]     = glm::vec4(light.diffuse, 0.0f);
+            vsLights.range[i]       = glm::vec4(light.range.x, light.range.y, 0.0f, 0.0f);
+            vsLights.cone[i]        = glm::vec4(light.cone.x, light.cone.y, 0.0f, 0.0f);
         }
 
         sg_range vsLightRange{

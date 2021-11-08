@@ -77,27 +77,38 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
             light->setDir(dir);
         } break;
         
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_SPOT: {
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
+            light->setType(LightType::Spot);
+            light->setDiffuse(color);
+            light->setRange({object.mLightNear, object.mLightFar});
+            light->setCone(object.mLightConeTheta, object.mLightConePhi);
+
+            glm::quat meshRot {};
+            meshRot.w = object.mRot.w;
+            meshRot.x = object.mRot.x;
+            meshRot.y = object.mRot.y;
+            meshRot.z = object.mRot.z;
+
+            auto mat4 = glm::toMat4(meshRot);
+            auto dir = glm::vec3(mat4[2]);
+            light->setDir(dir);
+
+            return light;
+        } break;
+
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
             auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Ambient);
             light->setAmbient(color);
         } break;
         
-        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_SPOT: {
-            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
-            light->setType(LightType::Ambient);
-            light->setAmbient(glm::normalize(color));
-            //Logger::get().info("info spot light {}", object.mName);
-            return light;
-        } break;
-
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_POINT: {
             auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Point);
             light->setPos({object.mPos2.x, object.mPos2.y, object.mPos2.z});
             light->setDiffuse(color);
-            light->setFar(object.mLightFar);
-            light->setNear(object.mLightNear);
+            light->setRange({object.mLightNear, object.mLightFar});
         } break;
 
         default: {

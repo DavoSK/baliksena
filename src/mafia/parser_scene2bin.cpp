@@ -388,9 +388,9 @@ void DataFormatScene2BIN::readLight(MFUtil::ScopedBuffer& srcFile, Header* heade
             read(srcFile, &object->mLightFlags);
         } break;
 
-        case OBJECT_LIGHT_UNK_1: {
-            read(srcFile, &object->mLightUnk0);
-            read(srcFile, &object->mLightUnk1);
+        case OBJECT_LIGHT_CONE: {
+            read(srcFile, &object->mLightConeTheta);
+            read(srcFile, &object->mLightConePhi);
         } break;
     }
 }

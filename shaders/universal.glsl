@@ -33,7 +33,7 @@ material_t getMaterial();
 /* --------------- */
 
 /* lights section */
-#define NUM_LIGHTS 8
+#define NUM_LIGHTS 50
 
 const uint LightType_Dir        = 0;
 const uint LightType_Point      = 1;
@@ -43,19 +43,22 @@ const uint LightType_Spot       = 3;
 struct light_t {
     int type;    
     vec3 position;
+    vec3 dir;
     vec3 ambient;
     vec3 diffuse;
-    float far;
-    float near;
+    vec2 range;
+    vec2 cone;
 };
 
 //NOTE: use w as type
 //NOTE: use x as range, y z w resered for spot light
 uniform vs_lights {
     vec4 position[NUM_LIGHTS];
+    vec4 dir[NUM_LIGHTS];
     vec4 ambient[NUM_LIGHTS];
     vec4 diffuse[NUM_LIGHTS];
     vec4 range[NUM_LIGHTS];
+    vec4 cone[NUM_LIGHTS];
 } lights;
 
 light_t getLight(int index);
@@ -68,7 +71,6 @@ uniform vs_params {
     mat4 view;
     mat4 projection;
     vec3 viewPos;
-    //vec3 ambientLight;
     float billboard;
     float lightsCount;
 };
@@ -118,10 +120,11 @@ light_t getLight(int index) {
     return light_t(
         int(lights.position[index].w),
         lights.position[index].xyz,
+        lights.dir[index].xyz,
         lights.ambient[index].xyz,
         lights.diffuse[index].xyz,
-        lights.range[index].x,
-        lights.range[index].y
+        lights.range[index].xy,
+        lights.cone[index].xy
     );
 }
 
@@ -131,7 +134,7 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
             return light.ambient;
         }
         case LightType_Dir: {
-            vec3 lightDir = normalize(-light.position);
+            vec3 lightDir = normalize(-light.dir);
             float intensity = clamp(dot(normalize(normal), normalize(lightDir)), 0.0, 1.0);
             vec3 diffuse = (light.diffuse * (intensity * mat.diffuse));
             return diffuse;
@@ -140,15 +143,16 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
             vec3 lightVec = (light.position - fragPos);
             float dist = length(lightVec);
             lightVec = normalize(lightVec);
-
-            if(dist <= light.near) dist = 1.0;
-            else if(dist < light.far) dist = (dist - light.near) / (light.far - light.near) * -1.0 + 1.0;
+        
+            if(dist <= light.range.x) dist = 1.0;
+            else if(dist < light.range.y) dist = (dist - light.range.x) / (light.range.y - light.range.x) * -1.0 + 1.0;
             else dist = 0.0;
 
             return light.diffuse * max(dot(lightVec, normalize(normal)), 0.0) * dist * mat.diffuse;
         }
         case LightType_Spot: {
-            
+            vec3 lightVec = (light.position - fragPos);
+            float spot = acos(max(dot(lightVec, light.dir), 0.0));
         }
         default:
             return vec3(0.0);
