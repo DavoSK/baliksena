@@ -242,22 +242,18 @@ void Renderer::commit() {
 
 Renderer::TextureHandle Renderer::createTexture(uint8_t* data, int width, int height, bool mipmaps) {
     sg_image_desc imageDesc {};
-    imageDesc.width         = width;
-    imageDesc.height        = height;
-    imageDesc.pixel_format  = SG_PIXELFORMAT_RGBA8;
-    imageDesc.wrap_u        = SG_WRAP_REPEAT;
-    imageDesc.wrap_v        = SG_WRAP_REPEAT;
-    imageDesc.min_filter    = SG_FILTER_LINEAR;
-    imageDesc.mag_filter    = SG_FILTER_LINEAR;
-    imageDesc.data = { data, static_cast<size_t>(width * height * 4) };
-
+    imageDesc.width             = width;
+    imageDesc.height            = height;
+    imageDesc.pixel_format      = SG_PIXELFORMAT_RGBA8;
+    imageDesc.wrap_u            = SG_WRAP_REPEAT;
+    imageDesc.wrap_v            = SG_WRAP_REPEAT;
+    imageDesc.min_filter        = SG_FILTER_LINEAR;
+    imageDesc.mag_filter        = SG_FILTER_LINEAR;
+    imageDesc.autogen_mipmaps   = mipmaps;
+    imageDesc.data.subimage[0][0] = { data, static_cast<size_t>(width * height * 4) };
+    
     sg_image createdImage {SG_INVALID_ID};
-    if(mipmaps) {
-        createdImage = sg_make_image_with_mipmaps(&imageDesc);
-    } else {
-        createdImage = sg_make_image(&imageDesc);
-    }
-  
+    createdImage = sg_make_image(&imageDesc);
     assert(createdImage.id != SG_INVALID_ID);
     return { createdImage.id };
 }

@@ -77,16 +77,16 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
             light->setDir(dir);
         } break;
         
-        // case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
-        //     auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
-        //     light->setType(LightType::Ambient);
-        //     light->setAmbient(color);
-        // } break;
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_AMBIENT: {
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
+            light->setType(LightType::Ambient);
+            light->setAmbient(color);
+        } break;
         
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_SPOT: {
-            // auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
-            // light->setType(LightType::Ambient);
-            // light->setAmbient(glm::normalize(color));
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
+            light->setType(LightType::Ambient);
+            light->setAmbient(glm::normalize(color));
             //Logger::get().info("info spot light {}", object.mName);
             return light;
         } break;

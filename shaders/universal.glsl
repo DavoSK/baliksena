@@ -33,7 +33,7 @@ material_t getMaterial();
 /* --------------- */
 
 /* lights section */
-#define NUM_LIGHTS 10
+#define NUM_LIGHTS 8
 
 const uint LightType_Dir        = 0;
 const uint LightType_Point      = 1;
@@ -145,7 +145,7 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
             else if(dist < light.far) dist = (dist - light.near) / (light.far - light.near) * -1.0 + 1.0;
             else dist = 0.0;
 
-            return light.diffuse * max(dot(lightVec, normalize(normal)), 0.0) * dist;
+            return light.diffuse * max(dot(lightVec, normalize(normal)), 0.0) * dist * mat.diffuse;
         }
         case LightType_Spot: {
             

@@ -27,12 +27,6 @@ Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparency
     auto* texture = gTextureCache[fileName];
     if (texture == nullptr) {
         auto path = "MAPS\\" + fileName;   
-       
-        /*if(fileName.find("5OKNA08") != std::string::npos) {
-            int test = 0;
-            test++;
-        }*/
-
         auto textureFile = Vfs::getFile(path);
         if (textureFile.has_value()) {
             //NOTE: init new texture
@@ -43,7 +37,7 @@ Texture* Texture::loadFromFile(const std::string& fileName, bool useTransparency
             if (!newTexture->mBuffer)
                 return {};
 
-            newTexture->mTextureHandle = Renderer::createTexture(newTexture->mBuffer, newTexture->mWidth, newTexture->mHeight, false);
+            newTexture->mTextureHandle = Renderer::createTexture(newTexture->mBuffer, newTexture->mWidth, newTexture->mHeight, mipmaps);
             return gTextureCache[fileName] = newTexture;
         }
     }

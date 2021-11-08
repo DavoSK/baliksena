@@ -44,11 +44,11 @@ void Mesh::render() {
     if (mStatic || mVertices.empty() || !isOn()) return;
     
     //NOTE: cull only objects in Primary sector
-    // const auto& worldBBOX = getWorldBBOX();
-    // if ( Renderer::getPass() != Renderer::RenderPass::SKYBOX && 
-    //     !Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
-    //     return;
-    // }
+    const auto& worldBBOX = getWorldBBOX();
+    if ( Renderer::getPass() != Renderer::RenderPass::SKYBOX && 
+        !Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
+        return;
+    }
 
     if(mUpdateLights) {
         updateLights();
@@ -115,4 +115,6 @@ void Mesh::updateLights() {
     std::sort(mLights.begin(), mLights.end(), [&](Renderer::Light a, Renderer::Light b) {
         return rankFromLighType(a) < rankFromLighType(b);
     });
+
+    mLights.resize(8);
 }
