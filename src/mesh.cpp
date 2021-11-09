@@ -3,6 +3,7 @@
 #include "scene.hpp"
 #include "sector.hpp"
 #include "app.hpp"
+#include "camera.h"
 #include "light.hpp"
 
 /*
@@ -26,10 +27,8 @@ void FaceGroup::render() const {
 void Mesh::setVertices(std::vector<Renderer::Vertex> vertices) {
     mVertices = std::move(vertices);
 
-    // NOTE: build AABB bounding box
-    glm::vec3 AABBmin, AABBmax;
-    AABBmin = mVertices[0].p;
-    AABBmax = mVertices[0].p;
+    glm::vec3 AABBmin = glm::vec3(std::numeric_limits<float>::max());
+	glm::vec3 AABBmax = glm::vec3(std::numeric_limits<float>::min());
 
     for (const auto& vertex : mVertices) {
         AABBmin = glm::min(AABBmin, vertex.p);
@@ -41,13 +40,12 @@ void Mesh::setVertices(std::vector<Renderer::Vertex> vertices) {
 
 void Mesh::render() {
     Frame::render();
-    if (mStatic || mVertices.empty() || !isOn()) return;
-    
-    //NOTE: cull only objects in Primary sector
-    const auto& worldBBOX = getWorldBBOX();
-    if ( Renderer::getPass() != Renderer::RenderPass::SKYBOX && 
-        !Renderer::getFrustum().IsBoxVisible(worldBBOX.first, worldBBOX.second)) {
-        return;
+    if (mVertices.empty() || !isOn()) return;
+    if(auto* cam = App::get()->getScene()->getActiveCamera()) {
+        if(Renderer::getPass() != Renderer::RenderPass::SKYBOX && mSphereBounding != nullptr) {
+            if(!cam->getFrustum().isSphereInFrustum(*mSphereBounding)) 
+                return;
+        }
     }
 
     if(mUpdateLights) {
@@ -124,9 +122,11 @@ void Mesh::updateLights() {
         }
     };
 
+    //TODO: spot and point lights needs to be sorted
+    //by checking bouding volume next to mesh bounding volume
     std::sort(mLights.begin(), mLights.end(), [&](Renderer::Light a, Renderer::Light b) {
         return rankFromLighType(a) < rankFromLighType(b);
     });
 
-    mLights.resize(8);
+    mLights.resize(15);
 }

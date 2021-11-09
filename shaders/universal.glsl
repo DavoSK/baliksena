@@ -33,7 +33,7 @@ material_t getMaterial();
 /* --------------- */
 
 /* lights section */
-#define NUM_LIGHTS 50
+#define NUM_LIGHTS 15
 
 const uint LightType_Dir        = 0;
 const uint LightType_Point      = 1;

@@ -13,7 +13,9 @@ constexpr float YAW = -90.0f;
 constexpr float PITCH = 0.0f;
 constexpr float SPEED = 0.05f;
 constexpr float SENSITIVITY = 0.4f;
-constexpr float ZOOM = 65.0f;
+constexpr float FOV = 65.0f;
+
+#include "bounding_volumes.hpp"
 
 class Camera {
 public:
@@ -31,7 +33,7 @@ public:
     // NOTE: camera options
     float MovementSpeed = SPEED;
     float MouseSensitivity = SENSITIVITY;
-    float Zoom = ZOOM;
+    float Fov = FOV;
     float Aspect = 0.0f;
     float Near = 0.0f;
     float Far = 0.0f;
@@ -47,16 +49,19 @@ public:
     [[nodiscard]] const glm::mat4& getSkyboxProjMatrix() const { return mProjSkyboxMatrix; }
     [[nodiscard]] const glm::vec3& getPos() const { return Position; }
     [[nodiscard]] const glm::vec3& getRight() const { return Right; }
-    [[nodiscard]] float getFOV() const { return Zoom; }
+    [[nodiscard]] float getFOV() const { return Fov; }
     [[nodiscard]] float getPitch() const { return Pitch; }
     [[nodiscard]] float getYaw() const { return Yaw; }
+    [[nodiscard]] Frustum& getFrustum() { return mFrustum; }
 
     void setPosDelta(const glm::vec3& posDelta) { mPosDelta = posDelta; }
     void setDirDelta(const glm::vec2& dirDelta) { mDirDelta = dirDelta; }
     void update(float deltaTime);
+    void updateFrustum();
     void processInput();
 private:
     void updateCameraVectors();
+    Frustum mFrustum;
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
     glm::mat4 mProjSkyboxMatrix;

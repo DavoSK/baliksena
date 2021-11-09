@@ -10,6 +10,5 @@ public:
     void pushLight(std::shared_ptr<Light> light);
     [[nodiscard]] const std::vector<std::shared_ptr<Light>>& getLights() { return mSectorLights; }
 private:
-    void renderLights();
     std::vector<std::shared_ptr<Light>> mSectorLights;
 };

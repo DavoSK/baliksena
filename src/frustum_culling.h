@@ -9,7 +9,8 @@ public:
 
     // http://iquilezles.org/www/articles/frustumcorrect/frustumcorrect.htm
     bool IsBoxVisible(const glm::vec3& minp, const glm::vec3& maxp) const;
-
+    bool IsSphereInFrustum(const glm::vec3& center, float radius);
+    
 private:
     enum Planes { Left = 0, Right, Bottom, Top, Near, Far, Count, Combinations = Count * (Count - 1) / 2 };
 

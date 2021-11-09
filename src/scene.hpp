@@ -27,6 +27,7 @@ public:
     void clear();
     void render();
 private:
+    void initVertexBuffers();
     void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector);
     std::shared_ptr<Light> loadLight(const MFFormat::DataFormatScene2BIN::Object& object);
     std::shared_ptr<Sector> loadSector(const MFFormat::DataFormatScene2BIN::Object& object);
@@ -35,4 +36,10 @@ private:
     std::shared_ptr<Sector> mBackdropSector{ nullptr };
     std::shared_ptr<Camera> mActiveCamera{ nullptr };
     Sector* mCurrentSector{ nullptr };
+
+    //TODO: move
+    //std::vector<Renderer::Light> mBatchedLights;
+    //std::unordered_map<Material*, RenderHelper> mRenderHelper;
+    Renderer::BufferHandle mVertexBuffer{ 0 };
+    Renderer::BufferHandle mIndexBuffer{ 0 };
 };

@@ -146,28 +146,24 @@
 std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     std::vector<MFFormat::DataFormat4DS::Lod>* lods = nullptr;
-    bool isStaticMesh = false;
-
     std::shared_ptr<Mesh> newMesh = nullptr;
-
     switch (mesh.mVisualMeshType) {
-    case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_STANDARD: {
-        lods = &mesh.mStandard.mLODs;
-    } break;
-    case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_BILLBOARD: {
-        lods = &mesh.mBillboard.mStandard.mLODs;
-        isStaticMesh = false;
-        newMesh = std::make_shared<Billboard>();
-    } break;
-    case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMESH: {
-        lods = &mesh.mSingleMesh.mStandard.mLODs;
-    } break;
-    case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMORPH: {
-        lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;
-    } break;
-    default: {
-        //Logger::get().warn("unable to load visual mesh type {}",  mesh.mVisualMeshType);
-    } break;
+        case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_STANDARD: {
+            lods = &mesh.mStandard.mLODs;
+        } break;
+        case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_BILLBOARD: {
+            lods = &mesh.mBillboard.mStandard.mLODs;
+            newMesh = std::make_shared<Billboard>();
+        } break;
+        case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMESH: {
+            lods = &mesh.mSingleMesh.mStandard.mLODs;
+        } break;
+        case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMORPH: {
+            lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;
+        } break;
+        default: {
+            //Logger::get().warn("unable to load visual mesh type {}",  mesh.mVisualMeshType);
+        } break;
     }
 
     if(newMesh == nullptr) {
@@ -175,8 +171,6 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     }
 
     newMesh->setName(mesh.mMeshName);
-    newMesh->setStatic(isStaticMesh);
-
     newMesh->setPos({mesh.mPos.x, mesh.mPos.y, mesh.mPos.z});
     newMesh->setScale({mesh.mScale.x, mesh.mScale.y, mesh.mScale.z});
 

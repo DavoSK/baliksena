@@ -3,7 +3,6 @@
 
 void Frame::render() {
     if (!mOn) return;
-
     for (auto& child : mChilds) {
         child->render();
     }
@@ -25,6 +24,7 @@ const glm::mat4& Frame::getWorldMatrix() {
     }
 
     if (getOwner() == nullptr) {
+        mCachedTransform = mTransform;
         return mTransform;
     }
 
@@ -39,36 +39,20 @@ void Frame::invalidateTransformRecursively() {
         frame->invalidateTransformRecursively();
     }
 
-    updateAABBWorld();
+    updateBoundingVolumes();
 }
 
 void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
     mAABB = bbox;
-    updateAABBWorld();
+    updateBoundingVolumes();
 }
 
-void Frame::updateAABBWorld() {
+void Frame::updateBoundingVolumes() {
     const auto currentWorld = getWorldMatrix();
-    // const auto min = glm::translate(currentWorld, mAABB.first);
-    // const auto max = glm::translate(currentWorld, mAABB.second);
-    // mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
     const auto min = currentWorld * glm::vec4(mAABB.first, 1.0f);
     const auto max = currentWorld * glm::vec4(mAABB.second, 1.0f);
     mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min, max);
-}
-
-std::vector<std::string> split(std::string const& original, char separator) {
-    std::vector<std::string> results;
-    std::string::const_iterator start = original.begin();
-    std::string::const_iterator end = original.end();
-    std::string::const_iterator next = std::find(start, end, separator);
-    while (next != end) {
-        results.push_back(std::string(start, next));
-        start = next + 1;
-        next = std::find(start, end, separator);
-    }
-    results.push_back(std::string(start, next));
-    return results;
+    mSphereBounding = std::make_unique<Sphere>((mABBBWorld.second + mABBBWorld.first) * 0.5f, glm::length(mABBBWorld.first - mABBBWorld.second));
 }
 
 std::shared_ptr<Frame> Frame::findFrame(const std::string& name) const {

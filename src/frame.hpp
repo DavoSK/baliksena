@@ -1,6 +1,7 @@
 #pragma once
 #include "renderer.hpp"
 #include "stats.hpp"
+#include "bounding_volumes.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -10,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <functional>
 
 enum class FrameType
 {
@@ -82,9 +84,45 @@ public:
 
     void setScale(const glm::vec3& scale);
     [[nodiscard]] const glm::vec3& getScale() const { return mScale; }
+
+
+    glm::vec3 getRight() const {
+		return mCachedTransform[0];
+	}
+
+	glm::vec3 getUp() const {
+		return mCachedTransform[1];
+	}
+
+	glm::vec3 getBackward() const {
+		return mCachedTransform[2];
+	}
+
+	glm::vec3 getForward() const {
+		return -mCachedTransform[2];
+	}
+
+    glm::vec3 getGlobalScale() const{
+		return { glm::length(getRight()), glm::length(getUp()), glm::length(getBackward()) };
+	}
+
+    template<typename T>
+    void forEach(std::function<void(T*)> callback, Frame* owner) {
+        for (const auto& child : owner->getChilds()) {
+            auto* frame = child.get();
+            //NOTE: if its not mesh it still can hold mesh childs
+            auto* mesh = dynamic_cast<T*>(frame);
+            if (!mesh) {
+                forEach(callback, frame);
+                continue;
+            }
+            callback(mesh);
+            forEach(callback, mesh);
+        }
+    }
 protected:
     void updateTransform();
-    void updateAABBWorld();
+    void updateBoundingVolumes();
     std::pair<glm::vec3, glm::vec3> mAABB;
     std::pair<glm::vec3, glm::vec3> mABBBWorld;
 
@@ -98,4 +136,5 @@ protected:
     glm::mat4 mCachedTransform;
     Frame* mOwner;
     std::vector<std::shared_ptr<Frame>> mChilds;
+    std::unique_ptr<Sphere> mSphereBounding;
 };

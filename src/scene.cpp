@@ -11,11 +11,13 @@
 #include "input.hpp"
 #include "app.hpp"
 #include "light.hpp"
+#include "mesh.hpp"
 #include "mafia/utils.hpp"
 
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <algorithm>
 
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
@@ -331,7 +333,7 @@ void Scene::load(const std::string& missionName) {
     }
 
     invalidateTransformRecursively();
-    init();
+    initVertexBuffers();
 }
 
 void Scene::clear() {
@@ -390,5 +392,25 @@ void Scene::render() {
     if(mPrimarySector != nullptr) {
         mPrimarySector->render();
     }
+
     //TODO: transparency pass, alpha blending, sorting, etc ...
+}
+
+void Scene::initVertexBuffers() {
+    forEach<Mesh>([&](Mesh* mesh) {
+        const auto& vertices = mesh->getVertices();
+        const auto currentVerticesCount = static_cast<uint32_t>(mVertices.size());
+        mVertices.insert(mVertices.end(), vertices.begin(), vertices.end());
+
+        for (const auto& faceGroup : mesh->getFaceGroups()) {
+            const auto currentIndicesCount = mIndices.size();
+            for (auto i : faceGroup->getIndices()) {
+                mIndices.push_back(i + currentVerticesCount);
+            }
+            faceGroup->setOffset(currentIndicesCount);
+        }
+    }, this);
+
+    mIndexBuffer = Renderer::createIndexBuffer(mIndices);
+    mVertexBuffer = Renderer::createVertexBuffer(mVertices);
 }

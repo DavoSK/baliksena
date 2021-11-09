@@ -4,8 +4,8 @@
 #define SOKOL_LOG(X) Logger::get().warn(X);
 #define SOKOL_IMPL
 
-//#define SOKOL_D3D11
-#define SOKOL_GLCORE33
+#define SOKOL_D3D11
+//#define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
@@ -20,10 +20,6 @@
 #include <glm/gtx/transform.hpp>
 
 //NOTE: shaders
-/*#include "shader_basic.h"
-#include "shader_cutout.h" 
-#include "shader_billboard.h" 
-#include "shader_env.h"*/
 #include "shader_universal.h"
 #include "shader_skybox.h"
 
@@ -413,7 +409,7 @@ void Renderer::applyUniforms() {
         universal_vs_lights_t vsLights = {};
         memset(&vsLights, 0, sizeof(universal_vs_lights_t));
 
-        for(size_t i = 0; i < 50; i++) {
+        for(size_t i = 0; i < MaxLights; i++) {
             if( i >= state.lights.size()) break;
             const auto& light = state.lights[i];
             vsLights.position[i]    = glm::vec4(light.position, (float)light.type);
@@ -448,16 +444,13 @@ void Renderer::applyUniforms() {
 
 void Renderer::setViewMatrix(const glm::mat4 &view) {
     state.view = view;
-    updateFrustum();
 }
 
 void Renderer::setProjMatrix(const glm::mat4 &proj) {
     state.proj = proj;
-    updateFrustum();
 }
 
-void Renderer::setViewPos(const glm::vec3& pos)
-{
+void Renderer::setViewPos(const glm::vec3& pos) {
     state.viewPos = pos;
 }
 
@@ -476,9 +469,3 @@ void Renderer::guiHandleSokolInput(const sapp_event* e) {
 
 int Renderer::getWidth() { return sapp_width(); }
 int Renderer::getHeight() { return sapp_height(); }
-
-void Renderer::updateFrustum() {
-    mFurstum = Frustum(state.proj * state.view);
-}
-
-Frustum Renderer::mFurstum;

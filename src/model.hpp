@@ -4,6 +4,7 @@
 #include "stats.hpp"
 
 #include <unordered_map>
+#include <memory>
 
 struct RenderHelper {
     size_t vertexBufferOffset;
@@ -21,9 +22,6 @@ public:
     void init();
 protected:
     Material* mMat = nullptr;
-    std::unordered_map<Material*, RenderHelper> mRenderHelper;
     std::vector<Renderer::Vertex> mVertices;
     std::vector<uint32_t> mIndices;
-    Renderer::BufferHandle mVertexBuffer{ 0 };
-    Renderer::BufferHandle mIndexBuffer{ 0 };
 };

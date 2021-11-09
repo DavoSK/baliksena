@@ -48,6 +48,7 @@ add_executable(baliksena
     src/renderer.cpp
     src/input.cpp
     src/camera.cpp
+    src/bounding_volumes.cpp
     src/frustum_culling.cpp
     src/texture.cpp 
     src/material.cpp

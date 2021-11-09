@@ -44,14 +44,12 @@ public:
     [[nodiscard]] const std::vector<std::unique_ptr<FaceGroup>>& getFaceGroups() { return mFaceGroups; }
 
     virtual void render() override;
-
-    void setStatic(bool isStatic) { mStatic = isStatic; }
-    [[nodiscard]] bool isStatic() { return mStatic; }
 private:
+    //NOTE: batch ligts for this mesh from current sector
     void updateLights();
     std::vector<Renderer::Light> mLights;
+    bool mUpdateLights = true;
+
     std::vector<Renderer::Vertex> mVertices;
     std::vector<std::unique_ptr<FaceGroup>> mFaceGroups;
-    bool mStatic = true;
-    bool mUpdateLights = true;
 };

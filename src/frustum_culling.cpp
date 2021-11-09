@@ -12,7 +12,7 @@ Frustum::Frustum(glm::mat4 m) {
     m_planes[Near] = m[3] + m[2];
     m_planes[Far] = m[3] - m[2];
 
-    glm::vec3 crosses[Combinations] = {
+    /*glm::vec3 crosses[Combinations] = {
         glm::cross(glm::vec3(m_planes[Left]), glm::vec3(m_planes[Right])),  glm::cross(glm::vec3(m_planes[Left]), glm::vec3(m_planes[Bottom])),
         glm::cross(glm::vec3(m_planes[Left]), glm::vec3(m_planes[Top])),    glm::cross(glm::vec3(m_planes[Left]), glm::vec3(m_planes[Near])),
         glm::cross(glm::vec3(m_planes[Left]), glm::vec3(m_planes[Far])),    glm::cross(glm::vec3(m_planes[Right]), glm::vec3(m_planes[Bottom])),
@@ -29,7 +29,7 @@ Frustum::Frustum(glm::mat4 m) {
     m_points[4] = intersection<Left, Bottom, Far>(crosses);
     m_points[5] = intersection<Left, Top, Far>(crosses);
     m_points[6] = intersection<Right, Bottom, Far>(crosses);
-    m_points[7] = intersection<Right, Top, Far>(crosses);
+    m_points[7] = intersection<Right, Top, Far>(crosses);*/
 }
 
 bool Frustum::IsBoxVisible(const glm::vec3& minp, const glm::vec3& maxp) const {
@@ -48,6 +48,17 @@ bool Frustum::IsBoxVisible(const glm::vec3& minp, const glm::vec3& maxp) const {
 
     return true;
 }
+
+bool Frustum::IsSphereInFrustum(const glm::vec3& center, float radius) {
+    
+    // for (int i = 0; i < Count; i++) {
+    //     if ((m_planes[i].normal.x * center.x + planes[i].normal.y * center.y + planes[i].normal.z
+    //             * center.z) < (-radius - planes[i].d))
+    //         return false;
+    // }
+
+    return true;
+}   
 
 template <Frustum::Planes a, Frustum::Planes b, Frustum::Planes c>
 glm::vec3 Frustum::intersection(const glm::vec3* crosses) const {

@@ -3,7 +3,6 @@
 #include <vector>
 #include <optional>
 
-#include "frustum_culling.h"
 struct sapp_event;
 
 class Renderer {
@@ -27,6 +26,7 @@ public:
         ADD
     };
 
+    static constexpr int MaxLights = 15;
     static constexpr int InvalidHandle = 0;
     struct TextureHandle { uint32_t id; };  
     struct BufferHandle { uint32_t id; };
@@ -91,8 +91,6 @@ public:
     static void setProjMatrix(const glm::mat4& proj);
     static void setViewPos(const glm::vec3& pos);
 
-    static Frustum& getFrustum() { return mFurstum; }
-
     static void draw(int baseElement, int numElements, int numInstances);
 
     static void createRenderTarget(int width, int height);
@@ -101,8 +99,5 @@ public:
     static void guiHandleSokolInput(const sapp_event* e);
     static int getWidth();
     static int getHeight();
-
-private: 
-    static void updateFrustum();
-    static Frustum mFurstum;
+private:
 };
