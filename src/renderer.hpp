@@ -7,9 +7,10 @@ struct sapp_event;
 
 class Renderer {
 public:
-    enum class RenderPass {
+    enum class RenderPass : uint64_t {
         NORMAL,
-        SKYBOX,
+        ALPHA,
+        DEBUG
     };
 
     enum class MaterialKind {
@@ -83,6 +84,9 @@ public:
     static void setIndexBuffer(BufferHandle handle);
     static void bindBuffers();
 
+    static void setCamRelative(bool relative);
+    static bool isCamRelative();
+
     static void setModel(const glm::mat4& model);
     static void setLights(const std::vector<Light>& light);
     static void applyUniforms();
@@ -99,5 +103,13 @@ public:
     static void guiHandleSokolInput(const sapp_event* e);
     static int getWidth();
     static int getHeight();
+
+    /* debug */
+    static void debugSetRenderColor(const glm::vec3& color = glm::vec3(1.0f, 1.0f, 1.0f));
+    static void debugRenderBox(const glm::vec3& center, const glm::vec3& scale);
+    static void debugRenderSphere(const glm::vec3& center, float radius);
+    static void debugBegin();
+    static void debugEnd();
 private:
+    static void debugInit();
 };

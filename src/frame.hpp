@@ -120,6 +120,8 @@ public:
             forEach(callback, mesh);
         }
     }
+
+    bool isVisible();
 protected:
     void updateTransform();
     void updateBoundingVolumes();

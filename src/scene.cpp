@@ -12,6 +12,7 @@
 #include "app.hpp"
 #include "light.hpp"
 #include "mesh.hpp"
+#include "gui.hpp"
 #include "mafia/utils.hpp"
 
 #include <functional>
@@ -352,8 +353,6 @@ void Scene::clear() {
 }
 
 void Scene::render() {
-    if(!isOn()) return;
-
     const auto deltaTime = 16.0f;
 
     //NOTE: update camera & render
@@ -370,30 +369,55 @@ void Scene::render() {
         Renderer::setViewPos(cam->Position);
     }
 
-    //NOTE: bind buffers
-    if (mVertexBuffer.id != Renderer::InvalidHandle && 
-        mIndexBuffer.id != Renderer::InvalidHandle) {
-        Renderer::setVertexBuffer(mVertexBuffer);
-        Renderer::setIndexBuffer(mIndexBuffer);
-    }
-
-    //NOTE: skybox pass -> render Backdrop sector first
-    Renderer::setPass(Renderer::RenderPass::SKYBOX);
-    Renderer::setProjMatrix(mActiveCamera->getSkyboxProjMatrix());
-    
-    if(mBackdropSector != nullptr) {
-        mBackdropSector->render();
-    }
-
     //NOTE: normal pass -> render normal objects
     Renderer::setPass(Renderer::RenderPass::NORMAL);
-    Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
+    {
+        //NOTE: bind buffers
+        if (mVertexBuffer.id != Renderer::InvalidHandle && 
+            mIndexBuffer.id != Renderer::InvalidHandle) {
+            Renderer::setVertexBuffer(mVertexBuffer);
+            Renderer::setIndexBuffer(mIndexBuffer);
+        }
 
-    if(mPrimarySector != nullptr) {
-        mPrimarySector->render();
+        //NOTE: skybox pass -> render Backdrop sector first
+        Renderer::setCamRelative(true);
+        Renderer::setProjMatrix(mActiveCamera->getSkyboxProjMatrix());
+
+        if(mBackdropSector != nullptr) {
+            mBackdropSector->render();
+        }
+
+        Renderer::setCamRelative(false);
+        Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
+
+        if(mPrimarySector != nullptr) {
+            mPrimarySector->render();
+        }
     }
 
-    //TODO: transparency pass, alpha blending, sorting, etc ...
+    //NOTE: transparency pass, alpha blending, sorting, etc ...
+    Renderer::setPass(Renderer::RenderPass::ALPHA);
+    {
+        //NOTE: bind buffers
+        if (mVertexBuffer.id != Renderer::InvalidHandle && 
+            mIndexBuffer.id != Renderer::InvalidHandle) {
+            Renderer::setVertexBuffer(mVertexBuffer);
+            Renderer::setIndexBuffer(mIndexBuffer);
+        }
+
+        Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
+
+        if(mPrimarySector != nullptr) {
+            mPrimarySector->render();
+        }
+    }
+
+    Renderer::setPass(Renderer::RenderPass::DEBUG);
+    {
+        Renderer::debugBegin();
+        Gui::debugRender(this);
+        Renderer::debugEnd();
+    }
 }
 
 void Scene::initVertexBuffers() {

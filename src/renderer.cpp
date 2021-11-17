@@ -21,10 +21,21 @@
 
 //NOTE: shaders
 #include "shader_universal.h"
-#include "shader_skybox.h"
+#include "shader_debug.h"
 
 #include "renderer.hpp"
 #include "gui.hpp"
+
+/* debug rendering */
+struct Sphere {
+    glm::vec3 center;
+    float radius;
+};
+
+struct Box {
+    glm::vec3 center;
+    glm::vec3 scale;
+};
 
 static struct {
     struct {
@@ -36,10 +47,14 @@ static struct {
     struct {
         sg_shader shader;
         sg_pipeline pip[2];
-        sg_shader skyboxShader;
-        sg_pipeline skyboxPip;
-    
-        sg_bindings bind;
+
+        //sg_shader alphablendShader;
+        sg_pipeline alphaPip[2];
+
+        sg_shader debugShader;
+        sg_pipeline debugPip;
+        sg_bindings bindings;
+
         sg_pass pass;
         sg_pass_desc passDesc;
         sg_pass_action passAction;
@@ -48,6 +63,7 @@ static struct {
 
     sg_image emptyTexture;
 
+    bool isRelative;
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
@@ -56,6 +72,14 @@ static struct {
     Renderer::Material material;
     Renderer::RenderPass pass;
     std::vector<Renderer::Light> lights;
+
+    /* debug */
+    sg_buffer debugCubeVertexBuffer;
+    sg_buffer debugCubeIndexBuffer;
+
+    std::vector<Box> debugBoxes;
+    std::vector<Sphere> debugSphers;
+    glm::vec3 debugColor;
 } state;
 
 void Renderer::createRenderTarget(int width, int height) {
@@ -151,39 +175,74 @@ void Renderer::init() {
     {
         state.offscreen.shader          = sg_make_shader(universal_universal_shader_desc(sg_query_backend()));
 
-        sg_pipeline_desc pipelineDesc   = {};
-        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
-        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
-        pipelineDesc.shader             = state.offscreen.shader;
-        pipelineDesc.layout             = layoutDesc;
-        pipelineDesc.depth              = depthState;
-        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        //NOTE: default pipeline
+        {
+            sg_pipeline_desc pipelineDesc   = {};
+            pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+            pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+            pipelineDesc.shader             = state.offscreen.shader;
+            pipelineDesc.layout             = layoutDesc;
+            pipelineDesc.depth              = depthState;
+            pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
 
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
-        pipelineDesc.label              = "universal-pipeline";
-        state.offscreen.pip[0]          = sg_make_pipeline(&pipelineDesc);
+            pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
+            pipelineDesc.label              = "universal-pipeline";
+            state.offscreen.pip[0]          = sg_make_pipeline(&pipelineDesc);
 
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
-        pipelineDesc.label              = "universal-pipeline-backfaceculled";
-        state.offscreen.pip[1]          = sg_make_pipeline(&pipelineDesc);
+            pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+            pipelineDesc.label              = "universal-pipeline-backfaceculled";
+            state.offscreen.pip[1]          = sg_make_pipeline(&pipelineDesc);
+        }
+
+        //NOTE: alpha blending pipeline
+        {
+            sg_pipeline_desc pipelineDesc   = {};
+            sg_color_state& colorState      = pipelineDesc.colors[0];
+            colorState.pixel_format         = SG_PIXELFORMAT_RGBA8;
+            colorState.blend.enabled            = true;
+            colorState.blend.src_factor_rgb     = SG_BLENDFACTOR_SRC_ALPHA;
+            colorState.blend.src_factor_rgb     = SG_BLENDFACTOR_SRC_ALPHA;
+            colorState.blend.dst_factor_rgb     = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+            colorState.blend.op_rgb             = SG_BLENDOP_ADD;
+            colorState.blend.src_factor_alpha   = SG_BLENDFACTOR_SRC_ALPHA;
+            colorState.blend.dst_factor_alpha   = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+            colorState.blend.op_alpha           = SG_BLENDOP_ADD;
+
+            pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
+            pipelineDesc.shader             = state.offscreen.shader;
+            pipelineDesc.layout             = layoutDesc;
+            pipelineDesc.depth              = depthState;
+            pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+
+            pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
+            pipelineDesc.label              = "universal-pipeline-alphablend";
+            state.offscreen.alphaPip[0]     = sg_make_pipeline(&pipelineDesc);
+
+            pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_BACK;
+            pipelineDesc.label              = "universal-pipeline-alphablend-backfaceculled";
+            state.offscreen.alphaPip[1]     = sg_make_pipeline(&pipelineDesc);
+        }
     }
 
-    //NOTE: skybox shader
+    //NOTE: debug shader
     {
-        state.offscreen.skyboxShader = sg_make_shader(skybox_skybox_shader_desc(sg_query_backend()));
+        sg_layout_desc layoutDesc{};
+        layoutDesc.attrs[ATTR_debug_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
+        state.offscreen.debugShader = sg_make_shader(debug_debug_shader_desc(sg_query_backend()));
 
         sg_pipeline_desc pipelineDesc   = {};
         pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
         pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
-        pipelineDesc.shader             = state.offscreen.skyboxShader;
+        pipelineDesc.shader             = state.offscreen.debugShader;
         pipelineDesc.layout             = layoutDesc;
         pipelineDesc.depth              = depthState;
-        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT32;
+        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT16;
         pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
-        pipelineDesc.label              = "skybox-pipeline";
-        state.offscreen.skyboxPip       = sg_make_pipeline(&pipelineDesc);
+        pipelineDesc.label              = "debug-pipeline";
+        state.offscreen.debugPip        = sg_make_pipeline(&pipelineDesc);
     }
 
+    debugInit();
     Gui::init();
 }
 
@@ -193,11 +252,12 @@ void Renderer::destroy() {
 
     for(size_t i = 0; i < 2; i++) {
         sg_destroy_pipeline(state.offscreen.pip[i]);
+        sg_destroy_pipeline(state.offscreen.alphaPip[i]);
     }
 
-    sg_destroy_shader(state.offscreen.skyboxShader);
-    sg_destroy_pipeline(state.offscreen.skyboxPip);
-
+    /* debug */
+    sg_destroy_shader(state.offscreen.debugShader);
+    sg_destroy_pipeline(state.offscreen.debugPip);
     sg_shutdown();
 }
 
@@ -207,15 +267,12 @@ void Renderer::begin() {
 
 void Renderer::setPass(RenderPass pass) {
     state.pass = pass;
+    memset(&state.offscreen.bindings, 0, sizeof(sg_bindings));
 }
 
-Renderer::RenderPass Renderer::getPass() {
-    return state.pass;
-}
+Renderer::RenderPass Renderer::getPass() { return state.pass; }
 
-void Renderer::end()  {
-    sg_end_pass();
-}
+void Renderer::end()  { sg_end_pass(); }
 
 void Renderer::commit() { 
     //NOTE: begin default pass for GUI
@@ -260,7 +317,7 @@ void Renderer::destroyTexture(TextureHandle textureHandle) {
 
 void Renderer::bindTexture(TextureHandle textureHandle, unsigned int slot) {
     sg_image textureToBind = { textureHandle.id };
-    state.offscreen.bind.fs_images[slot] = textureToBind;
+    state.offscreen.bindings.fs_images[slot] = textureToBind;
 }
 
 void Renderer::bindMaterial(const Material& material) {
@@ -272,9 +329,10 @@ void Renderer::bindMaterial(const Material& material) {
         bindTexture({state.emptyTexture.id}, SLOT_universal_diffuseSampler);
     }
 
-    if(state.pass == RenderPass::SKYBOX) {
-        bindTexture({SG_INVALID_ID}, SLOT_universal_envSampler);
-        return;
+    if(material.alphaTexture.has_value()) {
+        bindTexture(material.alphaTexture.value(), SLOT_universal_alphaSampler);
+    } else {
+        bindTexture({state.emptyTexture.id}, SLOT_universal_alphaSampler);
     }
 
     if (material.envTexture.has_value()) {
@@ -326,23 +384,25 @@ void Renderer::destroyBuffer(BufferHandle bufferHandle) {
 void Renderer::setVertexBuffer(BufferHandle handle) {
     assert(handle.id != SG_INVALID_ID);
     sg_buffer bufferToBind = { handle.id };
-    state.offscreen.bind.vertex_buffers[0] = bufferToBind;
+    state.offscreen.bindings.vertex_buffers[0] = bufferToBind;
 }
 
 void Renderer::setIndexBuffer(BufferHandle handle) {
     assert(handle.id != SG_INVALID_ID);
     sg_buffer bufferToBind = { handle.id };
-    state.offscreen.bind.index_buffer = bufferToBind;    
+    state.offscreen.bindings.index_buffer = bufferToBind;    
 }
 
 void Renderer::bindBuffers() {
-    if(state.pass == Renderer::RenderPass::SKYBOX) {
-        sg_apply_pipeline(state.offscreen.skyboxPip);
+    if(state.pass ==Renderer::RenderPass::DEBUG) {
+        sg_apply_pipeline(state.offscreen.debugPip);
+    } else if (state.pass == Renderer::RenderPass::ALPHA) {
+        sg_apply_pipeline(state.offscreen.alphaPip[state.material.isDoubleSided ? 0 : 1]);
     } else {
         sg_apply_pipeline(state.offscreen.pip[state.material.isDoubleSided ? 0 : 1]);
     }
 
-    sg_apply_bindings(&state.offscreen.bind);
+    sg_apply_bindings(&state.offscreen.bindings);
 }
 
 void Renderer::setModel(const glm::mat4& model) {
@@ -354,19 +414,20 @@ void Renderer::setLights(const std::vector<Light>& lights) {
 }
 
 void Renderer::applyUniforms() {
-    if(state.pass == Renderer::RenderPass::SKYBOX) {
-        skybox_vs_params_t vertexUniforms{
+    if(state.pass == Renderer::RenderPass::DEBUG) {
+        debug_vs_params_t vertexUniforms{
             state.model,
             state.view,
-            state.proj
+            state.proj,
+            state.debugColor
         };
 
         sg_range uniformsRange{
             &vertexUniforms,
-            sizeof(skybox_vs_params_t)
+            sizeof(debug_vs_params_t)
         };
 
-        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_skybox_vs_params, &uniformsRange);
+        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_debug_vs_params, &uniformsRange);
         return;
     }
 
@@ -381,10 +442,8 @@ void Renderer::applyUniforms() {
         vertexUniforms.projection = state.proj;
         vertexUniforms.viewPos = state.viewPos;
         vertexUniforms.billboard = isBillboard;
+        vertexUniforms.relative = state.isRelative ? 1.0f : 0.0f;
         vertexUniforms.lightsCount = (float)state.lights.size();
-        //vertexUniforms.pointLightsCount = (float)state.pointLights.size();
-        //vertexUniforms.ambientLight = state.ambLight.diffuse;
-
         sg_range uniformsRange{
             &vertexUniforms,
             sizeof(universal_vs_params_t)
@@ -454,6 +513,14 @@ void Renderer::setViewPos(const glm::vec3& pos) {
     state.viewPos = pos;
 }
 
+void Renderer::setCamRelative(bool relative) {
+    state.isRelative = relative;
+}
+
+bool Renderer::isCamRelative() {
+    return state.isRelative;
+}
+
 void Renderer::draw(int baseElement, int numElements, int numInstances) {
     sg_draw(baseElement, numElements, numInstances);
 }
@@ -469,3 +536,103 @@ void Renderer::guiHandleSokolInput(const sapp_event* e) {
 
 int Renderer::getWidth() { return sapp_width(); }
 int Renderer::getHeight() { return sapp_height(); }
+
+/* debug */
+void Renderer::debugSetRenderColor(const glm::vec3& color) {
+    state.debugColor = color;
+}
+
+void Renderer::debugRenderBox(const glm::vec3& center, const glm::vec3& scale) {
+    //state.debugBoxes.push_back({center, scale});
+
+    state.offscreen.bindings.index_buffer = state.debugCubeIndexBuffer;
+    state.offscreen.bindings.vertex_buffers[0] = state.debugCubeVertexBuffer;
+
+    auto cubeBox = glm::translate(glm::mat4(1), center) * glm::scale(glm::mat4(1), scale);
+    setModel(cubeBox);
+    bindBuffers();
+    applyUniforms();
+    draw(0, 36, 1);
+}
+
+void Renderer::debugRenderSphere(const glm::vec3& center, float radius) {
+    state.debugSphers.push_back({center, radius});
+}
+
+void Renderer::debugInit() {
+    //NOTE: init vertex buffer for simple cube rendering
+    {
+        float vertices[] = {
+            // Front face
+            -1.0, -1.0,  1.0,
+            1.0, -1.0,  1.0,
+            1.0,  1.0,  1.0,
+            -1.0,  1.0,  1.0,
+
+            // Back face
+            -1.0, -1.0, -1.0,
+            -1.0,  1.0, -1.0,
+            1.0,  1.0, -1.0,
+            1.0, -1.0, -1.0,
+
+            // Top face
+            -1.0,  1.0, -1.0,
+            -1.0,  1.0,  1.0,
+            1.0,  1.0,  1.0,
+            1.0,  1.0, -1.0,
+
+            // Bottom face
+            -1.0, -1.0, -1.0,
+            1.0, -1.0, -1.0,
+            1.0, -1.0,  1.0,
+            -1.0, -1.0,  1.0,
+
+            // Right face
+            1.0, -1.0, -1.0,
+            1.0,  1.0, -1.0,
+            1.0,  1.0,  1.0,
+            1.0, -1.0,  1.0,
+
+            // Left face
+            -1.0, -1.0, -1.0,
+            -1.0, -1.0,  1.0,
+            -1.0,  1.0,  1.0,
+            -1.0,  1.0, -1.0,
+        };
+
+        sg_buffer_desc bufferDesc  = {};
+        bufferDesc.data            = SG_RANGE(vertices);
+        bufferDesc.label           = "debug-cube-vertex-buffer";
+
+        state.debugCubeVertexBuffer = sg_make_buffer(&bufferDesc);
+        assert(state.debugCubeVertexBuffer.id != SG_INVALID_ID);
+    }
+
+    //NOTE: debug cube index buffer
+    {
+        uint16_t indices[] = {
+            0,  1,  2,      0,  2,  3,    // front
+            4,  5,  6,      4,  6,  7,    // back
+            8,  9,  10,     8,  10, 11,   // top
+            12, 13, 14,     12, 14, 15,   // bottom
+            16, 17, 18,     16, 18, 19,   // right
+            20, 21, 22,     20, 22, 23,   // left
+        };
+
+        sg_buffer_desc bufferDesc = {};
+        bufferDesc.data     = SG_RANGE(indices);
+        bufferDesc.type     = sg_buffer_type::SG_BUFFERTYPE_INDEXBUFFER;
+        bufferDesc.label    = "debug-cube-index-buffer";
+
+        state.debugCubeIndexBuffer = sg_make_buffer(&bufferDesc);
+        assert(state.debugCubeIndexBuffer.id != SG_INVALID_ID);
+    }
+}
+
+void Renderer::debugBegin() {
+
+}
+
+void Renderer::debugEnd() {
+
+}

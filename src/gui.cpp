@@ -395,6 +395,23 @@ void renderImGuizmo(Scene* scene) {
     }
 }
 
+void Gui::debugRender(Scene* scene) {
+    if(gSelectedNode != nullptr) {
+        auto bbox = gSelectedNode->getWorldBBOX();
+        float max_x = bbox.second.x;
+        float max_y = bbox.second.y;
+        float max_z = bbox.second.z;
+        float min_x = bbox.first.x;
+        float min_y = bbox.first.y;
+        float min_z = bbox.first.z;
+
+        glm::vec3 size = glm::vec3(max_x-min_x, max_y-min_y, max_z-min_z);
+        glm::vec3 center = glm::vec3((min_x+max_x)/2, (min_y+max_y)/2, (min_z+max_z)/2);
+        Renderer::debugSetRenderColor(glm::vec3(1.0f, 1.0f, 1.0f));
+        Renderer::debugRenderBox(center, size * 0.5f);
+    }
+}
+
 void Gui::render() {
     auto* scene = App::get()->getScene();
     auto* cam = scene->getActiveCamera();

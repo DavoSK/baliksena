@@ -1,6 +1,10 @@
 #include "frame.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "app.hpp"
+#include "scene.hpp"
+#include "camera.h"
+
 void Frame::render() {
     if (!mOn) return;
     for (auto& child : mChilds) {
@@ -35,11 +39,18 @@ const glm::mat4& Frame::getWorldMatrix() {
 
 void Frame::invalidateTransformRecursively() {
     invalidateTransform(); 
+    
+    glm::vec3 AABBmin = mAABB.first;
+	glm::vec3 AABBmax = mAABB.second;
+
     for (const auto& frame : mChilds) {
         frame->invalidateTransformRecursively();
+        auto childBbox = frame->getBBOX();
+        AABBmin = glm::min(AABBmin, childBbox.first);
+        AABBmax = glm::max(AABBmax, childBbox.second);
     }
 
-    updateBoundingVolumes();
+    setBBOX(std::make_pair(AABBmin, AABBmax));
 }
 
 void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
@@ -91,4 +102,14 @@ void Frame::updateTransform() {
     const auto rot = glm::mat4(1.f) * glm::toMat4(mRot);
     const auto world = translation * rot * scale;
     setMatrix(world);
+}
+
+bool Frame::isVisible() {
+    if(auto* cam = App::get()->getScene()->getActiveCamera()) {
+        if(!Renderer::isCamRelative() && mSphereBounding != nullptr) {
+            if(!cam->getFrustum().isSphereInFrustum(*mSphereBounding)) 
+                return false;
+        }
+    }
+    return true;
 }

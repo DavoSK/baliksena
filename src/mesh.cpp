@@ -12,6 +12,9 @@
 
 void FaceGroup::render() const {    
     if(mMaterial != nullptr) {
+        if(Renderer::getPass() != Renderer::RenderPass::ALPHA && mMaterial->isTransparent()) {
+            return;
+        }
         mMaterial->bind();
     }
 
@@ -39,14 +42,10 @@ void Mesh::setVertices(std::vector<Renderer::Vertex> vertices) {
 }
 
 void Mesh::render() {
+    //if(!isVisible()) return;
+    
     Frame::render();
     if (mVertices.empty() || !isOn()) return;
-    if(auto* cam = App::get()->getScene()->getActiveCamera()) {
-        if(Renderer::getPass() != Renderer::RenderPass::SKYBOX && mSphereBounding != nullptr) {
-            if(!cam->getFrustum().isSphereInFrustum(*mSphereBounding)) 
-                return;
-        }
-    }
 
     if(mUpdateLights) {
         updateLights();

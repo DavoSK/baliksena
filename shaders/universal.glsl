@@ -72,6 +72,7 @@ uniform vs_params {
     mat4 projection;
     vec3 viewPos;
     float billboard;
+    float relative;
     float lightsCount;
 };
 
@@ -91,10 +92,17 @@ void main() {
 
     Light = light;
 
+    //NOTE: reset view pos ( for relative things next to camera )
+    //used for skybox
+    mat4 viewMat = view;
+    if(int(relative) > 0) {
+        viewMat[3] = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
     //NOTE: billboarding
     //TODO: lock specific axis
-    mat4 modelView = view * model;
-    if(billboard > 0.0) {
+    mat4 modelView = viewMat * model;
+    if(int(billboard) > 0) {
         modelView[0][0] = length(vec3(model[0]));
         modelView[0][1] = 0.0; 
         modelView[0][2] = 0.0; 
@@ -178,9 +186,11 @@ uniform fs_params {
 
 uniform sampler2D diffuseSampler;
 uniform sampler2D envSampler;
+uniform sampler2D alphaSampler;
 
 void main() {
     vec4 diffuseTexture = texture(diffuseSampler, TexCoord);
+    vec4 alphaTexture = texture(alphaSampler, TexCoord);
 
     //NOTE: check for cutout
     if(diffuseTexture.a != 1.0)
@@ -188,6 +198,7 @@ void main() {
 
     //TODO: check for alpha blending
     vec4 lightDiffuse = vec4(Light, 1.0) * diffuseTexture.rgba;
+    lightDiffuse.a = ((alphaTexture.r + alphaTexture.g + alphaTexture.b) / 3.0);
 
     //NOTE: check for env blending
     vec3 envUvStuff = normalize(vec3(Env.x, max((Env.y - 1.0) * 0.65 + 1.0, 0.0), Env.z));
@@ -198,7 +209,7 @@ void main() {
     // 0 - ratio, 1 - mul, 2 - additiv, else disabled
     if(int(envMode) == 0) {
         FragColor = mix(lightDiffuse, envTexture, envRatio);
-    } else if(int(envMode) == 1)  {
+    } else if(int(envMode) == 1) {
         FragColor = lightDiffuse * envTexture;
     } else if(int(envMode) == 2) {
         FragColor = lightDiffuse + envTexture;
