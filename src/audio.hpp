@@ -10,9 +10,10 @@ public:
     void update();
     void open(Sound* sound);
     void update(Sound* sound);
+    void destroy(Sound* sound);
 private:
     Sector *mPrevSector { nullptr };
-    
+
     ALCdevice *mDevice { nullptr };
     ALCcontext *mContext { nullptr };
     bool mInited { false };

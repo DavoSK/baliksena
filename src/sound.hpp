@@ -17,6 +17,8 @@ enum class SoundType {
 
 class Sound : public Frame {
 public:
+    ~Sound();
+    
     [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Sound; }
     bool open(const std::string& path);
 

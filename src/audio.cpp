@@ -112,12 +112,12 @@ void Audio::open(Sound* sound) {
 
     alSource3f(source,  AL_VELOCITY,    0.0f, 0.0f, 0.0f);
     
-    if(sound->mSoundType == SoundType::Ambient || WavHeader.NumOfChan == 2) {
-        alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-        alSource3f(source,  AL_POSITION,  0.0f, 0.0f, 0.0f);
-        alSourcef(source,  AL_CONE_INNER_ANGLE,  0.0f);
-        alSourcef(source,  AL_CONE_OUTER_ANGLE,  0.0f);
-    }
+    // if(sound->mSoundType == SoundType::Ambient || WavHeader.NumOfChan == 2) {
+    //     alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
+    //     alSource3f(source,  AL_POSITION,  0.0f, 0.0f, 0.0f);
+    //     alSourcef(source,  AL_CONE_INNER_ANGLE,  0.0f);
+    //     alSourcef(source,  AL_CONE_OUTER_ANGLE,  0.0f);
+    // }
 
     //NOTE: create buffer and play
     alGenBuffers(1, (ALuint*)&sound->mBufferHandle);
@@ -129,4 +129,10 @@ void Audio::open(Sound* sound) {
 
 void Audio::update(Sound* sound) {
 
+}
+
+void Audio::destroy(Sound* sound) {
+    alSourceStop((ALuint)sound->mSourceHandle);
+    alDeleteSources(1, (const ALuint*)&sound->mSourceHandle);
+    alDeleteBuffers(1, (const ALuint*)&sound->mBufferHandle);
 }

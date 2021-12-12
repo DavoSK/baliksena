@@ -175,10 +175,6 @@ std::shared_ptr<Sound> Scene::loadSound(const MFFormat::DataFormatScene2BIN::Obj
 
 void Scene::load(const std::string& missionName) {
     clear();
-    
-    gLightsParenting.clear();
-    gSoundsParenting.clear();
-
     Logger::get().info("loading mission {}", missionName);
     setName(missionName);
 
@@ -363,6 +359,9 @@ void Scene::load(const std::string& missionName) {
             invalidateTransformRecursively();
         }
     }
+
+    gLightsParenting.clear();
+    gSoundsParenting.clear();
 
     //NOTE: load cachus binus
     std::string sceneCacheBin = missionFolder + "\\cache.bin";
