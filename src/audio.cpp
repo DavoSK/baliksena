@@ -50,9 +50,9 @@ void Audio::doSectorTransition() {
                 mutedCount++;
             }
 
-            Logger::get().info("Sector sound set volume: {}", currentSoundVolume);
+            //Logger::get().info("Sector sound set volume: {}", currentSoundVolume);
             sound->setVolume(currentSoundVolume);
-            Logger::get().info("Sector sound get volume: {}", sound->getVolume());
+            //Logger::get().info("Sector sound get volume: {}", sound->getVolume());
         }
 
         soundsMuted = mutedCount == prevSectorSounds.size();
@@ -89,7 +89,7 @@ void Audio::doSectorTransition() {
     //NOTE: transition done
     if(soundsResumed && soundsMuted) {
         mSectorTransition = false;
-        Logger::get().info("Sector sound trasition end");
+        //Logger::get().info("Sector sound trasition end");
     }
 }
 
@@ -101,7 +101,7 @@ void Audio::update() {
         auto* cam = scene->getActiveCamera();
         auto* camSector = scene->getCameraSector();
         
-        ALfloat listenerOri[] = { cam->Right.x, cam->Right.y, cam->Right.z, cam->Up.x, cam->Up.y, cam->Up.z };
+        ALfloat listenerOri[] = { cam->Front.x  * -1.0f, cam->Front.y * -1.0f, cam->Front.z * -1.0f, cam->Up.x, cam->Up.y, cam->Up.z };
         alListener3f(AL_POSITION, cam->Position.x, cam->Position.y, cam->Position.z);
         alListener3f(AL_VELOCITY, 0.0f, 0.0f, 0.0f);
         alListenerfv(AL_ORIENTATION, listenerOri);
@@ -117,7 +117,7 @@ void Audio::update() {
             mPrevSector = mCurrentSector;
             mCurrentSector = camSector;
             mSectorTransition = true;
-            Logger::get().info("Sector sound trasition start");
+            //Logger::get().info("Sector sound trasition start");
         }
 
         if(mSectorTransition) {
@@ -162,8 +162,10 @@ void Audio::soundUpdate(Sound* sound) {
     alSourcef(source,   AL_GAIN,        sound->mVolume);
     alSourcei(source,   AL_LOOPING,     sound->mIsLooping);
     alSource3f(source,  AL_POSITION,    pos.x, pos.y, pos.z);
-    alSourcef(source,   AL_CONE_INNER_ANGLE,  sound->mCone.x);
-    alSourcef(source,   AL_CONE_OUTER_ANGLE,  sound->mCone.y);
+    // alSourcef(source,   AL_CONE_INNER_ANGLE,  sound->mCone.x);
+    // alSourcef(source,   AL_CONE_OUTER_ANGLE,  sound->mCone.y);
+    alSourcef(source,   AL_MAX_DISTANCE, sound->mRadius.OuterRadius);
+    alSourcef(source,   AL_ROLLOFF_FACTOR, sound->mRadius.OuterFalloff);
     alSource3f(source,  AL_VELOCITY,    0.0f, 0.0f, 0.0f);
 }
 
