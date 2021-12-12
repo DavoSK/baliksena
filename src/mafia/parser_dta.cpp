@@ -303,13 +303,13 @@ std::vector<unsigned char> DataFormatDTA::decompressDPCM(uint16_t *delta, unsign
         decompressed.push_back(buffer[position + 1]);
 
         uint16_t valueL = *((uint16_t *) &(buffer[position]));
-        position += 4;
+        position += 2;
 
-        // decompressed.push_back(buffer[position]);
-        // decompressed.push_back(buffer[position + 1]);
+        decompressed.push_back(buffer[position]);
+        decompressed.push_back(buffer[position + 1]);
 
-        //uint16_t valueR = *((uint16_t *) &(buffer[position]));
-        //position += 2;
+        uint16_t valueR = *((uint16_t *) &(buffer[position]));
+        position += 2;
 
         while (position < bufferLen)
         {
@@ -319,13 +319,13 @@ std::vector<unsigned char> DataFormatDTA::decompressDPCM(uint16_t *delta, unsign
             decompressed.push_back(valueL & 0xff);
             decompressed.push_back(valueL >> 8);
             position += 1;
+    
+            int signR = (buffer[position] & 0x80) == 0 ? 1.0 : -1.0;
+            valueR += signR * delta[buffer[position] & 0x7f];
 
-            // int signR = (buffer[position] & 0x80) == 0 ? 1.0 : -1.0;
-            // valueR += signR * delta[buffer[position] & 0x7f];
-
-            // decompressed.push_back(valueR & 0xff);
-            // decompressed.push_back(valueR >> 8);
-            // position += 1;
+            decompressed.push_back(valueR & 0xff);
+            decompressed.push_back(valueR >> 8);
+            position += 1;
         }
         // TODO: find a stereo WAV and implement this or prove there are no stereo WAVs
     }

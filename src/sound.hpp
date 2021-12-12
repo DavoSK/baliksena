@@ -12,7 +12,9 @@ struct SoundRadius {
 
 enum class SoundType {
     Point, 
-    Ambient
+    Ambient,
+    Unk1,
+    Unk2
 };
 
 class Sound : public Frame {
@@ -31,6 +33,9 @@ public:
     void setVolume(float volume) { mVolume = volume; mWasChanged = true; }
     [[nodiscard]] float getVolume() const { return mVolume; }
 
+    void setOutVolume(float volume) { mOutVolume = volume; }
+    [[nodiscard]] float getOutVolume() const { return mOutVolume; }
+
     void setRadius(const SoundRadius& radius) { mRadius = radius; mWasChanged = true; }
     [[nodiscard]] const SoundRadius& getRadius() const {  return mRadius; }   
 
@@ -42,6 +47,11 @@ public:
 
     void setCone(const glm::vec2& cone) { mCone = cone; mWasChanged = true; }
     const glm::vec2& getCone() const { return mCone; }
+
+    void play();
+    void pause();
+    bool isPlaying() const { return mIsPlaying; }
+
     virtual void render() override;
 private:
     glm::vec2 mCone;
@@ -50,8 +60,10 @@ private:
     std::string mFile;
     bool mWasChanged = false;
     bool mIsLooping = false;
+    bool mIsPlaying = false;
     float mPitch = 1.0f;
-    float mVolume = 1.0f;
+    float mVolume = 0.0f;
+    float mOutVolume = 0.0f;
     SoundRadius mRadius{};
     uint32_t mSourceHandle;     //ALuint
     uint32_t mBufferHandle;     //ALuint;

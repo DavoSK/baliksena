@@ -40,17 +40,18 @@ const glm::mat4& Frame::getWorldMatrix() {
 void Frame::invalidateTransformRecursively() {
     invalidateTransform(); 
     
+    //NOTE: dunno about that
     // glm::vec3 AABBmin = mAABB.first;
 	// glm::vec3 AABBmax = mAABB.second;
 
-    // for (const auto& frame : mChilds) {
-    //     frame->invalidateTransformRecursively();
-    //     auto childBbox = frame->getBBOX();
-    //     AABBmin = glm::min(AABBmin, childBbox.first);
-    //     AABBmax = glm::max(AABBmax, childBbox.second);
-    // }
+    for (const auto& frame : mChilds) {
+        frame->invalidateTransformRecursively();
+        // auto childBbox = frame->getBBOX();
+        // AABBmin = glm::min(AABBmin, childBbox.first);
+        // AABBmax = glm::max(AABBmax, childBbox.second);
+    }
 
-    setBBOX(mAABB);
+    //setBBOX(mAABB);
 }
 
 void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
@@ -59,11 +60,11 @@ void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
 }
 
 void Frame::updateBoundingVolumes() {
-    const auto currentWorld = getWorldMatrix();
-    
-    const auto min = currentWorld * glm::vec4(mAABB.first, 1.0f);
-    const auto max = currentWorld * glm::vec4(mAABB.second, 1.0f);
-    mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min, max);
+    const auto mat = getWorldMatrix();
+    const auto min = glm::translate(mat, mAABB.first);
+    const auto max = glm::translate(mat, mAABB.second);
+
+    mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
     mSphereBounding = std::make_unique<Sphere>((mABBBWorld.second + mABBBWorld.first) * 0.5f, glm::length(mABBBWorld.first - mABBBWorld.second));
 }
 

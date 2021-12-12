@@ -164,6 +164,8 @@ std::shared_ptr<Sound> Scene::loadSound(const MFFormat::DataFormatScene2BIN::Obj
     sound->setType(static_cast<SoundType>(snd.mType));
     sound->setLooping(snd.mLoop);
     sound->setVolume(snd.mVolume);
+    //sound->setOutVolume(snd.mOutVolume);
+    sound->setOutVolume(snd.mVolume);
     sound->open(snd.mFile);
 
     for(const auto& splitedString : object.mSound.mSectors) {
@@ -474,12 +476,12 @@ void Scene::render() {
         }
     }
 
-    /*Renderer::setPass(Renderer::RenderPass::DEBUG);
+    Renderer::setPass(Renderer::RenderPass::DEBUG);
     {
         Renderer::debugBegin();
         Gui::debugRender(this);
         Renderer::debugEnd();
-    }*/
+    }
 }
 
 void Scene::initVertexBuffers() {

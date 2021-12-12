@@ -386,8 +386,8 @@ void DataFormatScene2BIN::readSound(MFUtil::ScopedBuffer& srcFile, Header* heade
             read(srcFile, &object->mSound.mVolume);
         } break;
         //TODO: unk
-        case OBJECT_SOUND_UNK1:{
-            read(srcFile, &object->mSound.mUnk1);
+        case OBJECT_SOUND_OUT_VOLUME:{
+            read(srcFile, &object->mSound.mOutVolume);
         } break;
         case OBJECT_SOUND_UNK2:{
             read(srcFile, &object->mSound.mCone);

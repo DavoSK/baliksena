@@ -49,7 +49,7 @@ public:
         OBJECT_SOUND_MAIN = 0x4060,
         OBJECT_SOUND_TYPE = 0x4061,
         OBJECT_SOUND_VOLUME = 0x4062,
-        OBJECT_SOUND_UNK1 = 0x4063, //f32
+        OBJECT_SOUND_OUT_VOLUME = 0x4063, //f32
         OBJECT_SOUND_UNK2 = 0x4064, //vec2
         OBJECT_SOUND_RADIUS = 0x4068,
         OBJECT_SOUND_LOOP = 0x4066,
@@ -236,7 +236,7 @@ public:
             std::string mFile;
             uint32_t mType;
             float mVolume;
-            float mUnk1;
+            float mOutVolume;
             MFMath::Vec2 mCone;
             struct {
                 float InnerRadius;

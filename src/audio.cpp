@@ -11,7 +11,6 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 
-
 void Audio::init() {
     mDevice = alcOpenDevice(nullptr);
     if (!mDevice) {
@@ -31,6 +30,69 @@ void Audio::init() {
     mInited = true;
 }
 
+void Audio::doSectorTransition() {
+    constexpr float loweringStep = 0.01f;
+    
+    bool soundsMuted = false;
+    if(mPrevSector != nullptr) {
+        size_t mutedCount = 0;
+        const auto& prevSectorSounds = mPrevSector->getSounds();
+        for(auto& sound : prevSectorSounds) {
+            float currentSoundVolume = sound->getVolume();
+            currentSoundVolume -= loweringStep;
+            if(currentSoundVolume < 0.0f) {
+                currentSoundVolume = 0.0f;
+
+                if(sound->isPlaying()) {
+                    sound->pause();
+                }
+
+                mutedCount++;
+            }
+
+            Logger::get().info("Sector sound set volume: {}", currentSoundVolume);
+            sound->setVolume(currentSoundVolume);
+            Logger::get().info("Sector sound get volume: {}", sound->getVolume());
+        }
+
+        soundsMuted = mutedCount == prevSectorSounds.size();
+        //Logger::get().info("Muting {} / {}", mutedCount, prevSectorSounds.size());
+    } else {
+        soundsMuted = true;
+    }
+
+    bool soundsResumed = false;
+    if(mCurrentSector != nullptr) {
+        size_t resumedCount = 0;
+        const auto& currSectorSounds = mCurrentSector->getSounds();
+        for(auto& sound : currSectorSounds) {
+            float currentSoundVolume = sound->getVolume();
+            currentSoundVolume += loweringStep;
+
+            if(!sound->isPlaying()) {
+                sound->play();
+            }
+
+            if(currentSoundVolume >= sound->getOutVolume()) {
+                currentSoundVolume = sound->getOutVolume();
+                resumedCount++;
+            }
+
+            sound->setVolume(currentSoundVolume);
+        }
+
+        soundsResumed = resumedCount == currSectorSounds.size();
+    } else {
+        soundsResumed = true;
+    }
+
+    //NOTE: transition done
+    if(soundsResumed && soundsMuted) {
+        mSectorTransition = false;
+        Logger::get().info("Sector sound trasition end");
+    }
+}
+
 void Audio::update() {
     if(!mInited) return;
 
@@ -46,93 +108,79 @@ void Audio::update() {
     
         //NOTE: sector sounds transition
         //TODO lerp later
-        if(camSector != mPrevSector) {
-            if(mPrevSector != nullptr) {
-                for(auto sound : mPrevSector->getSounds()) {
-                    alSourcePause((ALuint)sound->mSourceHandle);
-                }
-            }
+        // if(camSector != mPrevSector) {
+        //     mSectorTransition = true;
+        //     Logger::get().info("Sector sound trasition start");
+        // }
 
-            if(camSector != nullptr) {
-                for(auto sound : camSector->getSounds()) {
-                    alSourcePlay((ALuint)sound->mSourceHandle);
-                }
-            }
+        if(camSector != mCurrentSector) {
+            mPrevSector = mCurrentSector;
+            mCurrentSector = camSector;
+            mSectorTransition = true;
+            Logger::get().info("Sector sound trasition start");
+        }
 
-            mPrevSector = camSector;
+        if(mSectorTransition) {
+            doSectorTransition();
         }
     }
 }
 
-void Audio::open(Sound* sound) {
+void Audio::soundOpen(Sound* sound) {
     auto file = Vfs::getFile("sounds\\" + sound->mFile);
     if(!file.has_value()) {
         Logger::get().warn("unable to open sound: {}", sound->mFile);
         return;
     }
 
-    /*Read WAV header*/
-    struct
-    {
-        /* RIFF Chunk Descriptor */
-        uint8_t         RIFF[4];        // RIFF Header Magic header
-        uint32_t        ChunkSize;      // RIFF Chunk Size
-        uint8_t         WAVE[4];        // WAVE Header
-        /* "fmt" sub-chunk */
-        uint8_t         fmt[4];         // FMT header
-        uint32_t        Subchunk1Size;  // Size of the fmt chunk
-        uint16_t        AudioFormat;    // Audio format 1=PCM,6=mulaw,7=alaw,     257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM
-        uint16_t        NumOfChan;      // Number of channels 1=Mono 2=Sterio
-        uint32_t        SamplesPerSec;  // Sampling Frequency in Hz
-        uint32_t        bytesPerSec;    // bytes per second
-        uint16_t        blockAlign;     // 2=16-bit mono, 4=16-bit stereo
-        uint16_t        bitsPerSample;  // Number of bits per sample
-        /* "data" sub-chunk */
-        uint8_t         Subchunk2ID[4]; // "data"  string
-        uint32_t        Subchunk2Size;  // Sampled data length
-    } WavHeader;
+    auto& buffer = file.value();
+    
+    WavHeader wafHeader{};
+    buffer.read((char*)&wafHeader, sizeof(WavHeader));
 
-    file.value().read((char*)&WavHeader, sizeof(WavHeader));
-    ALsizei wavBufferSize = sizeof(char) * WavHeader.Subchunk2Size;
+    ALsizei wavBufferSize = sizeof(char) * wafHeader.Subchunk2Size;
     char* wavBuffer = (char *)malloc(wavBufferSize); 
-    file.value().read((char*)wavBuffer, wavBufferSize);
+    buffer.read((char*)wavBuffer, wavBufferSize);
 
     //NOTE: create source and set values
-    const auto& pos = sound->getAbsPos();
     alGenSources((ALuint)1,  (ALuint*)&sound->mSourceHandle);
-    ALuint source = (ALuint)sound->mSourceHandle;
+    
+    //NOTE: update initialy sound
+    soundUpdate(sound);
 
+    //NOTE: create buffer and play
+    alGenBuffers(1, (ALuint*)&sound->mBufferHandle);
+	alBufferData((ALuint)sound->mBufferHandle, wafHeader.NumOfChan == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16,
+			(ALvoid*)wavBuffer, wavBufferSize, wafHeader.SamplesPerSec);
+    alSourcei((ALuint)sound->mSourceHandle, AL_BUFFER, (ALuint)sound->mBufferHandle);
+}
+
+void Audio::soundUpdate(Sound* sound) {
+    const auto& pos = sound->getAbsPos();
+    ALuint source = (ALuint)sound->mSourceHandle;
     alSourcef(source,   AL_PITCH,       sound->mPitch);
     alSourcef(source,   AL_GAIN,        sound->mVolume);
     alSourcei(source,   AL_LOOPING,     sound->mIsLooping);
     alSource3f(source,  AL_POSITION,    pos.x, pos.y, pos.z);
-
-    alSourcef(source,  AL_CONE_INNER_ANGLE,  sound->mCone.x);
-    alSourcef(source,  AL_CONE_OUTER_ANGLE,  sound->mCone.y);
-
+    alSourcef(source,   AL_CONE_INNER_ANGLE,  sound->mCone.x);
+    alSourcef(source,   AL_CONE_OUTER_ANGLE,  sound->mCone.y);
     alSource3f(source,  AL_VELOCITY,    0.0f, 0.0f, 0.0f);
-    
-    // if(sound->mSoundType == SoundType::Ambient || WavHeader.NumOfChan == 2) {
-    //     alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-    //     alSource3f(source,  AL_POSITION,  0.0f, 0.0f, 0.0f);
-    //     alSourcef(source,  AL_CONE_INNER_ANGLE,  0.0f);
-    //     alSourcef(source,  AL_CONE_OUTER_ANGLE,  0.0f);
-    // }
-
-    //NOTE: create buffer and play
-    alGenBuffers(1, (ALuint*)&sound->mBufferHandle);
-	alBufferData((ALuint)sound->mBufferHandle, WavHeader.NumOfChan == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16,
-			(ALvoid*)wavBuffer, wavBufferSize, WavHeader.SamplesPerSec);
-    alSourcei(source, AL_BUFFER, (ALuint)sound->mBufferHandle);
-	//alSourcePlay(source);
 }
 
-void Audio::update(Sound* sound) {
-
-}
-
-void Audio::destroy(Sound* sound) {
+void Audio::soundDestroy(Sound* sound) {
     alSourceStop((ALuint)sound->mSourceHandle);
     alDeleteSources(1, (const ALuint*)&sound->mSourceHandle);
     alDeleteBuffers(1, (const ALuint*)&sound->mBufferHandle);
+}
+
+void Audio::soundStop(Sound* sound) {
+    alSourceStop((ALuint)sound->mSourceHandle);
+}
+
+void Audio::soundPause(Sound* sound) {
+    alSourcePause((ALuint)sound->mSourceHandle);
+}
+
+void Audio::soundPlay(Sound* sound) {
+    alSourcePlay((ALuint)sound->mSourceHandle);
 }
