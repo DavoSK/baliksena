@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "model.hpp"
 #include "mesh.hpp"
+#include "sound.hpp"
 #include "model_loader.hpp"
 #include "texture.hpp"
 #include "material.hpp"
@@ -56,6 +57,8 @@ void Scene::getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Se
 };
 
 std::unordered_map<std::string, std::vector<std::shared_ptr<Light>>> gLightsParenting;
+std::unordered_map<std::string, std::vector<std::shared_ptr<Sound>>> gSoundsParenting;
+
 
 std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Object& object) {
     auto light = std::make_shared<Light>();
@@ -134,9 +137,47 @@ std::shared_ptr<Model> Scene::loadModel(const MFFormat::DataFormatScene2BIN::Obj
     return ModelLoader::loadModel("MODELS\\" + object.mModelName, object.mName);
 }
 
+std::shared_ptr<Sound> Scene::loadSound(const MFFormat::DataFormatScene2BIN::Object& object) {
+    auto& snd = object.mSound;
+    auto sound = std::make_shared<Sound>();
+    SoundRadius radius {
+        snd.mRadius.InnerRadius,
+        snd.mRadius.OuterRadius,
+        snd.mRadius.InnerFalloff,
+        snd.mRadius.OuterFalloff
+    };
+
+    // glm::quat meshRot {};
+    // meshRot.w = object.mRot.w;
+    // meshRot.x = object.mRot.x;
+    // meshRot.y = object.mRot.y;
+    // meshRot.z = object.mRot.z;
+
+    // auto mat4 = glm::toMat4(meshRot);
+    // auto dir = glm::vec3(mat4[2]);
+
+    // sound->
+
+    sound->setCone({snd.mCone.x, snd.mCone.y});
+    sound->setRadius(radius);
+    sound->setAbsPos({object.mPos2.x, object.mPos2.y, object.mPos2.z});
+    sound->setType(static_cast<SoundType>(snd.mType));
+    sound->setLooping(snd.mLoop);
+    sound->setVolume(snd.mVolume);
+    sound->open(snd.mFile);
+
+    for(const auto& splitedString : object.mSound.mSectors) {
+        gSoundsParenting[splitedString].push_back(sound);        
+    }
+
+    return sound;
+}
+
 void Scene::load(const std::string& missionName) {
     clear();
+    
     gLightsParenting.clear();
+    gSoundsParenting.clear();
 
     Logger::get().info("loading mission {}", missionName);
     setName(missionName);
@@ -179,6 +220,10 @@ void Scene::load(const std::string& missionName) {
 
             case MFFormat::DataFormatScene2BIN::ObjectType::OBJECT_TYPE_SECTOR: {
                 return loadSector(obj);
+            } break;
+
+            case MFFormat::DataFormatScene2BIN::ObjectType::OBJECT_TYPE_SOUND: {
+                return loadSound(obj);
             } break;
         }
 
@@ -306,6 +351,15 @@ void Scene::load(const std::string& missionName) {
                 }
             }
 
+            for(const auto& [soundSector, sounds] : gSoundsParenting) {
+                auto foundSector = findFrame(soundSector);
+                if (foundSector != nullptr && foundSector->getFrameType() == FrameType::Sector) {
+                    for(auto soundToPush : sounds) {
+                        (std::dynamic_pointer_cast<Sector>(foundSector))->pushSound(soundToPush);
+                    }
+                }
+            }
+
             invalidateTransformRecursively();
         }
     }
@@ -332,6 +386,10 @@ void Scene::load(const std::string& missionName) {
             }
         }
     }
+
+    //NOTE: load rep file
+    // mCutscene = std::make_unique<Cutscene>();
+    // mCutscene->start("record00.rep");
 
     invalidateTransformRecursively();
     initVertexBuffers();
@@ -367,6 +425,11 @@ void Scene::render() {
         input->clearDeltas();
         Renderer::setViewMatrix(cam->getViewMatrix());
         Renderer::setViewPos(cam->Position);
+    }
+
+    //NOTE: if we have cutscene we need to tick it
+    if(mCutscene != nullptr) {
+        mCutscene->tick();
     }
 
     //NOTE: normal pass -> render normal objects
@@ -412,12 +475,12 @@ void Scene::render() {
         }
     }
 
-    Renderer::setPass(Renderer::RenderPass::DEBUG);
+    /*Renderer::setPass(Renderer::RenderPass::DEBUG);
     {
         Renderer::debugBegin();
         Gui::debugRender(this);
         Renderer::debugEnd();
-    }
+    }*/
 }
 
 void Scene::initVertexBuffers() {

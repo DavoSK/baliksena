@@ -157,6 +157,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         } break;
         case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMESH: {
             lods = &mesh.mSingleMesh.mStandard.mLODs;
+            //newMesh = std::make_shared<SingleMesh>();
         } break;
         case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMORPH: {
             lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;

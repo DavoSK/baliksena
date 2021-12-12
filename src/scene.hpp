@@ -7,12 +7,14 @@
 
 #include "model.hpp"
 #include "renderer.hpp"
+#include "cutscene.hpp"
 
 class Light;
 class Material;
 class Model;
 class Camera;
 class Sector;
+class Sound;
 
 class Scene : public Model {
 public:
@@ -29,6 +31,7 @@ public:
 private:
     void initVertexBuffers();
     void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector);
+    std::shared_ptr<Sound> loadSound(const MFFormat::DataFormatScene2BIN::Object& object);
     std::shared_ptr<Light> loadLight(const MFFormat::DataFormatScene2BIN::Object& object);
     std::shared_ptr<Sector> loadSector(const MFFormat::DataFormatScene2BIN::Object& object);
     std::shared_ptr<Model> loadModel(const MFFormat::DataFormatScene2BIN::Object& object);
@@ -42,4 +45,5 @@ private:
     //std::unordered_map<Material*, RenderHelper> mRenderHelper;
     Renderer::BufferHandle mVertexBuffer{ 0 };
     Renderer::BufferHandle mIndexBuffer{ 0 };
+    std::unique_ptr<Cutscene> mCutscene{ nullptr };
 };

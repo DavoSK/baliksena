@@ -4,6 +4,7 @@
 struct sapp_event;
 class Input;
 class Scene;
+class Audio;
 
 class App {
 public: 
@@ -22,7 +23,9 @@ public:
 
     Scene* getScene() { return mScene.get(); }
     Input* getInput() { return mInput.get(); }
+    Audio* getAudio() { return mAudio.get(); }
 private: 
-    std::shared_ptr<Input> mInput = nullptr;
-    std::shared_ptr<Scene> mScene = nullptr;
+    std::shared_ptr<Audio> mAudio { nullptr };
+    std::shared_ptr<Input> mInput { nullptr };
+    std::shared_ptr<Scene> mScene { nullptr };
 };

@@ -6,12 +6,14 @@
 #include "texture.hpp"
 #include "stats.hpp"
 #include "vfs.hpp"
+#include "audio.hpp"
 
 Stats gStats{};
 
 App::App() {
     mInput = std::make_shared<Input>();
     mScene = std::make_shared<Scene>();
+    mAudio = std::make_shared<Audio>();
 }
 
 void App::init() {
@@ -26,13 +28,19 @@ void App::init() {
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
     mScene->setActiveCamera(mainCam);
+
+    //NOTE: init audio
+    mAudio->init();
 }
 
 void App::render() {
+    mAudio->update();
+    
     Renderer::begin();
     mScene->render();
     Renderer::end();
     Renderer::commit();
+    
 }
 
 void App::event(const sapp_event* e) {

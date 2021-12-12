@@ -18,11 +18,13 @@ enum class FrameType
     All = -1,
     Frame, 
     Mesh,
+    SingleMesh,
     Model,
     Dummy,
     Light,
     Sector,
     Billboard,
+    Sound
 };
 
 class Frame {

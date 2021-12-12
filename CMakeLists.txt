@@ -16,10 +16,15 @@ add_subdirectory(
     vendors/spdlog
 )
 
+add_subdirectory(
+    vendors/openal-soft
+)
+
 include_directories(vendors 
     src
     shaders/include
     vendors/spdlog/include
+    vendors/openal-soft/include
     vendors/imgui
     vendors/imguizmo
 )
@@ -37,8 +42,12 @@ add_executable(baliksena
     src/app.cpp
     src/scene.cpp
     src/frame.cpp
+    src/sound.cpp
+    src/audio.cpp
     src/sector.cpp
     src/mesh.cpp
+    src/single_mesh.cpp
+    src/cutscene.cpp
     src/billboard.cpp
     src/model.cpp
     src/light.cpp
@@ -66,6 +75,8 @@ add_executable(baliksena
     vendors/imguizmo/GraphEditor.cpp
  )
 
+#find_package(OpenAL REQUIRED)
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries(
         baliksena
@@ -76,7 +87,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         dl 
         pthread 
         m
+        openal
     )
 else()
-    target_link_libraries(baliksena)    
+    target_link_libraries(baliksena OpenAL)    
 endif()

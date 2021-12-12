@@ -45,6 +45,17 @@ public:
         OBJECT_NAME = 0x0010, 
         OBJECT_NAME_SPECIAL = 0xAE23,
         OBJECT_MODEL = 0x2012,
+        
+        OBJECT_SOUND_MAIN = 0x4060,
+        OBJECT_SOUND_TYPE = 0x4061,
+        OBJECT_SOUND_VOLUME = 0x4062,
+        OBJECT_SOUND_UNK1 = 0x4063, //f32
+        OBJECT_SOUND_UNK2 = 0x4064, //vec2
+        OBJECT_SOUND_RADIUS = 0x4068,
+        OBJECT_SOUND_LOOP = 0x4066,
+        OBJECT_SOUND_PITCH = 0xb800,
+        OBJECT_SOUND_SECTOR = 0xb200,
+
         OBJECT_LIGHT_MAIN = 0x4040,
         OBJECT_LIGHT_TYPE = 0x4041,
         OBJECT_LIGHT_COLOUR = 0x0026,
@@ -220,6 +231,24 @@ public:
         float mLightFar;
         std::vector<std::string> mLightSectors;
 
+        // Sound properties
+        struct {
+            std::string mFile;
+            uint32_t mType;
+            float mVolume;
+            float mUnk1;
+            MFMath::Vec2 mCone;
+            struct {
+                float InnerRadius;
+                float OuterRadius;
+                float InnerFalloff;
+                float OuterFalloff;
+            } mRadius;
+            bool mLoop;
+            float mPitch;
+            std::vector<std::string> mSectors;
+        } mSound;
+
         struct {
             // Physical object properties
             float mMovVal1;
@@ -251,7 +280,8 @@ public:
 private:
     void readHeader(MFUtil::ScopedBuffer&srcFile, Header* header, uint32_t offset);
     void readObject(MFUtil::ScopedBuffer&srcFile, Header* header, Object* object, uint32_t offset);
-    void readLight (MFUtil::ScopedBuffer&srcFile, Header* header, Object* object);
+    void readSound(MFUtil::ScopedBuffer&srcFile, Header* header, Object* object);
+    void readLight(MFUtil::ScopedBuffer&srcFile, Header* header, Object* object);
 
     VertexLightmap readLmVertexData(MFUtil::ScopedBuffer& srcFile);
 

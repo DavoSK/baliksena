@@ -346,6 +346,16 @@ void DataFormatScene2BIN::readObject(MFUtil::ScopedBuffer& srcFile, Header* head
             }
         } break;
 
+        case OBJECT_SOUND_MAIN: {
+            uint32_t position = offset;
+            while (position + 6 < offset + header->mSize) {
+                Header soundHeader = {};
+                read(srcFile, &soundHeader);
+                readSound(srcFile, &soundHeader, object);
+                position += soundHeader.mSize;
+            }
+        } break;
+
         case OBJECT_PARENT: {
             Header parentHeader = {};
             read(srcFile, &parentHeader);
@@ -357,6 +367,51 @@ void DataFormatScene2BIN::readObject(MFUtil::ScopedBuffer& srcFile, Header* head
         } break;
     }
 }
+
+void DataFormatScene2BIN::readSound(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
+    switch (header->mType) {
+        case OBJECT_NAME:
+        case OBJECT_NAME_SPECIAL: {
+            char* name = reinterpret_cast<char*>(malloc(header->mSize - 6));
+            read(srcFile, name, header->mSize - 6);
+            name[header->mSize - 7] = '\0';
+            object->mSound.mFile = name;
+            free(name);
+        } break;
+
+        case OBJECT_SOUND_TYPE: {
+            read(srcFile, &object->mSound.mType);
+        } break;
+        case OBJECT_SOUND_VOLUME:{
+            read(srcFile, &object->mSound.mVolume);
+        } break;
+        //TODO: unk
+        case OBJECT_SOUND_UNK1:{
+            read(srcFile, &object->mSound.mUnk1);
+        } break;
+        case OBJECT_SOUND_UNK2:{
+            read(srcFile, &object->mSound.mCone);
+        } break;
+        case OBJECT_SOUND_RADIUS:{
+            read(srcFile, &object->mSound.mRadius);
+        } break;
+        case OBJECT_SOUND_LOOP:{
+            object->mSound.mLoop = true;
+        } break;
+
+        case OBJECT_SOUND_PITCH:{
+            read(srcFile, &object->mSound.mPitch);
+        } break;
+        
+        case OBJECT_SOUND_SECTOR:{
+            char* sectorName = (char*)malloc(header->mSize - 6);
+            read(srcFile, sectorName, header->mSize - 6);
+            object->mSound.mSectors.push_back(sectorName);
+            free(sectorName);
+        } break;
+    }
+}
+
 
 void DataFormatScene2BIN::readLight(MFUtil::ScopedBuffer& srcFile, Header* header, Object* object) {
     switch (header->mType) {

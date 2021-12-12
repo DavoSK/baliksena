@@ -45,6 +45,9 @@ public:
     glm::mat4 createProjMatrix(int width, int height);
     glm::mat4 getViewMatrix();
 
+    void setViewMatrix(const glm::mat4& view) { mViewMatrix = view; }
+    void setProjMatrix(const glm::mat4& proj) { mProjMatrix = proj; }
+
     [[nodiscard]] const glm::mat4& getProjMatrix() const { return mProjMatrix; }
     [[nodiscard]] const glm::mat4& getSkyboxProjMatrix() const { return mProjSkyboxMatrix; }
     [[nodiscard]] const glm::vec3& getPos() const { return Position; }

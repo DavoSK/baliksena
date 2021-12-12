@@ -239,7 +239,7 @@ void renderTerminalWidget() {
 
 void renderSceneWidget(Scene* scene) {
     auto& missionList = Vfs::getMissionsList();
-    static int currentMissionIdx = 49;  
+    static int currentMissionIdx = 15;  
     ImGui::Combo("##missionscombo", &currentMissionIdx, missionList); 
 
     ImGui::SameLine();
