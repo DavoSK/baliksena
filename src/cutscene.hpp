@@ -16,7 +16,7 @@ public:
 private:
     void updateCamera();
     void updateObjects();
-    std::unordered_map<uint32_t, std::shared_ptr<Frame>> mDefinitions;
+    std::unordered_map<std::string, std::shared_ptr<Frame>> mDefinitions;
     uint64_t mStartTime = 0;
     bool mIsPlaying = false;
     RepFile::File mRep;

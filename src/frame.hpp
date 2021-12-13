@@ -19,6 +19,7 @@ enum class FrameType
     Frame, 
     Mesh,
     SingleMesh,
+    Joint,
     Model,
     Dummy,
     Light,

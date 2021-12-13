@@ -72,6 +72,7 @@ static struct {
     Renderer::Material material;
     Renderer::RenderPass pass;
     std::vector<Renderer::Light> lights;
+    std::vector<glm::mat4> bones;
 
     /* debug */
     sg_buffer debugCubeVertexBuffer;
@@ -168,6 +169,10 @@ void Renderer::init() {
     layoutDesc.attrs[ATTR_universal_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
     layoutDesc.attrs[ATTR_universal_vs_aNormal].format      = SG_VERTEXFORMAT_FLOAT3;
     layoutDesc.attrs[ATTR_universal_vs_aTexCoord].format    = SG_VERTEXFORMAT_FLOAT2;
+    layoutDesc.attrs[ATTR_universal_vs_index0].format       = SG_VERTEXFORMAT_FLOAT;
+    layoutDesc.attrs[ATTR_universal_vs_index1].format       = SG_VERTEXFORMAT_FLOAT;
+    layoutDesc.attrs[ATTR_universal_vs_weight0].format      = SG_VERTEXFORMAT_FLOAT;
+    layoutDesc.attrs[ATTR_universal_vs_weight1].format      = SG_VERTEXFORMAT_FLOAT;
 
     constexpr int OFFSCREEN_SAMPLE_COUNT = 4;
 
@@ -413,6 +418,10 @@ void Renderer::setLights(const std::vector<Light>& lights) {
     state.lights = lights;
 }
 
+void Renderer::setBones(const std::vector<glm::mat4>& bones) {
+    state.bones = bones;
+}
+
 void Renderer::applyUniforms() {
     if(state.pass == Renderer::RenderPass::DEBUG) {
         debug_vs_params_t vertexUniforms{
@@ -444,6 +453,14 @@ void Renderer::applyUniforms() {
         vertexUniforms.billboard = isBillboard;
         vertexUniforms.relative = state.isRelative ? 1.0f : 0.0f;
         vertexUniforms.lightsCount = (float)state.lights.size();
+        vertexUniforms.bonesCount = (float)state.bones.size();
+        
+        //NOTE: set bones
+        memset(&vertexUniforms.bones, 0, sizeof(glm::mat4) * MaxBones);
+        for(size_t i = 0; i < state.bones.size(); i++) {
+            vertexUniforms.bones[i] = state.bones[i];
+        }
+
         sg_range uniformsRange{
             &vertexUniforms,
             sizeof(universal_vs_params_t)

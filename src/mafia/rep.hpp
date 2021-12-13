@@ -208,6 +208,7 @@ struct TransformPayload
 struct Transformation
 {
   TransformationHeader header;
+  AnimatedObjectDefinitions def;
   TransformPayload payload;
 };
 
@@ -427,6 +428,7 @@ private:
     for (size_t i = 0; i < fileHeader.countOfObjectDefinitionBlocks; i++) {
       GETPOS(stream);
       auto& animatedObject = currentFile.animatedObjects[i];
+
       endPointer = currentPointer + animatedObject.sizeOfStreamSection;
       uint32_t zeroUnkBlock;
       // Skip leading 8 bytes
@@ -450,7 +452,8 @@ private:
         TransformPayload* body = reinterpret_cast<TransformPayload*>(&payload);
         currentFile.transformBlocks.push_back({
           header,
-          *body
+          animatedObject,
+          *body,
         });
         
       }

@@ -383,14 +383,14 @@ void renderImGuizmo(Scene* scene) {
         if(gSelectedNode == nullptr) return;
         glm::mat4 view = cam->getViewMatrix();
         glm::mat4 proj = cam->getProjMatrix();
-        glm::mat4 nodeWorld = gSelectedNode->getWorldMatrix();
+        glm::mat4 nodeWorld = gSelectedNode->getMatrix();
         glm::mat4 deltaMat = glm::mat4(1.0f);
         editTransform(reinterpret_cast<float*>(&view), 
                         reinterpret_cast<float*>(&proj), 
-                        reinterpret_cast<float*>(&nodeWorld), 
-                        reinterpret_cast<float*>(&deltaMat));
+                        reinterpret_cast<float*>(&nodeWorld), nullptr/*, 
+                        reinterpret_cast<float*>(&deltaMat)*/);
         if(ImGuizmo::IsUsing()) {
-            gSelectedNode->setMatrix(gSelectedNode->getMatrix() * deltaMat);
+            gSelectedNode->setMatrix(nodeWorld);
         }
     }
 }

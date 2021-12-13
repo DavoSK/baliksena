@@ -3,7 +3,9 @@
 #include "scene.hpp"
 #include "camera.h"
 #include "app.hpp"
+#include "logger.hpp"
 
+#include <optional>
 #include <sokol/sokol_time.h>
 
 void Cutscene::start(const std::string& recordName) {
@@ -16,7 +18,9 @@ void Cutscene::start(const std::string& recordName) {
         //NOTE: find animated objects
         for(size_t i = 0; i < mRep.animatedObjects.size(); i++) {
             const auto& animObj = mRep.animatedObjects[i];
-            mDefinitions[i] = App::get()->getScene()->findFrame(animObj.frameName);
+            
+            mDefinitions[animObj.frameName] = App::get()->getScene()->findFrame(animObj.frameName);
+            Logger::get().info("frm def {} {}", i, animObj.frameName);
         }
     }
 }
@@ -33,7 +37,7 @@ void Cutscene::updateCamera() {
 
     RepFile::CameraFocusChunk focusChunk;
     for(const auto& chunk : mRep.camerafocusChunks) {
-        if(chunk.timestamp <= diff) {
+        if(chunk.timestamp >= diff) {
             focusChunk = chunk;
         }
     }
@@ -43,24 +47,40 @@ void Cutscene::updateCamera() {
     cam->setProjMatrix(glm::perspectiveLH(tsChunk.fov, cam->Aspect, cam->Near, cam->Far));  
 }
 
+
+
 void Cutscene::updateObjects() {
-    // uint64_t diff = stm_ms(stm_diff(stm_now(), mStartTime));
+    uint64_t diff = stm_ms(stm_diff(stm_now(), mStartTime));
 
-    // RepFile::Transformation tsChunk;
-    // for(const auto& obj : mRep.transformBlocks) {
-    //     if(tsChunk.header.timestamp <= diff) {
-    //         tsChunk = obj;
-    //     }
-    // }
+    auto getAnimationById = [&](size_t animationId) -> std::string { 
+        for(auto& animBlock : mRep.animationBlocks) {
+            if(animBlock.animationID == animationId) 
+                return animBlock.animationName;
+        }
 
-    // std::shared_ptr<Frame> frame = mDefinitions[tsChunk.payload.getAnimationID()];
-    // if(frame != nullptr) {
-    //     frame->setPos(tsChunk.payload.position);
-    // }
+        return {};
+    };
+
+    auto playTransform = [&](RepFile::Transformation& transform) -> void {
+        if(transform.payload.hasAnimationID()) {
+            Logger::get().info("anim: {} for: {}: flags: {}", getAnimationById(transform.payload.getAnimationID()), transform.def.frameName, transform.payload.getFlagsAsString());
+        } else {
+            Logger::get().info("transform for: {}: flags: {}", transform.def.frameName, transform.payload.getFlagsAsString());
+        }
+    };
+
+    static size_t curentTransformBlockIdx = 0;
+    for( size_t i = curentTransformBlockIdx; i < mRep.transformBlocks.size(); i++) {
+        auto& currentTransformBlock = mRep.transformBlocks[i];
+        if(diff >= currentTransformBlock.header.timestamp) {
+            playTransform(currentTransformBlock);
+            curentTransformBlockIdx = i + 1;
+        }
+    }
 }
 
 void Cutscene::tick() {
-    updateCamera();
+    //updateCamera();
     updateObjects();
 }
     

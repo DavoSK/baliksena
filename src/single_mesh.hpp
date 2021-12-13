@@ -1,56 +1,36 @@
 #pragma once
-/*#include "frame.hpp"
-#include "renderer.hpp"
+#include "frame.hpp"
+#include "mesh.hpp"
 
-#include <vector>
-#include <memory>
-
-class Mesh;
-class Material;
-
-class FaceGroup {
+class Joint : public Frame {
 public:
-    explicit FaceGroup(
-        std::vector<uint16_t> indices, 
-		std::weak_ptr<Mesh> mesh) :
-            mIndices(std::move(indices)),
-            mMesh(mesh) {
-        mIndicesCount = mIndices.size();
-    }
+    constexpr FrameType getFrameType() const override { return FrameType::Joint; }
 
-    void setMaterial(std::shared_ptr<Material> mat) { mMaterial = std::move(mat); }
-    [[nodiscard]] const std::shared_ptr<Material>& getMaterial() { return mMaterial; }
-
-    const std::vector<uint16_t>& getIndices() { return mIndices; }
-    void setOffset(size_t offset) { mOffset = offset; }
-
-    void render() const;
+    void setBoneId(uint32_t boneId) { mBoneId = boneId; }
+    [[nodiscard]] uint32_t getBoneId() const { return mBoneId; }
 private:
-    size_t mOffset = 0;
-    size_t mIndicesCount = 0;
-    std::weak_ptr<Mesh> mMesh;
-    std::vector<uint16_t> mIndices;
-    std::shared_ptr<Material> mMaterial;
+    uint32_t mBoneId;
 };
 
-class Mesh : public Frame {
+struct Bone {
+    glm::mat4 mInverseTransform;
+    uint32_t mNoneWeightedVertCount;    // amount of vertices that should have a weight of 1.0f
+    uint32_t mWeightedVertCount;        // amount of vertices whose weights are stored in mWeights
+    uint32_t mBoneID;                   // this is likely a reference to a paired bone, which takes the remainder
+                                        // (1.0f - w) of weight
+    glm::vec3 mMinBox;
+    glm::vec3 mMaxBox;
+    std::vector<float> mWeights;
+};
+
+class SingleMesh : public Mesh {
 public:
-    [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Mesh; }
+    [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::SingleMesh; }
 
-    void setVertices(std::vector<Renderer::Vertex> vertices);
-    [[nodiscard]] const std::vector<Renderer::Vertex>& getVertices () { return mVertices; }
-
-    void addFaceGroup(std::unique_ptr<FaceGroup> faceGroup) { mFaceGroups.push_back(std::move(faceGroup)); }
-    [[nodiscard]] const std::vector<std::unique_ptr<FaceGroup>>& getFaceGroups() { return mFaceGroups; }
+    void setBones(std::vector<Bone> bones) { mBones = std::move(bones); }
+    [[nodiscard]] const std::vector<Bone>& getBones() const { return mBones; }
 
     virtual void render() override;
 private:
-    //NOTE: batch ligts for this mesh from current sector
-    void updateLights();
-    std::vector<Renderer::Light> mLights;
-    bool mUpdateLights = true;
-
-    std::vector<Renderer::Vertex> mVertices;
-    std::vector<std::unique_ptr<FaceGroup>> mFaceGroups;
+    std::vector<Bone> mBones;
 };
-*/

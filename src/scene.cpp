@@ -388,12 +388,12 @@ void Scene::load(const std::string& missionName) {
         }
     }
 
+    invalidateTransformRecursively();
+    initVertexBuffers();
+
     //NOTE: load rep file
     // mCutscene = std::make_unique<Cutscene>();
     // mCutscene->start("record00.rep");
-
-    invalidateTransformRecursively();
-    initVertexBuffers();
 }
 
 void Scene::clear() {

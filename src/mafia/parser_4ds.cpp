@@ -234,23 +234,23 @@ DataFormat4DS::Morph DataFormat4DS::loadMorph(MFUtil::ScopedBuffer& file,
     return newMorph;
 }
 
-DataFormat4DS::SingleMeshLodJoint DataFormat4DS::loadSingleMeshLodJoint(
+DataFormat4DS::SingleMeshLodBone DataFormat4DS::loadSingleMeshLodBone(
     MFUtil::ScopedBuffer& file) {
-    SingleMeshLodJoint newJoint = {};
-    read(file, &newJoint.mTransform);
-    read(file, &newJoint.mOneWeightedVertCount);
-    read(file, &newJoint.mWeightCount);
-    read(file, &newJoint.mBoneID);
-    read(file, &newJoint.mMinBox);
-    read(file, &newJoint.mMaxBox);
+    SingleMeshLodBone newBone = {};
+    read(file, &newBone.mInverseTransform);
+    read(file, &newBone.mNoneWeightedVertCount);
+    read(file, &newBone.mWeightedVertCount);
+    read(file, &newBone.mBoneID);
+    read(file, &newBone.mMinBox);
+    read(file, &newBone.mMaxBox);
 
-    for (size_t i = 0; i < newJoint.mWeightCount; ++i) {
+    for (size_t i = 0; i < newBone.mWeightedVertCount; ++i) {
         float f;
         read(file, &f, sizeof(f));
-        newJoint.mWeights.push_back(f);
+        newBone.mWeights.push_back(f);
     }
 
-    return newJoint;
+    return newBone;
 }
 
 DataFormat4DS::SingleMeshLod DataFormat4DS::loadSingleMeshLod(
@@ -263,15 +263,13 @@ DataFormat4DS::SingleMeshLod DataFormat4DS::loadSingleMeshLod(
     // - BONE1's weighted vertices
     // and so on
     SingleMeshLod newLod = {};
-    read(file, &newLod.mJointCount);
+    read(file, &newLod.mBoneCount);
     read(file, &newLod.mNonWeightedVertCount);
     read(file, &newLod.mMinBox);
     read(file, &newLod.mMaxBox);
 
-    for (size_t i = 0; i < newLod.mJointCount; ++i) {
-        SingleMeshLodJoint newJoint = {};
-        newJoint = loadSingleMeshLodJoint(file);
-        newLod.mJoints.push_back(newJoint);
+    for (size_t i = 0; i < newLod.mBoneCount; ++i) {
+        newLod.mBones.push_back(loadSingleMeshLodBone(file));
     }
 
     return newLod;
@@ -396,11 +394,11 @@ void DataFormat4DS::loadMesh(Model* model, MFUtil::ScopedBuffer& file) {
                 newMesh.mTarget = newTarget;
             } break;
 
-            case MESHTYPE_BONE: {
-                Bone newBone = {};
-                read(file, &newBone.mTransform);
-                read(file, &newBone.mBoneID);
-                newMesh.mBone = newBone;
+            case MESHTYPE_JOINT: {
+                Joint newJoint = {};
+                read(file, &newJoint.mTransform);
+                read(file, &newJoint.mJointID);
+                newMesh.mJoint = newJoint;
             } break;
 
             default: {

@@ -37,7 +37,7 @@ public:
         MESHTYPE_SECTOR = 0x05,     // part of space, used for culling, effective lighting etc.
         MESHTYPE_DUMMY = 0x06,      // invisible bounding box
         MESHTYPE_TARGET = 0x07,     // used in human models (as a shooting target?)
-        MESHTYPE_BONE = 0x0a        // for skeletal animation
+        MESHTYPE_JOINT = 0x0a        // for skeletal animation
     } MeshType;
 
     typedef enum {
@@ -135,8 +135,8 @@ public:
 
     typedef struct {
         float mTransform[16];
-        uint32_t mBoneID;
-    } Bone;
+        uint32_t mJointID;
+    } Joint;
 
     typedef struct {
         uint8_t mVertexCount;
@@ -217,22 +217,22 @@ public:
     } Morph;
 
     typedef struct {
-        float mTransform[16];
-        uint32_t mOneWeightedVertCount;  // amount of vertices that should have a weight of 1.0f
-        uint32_t mWeightCount;           // amount of vertices whose weights are stored in mWeights
+        float mInverseTransform[16];
+        uint32_t mNoneWeightedVertCount;  // amount of vertices that should have a weight of 1.0f
+        uint32_t mWeightedVertCount;           // amount of vertices whose weights are stored in mWeights
         uint32_t mBoneID;                // this is likely a reference to a paired bone, which takes the remainder
                                          // (1.0f - w) of weight
         MFMath::Vec3 mMinBox;
         MFMath::Vec3 mMaxBox;
         std::vector<float> mWeights;
-    } SingleMeshLodJoint;
+    } SingleMeshLodBone;
 
     typedef struct {
-        uint8_t mJointCount;
+        uint8_t mBoneCount;
         uint32_t mNonWeightedVertCount;
         MFMath::Vec3 mMinBox;
         MFMath::Vec3 mMaxBox;
-        std::vector<SingleMeshLodJoint> mJoints;
+        std::vector<SingleMeshLodBone> mBones;
     } SingleMeshLod;
 
     typedef struct {
@@ -266,7 +266,7 @@ public:
         Billboard mBillboard;
         Sector mSector;
         Target mTarget;
-        Bone mBone;
+        Joint mJoint;
         Morph mMorph;
         SingleMesh mSingleMesh;
         SingleMorph mSingleMorph;
@@ -330,7 +330,7 @@ protected:
     Sector loadSector(MFUtil::ScopedBuffer& file);
     Target loadTarget(MFUtil::ScopedBuffer& file);
     Morph loadMorph(MFUtil::ScopedBuffer& file, bool ignoreStandard);
-    SingleMeshLodJoint loadSingleMeshLodJoint(MFUtil::ScopedBuffer& file);
+    SingleMeshLodBone loadSingleMeshLodBone(MFUtil::ScopedBuffer& file);
     SingleMeshLod loadSingleMeshLod(MFUtil::ScopedBuffer& file);
     SingleMesh loadSingleMesh(MFUtil::ScopedBuffer& file);
     SingleMorph loadSingleMorph(MFUtil::ScopedBuffer& file);

@@ -7,6 +7,10 @@
 in vec3 aPos;
 in vec3 aNormal;
 in vec2 aTexCoord;
+in float index0;
+in float index1;
+in float weight0;
+in float weight1;
 
 out vec3 FragPos;
 out vec3 Norm;  
@@ -34,6 +38,7 @@ material_t getMaterial();
 
 /* lights section */
 #define NUM_LIGHTS 15
+
 
 const uint LightType_Dir        = 0;
 const uint LightType_Point      = 1;
@@ -66,14 +71,19 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
 
 /* --------------- */
 
+/* --------------- */
+#define NUM_BONES  20
+
 uniform vs_params {
     mat4 model;
     mat4 view;
     mat4 projection;
+    mat4 bones[NUM_BONES];
     vec3 viewPos;
     float billboard;
     float relative;
     float lightsCount;
+    float bonesCount;
 };
 
 void main() {
@@ -112,7 +122,20 @@ void main() {
         modelView[2][2] = 1.0; 
     }
 
-    vec4 P = modelView * vec4(aPos, 1.0);
+    vec4 newVertex = vec4(aPos, 1.0);
+    if(int(bonesCount) > 0) {
+        //vec4 newNormal;
+        //int index;
+        // --------------------
+        //index=int(index0); // Cast to int
+        newVertex = (bones[int(index0)] * vec4(aPos, 1.0)) * weight0;
+        //newNormal = (bones[index] * vec4(Normal, 0.0)) * Weight.x;
+        //index=int(index1); //Cast to int
+        newVertex = (bones[int(index1)] * vec4(aPos, 1.0)) * weight1 + newVertex;
+        //newNormal = (bones[index] * vec4(Normal, 0.0)) * Weight.y + newNormal;
+    }
+
+    vec4 P = modelView * vec4(newVertex.xyz, 1.0);
     gl_Position = projection * P;
 }
 

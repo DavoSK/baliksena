@@ -27,6 +27,7 @@ public:
         ADD
     };
 
+    static constexpr int MaxBones = 20;
     static constexpr int MaxLights = 15;
     static constexpr int InvalidHandle = 0;
     struct TextureHandle { uint32_t id; };  
@@ -62,6 +63,8 @@ public:
         glm::vec3 p;
         glm::vec3 n;
         glm::vec2 uv;
+        float index0, index1;     // Index into the bone/offset matrix array (2 bones)
+        float weight0, weight1;   // The blend factor for each bone/offset matrix (2 bones)
     };
 
     static void destroy();
@@ -89,6 +92,7 @@ public:
 
     static void setModel(const glm::mat4& model);
     static void setLights(const std::vector<Light>& light);
+    static void setBones(const std::vector<glm::mat4>& bones);
     static void applyUniforms();
 
     static void setViewMatrix(const glm::mat4& view);

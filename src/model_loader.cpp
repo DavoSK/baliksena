@@ -6,6 +6,7 @@
 
 #include "renderer.hpp"
 #include "mesh.hpp"
+#include "single_mesh.hpp"
 #include "billboard.hpp"
 #include "material.hpp"
 #include "texture.hpp"
@@ -161,6 +162,7 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         } break;
         case MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMORPH: {
             lods = &mesh.mSingleMorph.mSingleMesh.mStandard.mLODs;
+            newMesh = std::make_shared<SingleMesh>();            
         } break;
         default: {
             //Logger::get().warn("unable to load visual mesh type {}",  mesh.mVisualMeshType);
@@ -190,17 +192,20 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     auto& lod = lods->at(0);
 
     // NOTE: get vertices from lod
+    std::vector<Renderer::Vertex> vertices;
     {
-        std::vector<Renderer::Vertex> vertices;
+        
         for (const auto& mafiaVertex : lod.mVertices) {
             Renderer::Vertex vertex{};
             vertex.p = { mafiaVertex.mPos.x, mafiaVertex.mPos.y, mafiaVertex.mPos.z };
             vertex.n = { mafiaVertex.mNormal.x, mafiaVertex.mNormal.y, mafiaVertex.mNormal.z };
             vertex.uv = { mafiaVertex.mUV.x, mafiaVertex.mUV.y * -1.0f };
+            vertex.index0 = 0.0f;
+            vertex.index1 = 0.0f;
+            vertex.weight0 = 0.0f;
+            vertex.weight1 = 0.0f;
             vertices.push_back(vertex);
         }
-
-        newMesh->setVertices(vertices);
     }
 
     //NOTE: load face groups
@@ -228,6 +233,53 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         }
     }
 
+    //NOTE: load bone for singlemeshes
+    if((mesh.mVisualMeshType == MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMESH || 
+       mesh.mVisualMeshType == MFFormat::DataFormat4DS::VisualMeshType::VISUALMESHTYPE_SINGLEMORPH) && 
+       mesh.mSingleMorph.mSingleMesh.mLODs.size() > 0) {
+        
+        auto singleMesh = std::dynamic_pointer_cast<SingleMesh>(newMesh);
+        const auto& singleLOD = mesh.mSingleMorph.mSingleMesh.mLODs.at(0);
+        
+        std::vector<Bone> singleMeshBones;
+        size_t skipVertices = 0;
+        for(size_t i = 0; i <  singleLOD.mBones.size(); i++) {
+            auto lodBone = singleLOD.mBones[i];
+
+            Bone newBone {};
+            newBone.mBoneID                 = lodBone.mBoneID;
+            newBone.mInverseTransform       = *(const glm::mat4*)&lodBone.mInverseTransform;
+            newBone.mMaxBox                 = { lodBone.mMaxBox.x, lodBone.mMaxBox.y, lodBone.mMaxBox.z };
+            newBone.mMinBox                 = { lodBone.mMinBox.x, lodBone.mMinBox.y, lodBone.mMinBox.z };
+            newBone.mNoneWeightedVertCount  = lodBone.mNoneWeightedVertCount;
+            newBone.mWeightedVertCount      = lodBone.mWeightedVertCount;
+            newBone.mWeights                = lodBone.mWeights;
+                
+            for (uint32_t j = 0; j < newBone.mNoneWeightedVertCount; j++) {
+                vertices[skipVertices + j].index0 = (float)i;
+                vertices[skipVertices + j].weight0 = 1.0f;
+                vertices[skipVertices + j].index1 = (float)newBone.mBoneID;
+                vertices[skipVertices + j].weight1 = 0.0f;
+            }
+
+            skipVertices += newBone.mNoneWeightedVertCount;
+
+            for (uint32_t j = 0; j < newBone.mWeights.size(); j++) {
+                vertices[skipVertices + j].index0 = (float)i;
+                vertices[skipVertices + j].weight0 = newBone.mWeights[j];
+                vertices[skipVertices + j].index1 = (float)newBone.mBoneID;
+                vertices[skipVertices + j].weight1 = 1.0f - newBone.mWeights[j];
+            }
+
+            skipVertices += newBone.mWeights.size();
+            singleMeshBones.push_back(newBone);
+        }
+
+        Logger::get().info("bones: {}", singleMeshBones.size());
+        singleMesh->setBones(singleMeshBones);        
+    }
+
+    newMesh->setVertices(vertices);
     return newMesh;
 }
 
@@ -271,6 +323,14 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     return newMesh;
 }
 
+[[nodiscard]] std::shared_ptr<Frame> loadJoint(MFFormat::DataFormat4DS::Mesh& mesh) {
+    auto newMesh = std::make_shared<Joint>();
+    newMesh->setMatrix(*(const glm::mat4*)&mesh.mJoint.mTransform);
+    newMesh->setName(mesh.mMeshName);
+    newMesh->setBoneId(mesh.mJoint.mJointID);
+    return newMesh;
+}
+
 std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const std::vector<MFFormat::DataFormat4DS::Material>& materials) {
     switch (mesh.mMeshType) {
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_STANDARD: {
@@ -281,9 +341,9 @@ std::shared_ptr<Frame> meshFactory(MFFormat::DataFormat4DS::Mesh& mesh, const st
             return loadSector(mesh);
         } break;
         
-        /*case MFFormat::DataFormat4DS::MeshType::MESHTYPE_BONE: {
-            return loadBone(mesh);
-        } break;*/
+        case MFFormat::DataFormat4DS::MeshType::MESHTYPE_JOINT: {
+            return loadJoint(mesh);
+        } break;
 
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_COLLISION:
         case MFFormat::DataFormat4DS::MeshType::MESHTYPE_DUMMY: {
