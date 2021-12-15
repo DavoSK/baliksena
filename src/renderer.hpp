@@ -63,8 +63,8 @@ public:
         glm::vec3 p;
         glm::vec3 n;
         glm::vec2 uv;
-        float index0, index1;     // Index into the bone/offset matrix array (2 bones)
-        float weight0, weight1;   // The blend factor for each bone/offset matrix (2 bones)
+        glm::vec2 indexes;
+        glm::vec2 weights;
     };
 
     static void destroy();

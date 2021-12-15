@@ -200,10 +200,6 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
             vertex.p = { mafiaVertex.mPos.x, mafiaVertex.mPos.y, mafiaVertex.mPos.z };
             vertex.n = { mafiaVertex.mNormal.x, mafiaVertex.mNormal.y, mafiaVertex.mNormal.z };
             vertex.uv = { mafiaVertex.mUV.x, mafiaVertex.mUV.y * -1.0f };
-            vertex.index0 = 0.0f;
-            vertex.index1 = 0.0f;
-            vertex.weight0 = 0.0f;
-            vertex.weight1 = 0.0f;
             vertices.push_back(vertex);
         }
     }
@@ -243,8 +239,8 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         
         std::vector<Bone> singleMeshBones;
         size_t skipVertices = 0;
-        for(size_t i = 0; i <  singleLOD.mBones.size(); i++) {
-            auto lodBone = singleLOD.mBones[i];
+        for(size_t i = 0; i < singleLOD.mBones.size(); i++) {
+            const auto& lodBone = singleLOD.mBones[i];
 
             Bone newBone {};
             newBone.mBoneID                 = lodBone.mBoneID;
@@ -256,19 +252,17 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
             newBone.mWeights                = lodBone.mWeights;
                 
             for (uint32_t j = 0; j < newBone.mNoneWeightedVertCount; j++) {
-                vertices[skipVertices + j].index0 = (float)i;
-                vertices[skipVertices + j].weight0 = 1.0f;
-                vertices[skipVertices + j].index1 = (float)newBone.mBoneID;
-                vertices[skipVertices + j].weight1 = 0.0f;
+                auto* vertexToModify = &vertices[skipVertices + j];
+                vertexToModify->indexes = { (float)i, (float)newBone.mBoneID };
+                vertexToModify->weights = { 1.0f, 0.0f };
             }
 
             skipVertices += newBone.mNoneWeightedVertCount;
 
             for (uint32_t j = 0; j < newBone.mWeights.size(); j++) {
-                vertices[skipVertices + j].index0 = (float)i;
-                vertices[skipVertices + j].weight0 = newBone.mWeights[j];
-                vertices[skipVertices + j].index1 = (float)newBone.mBoneID;
-                vertices[skipVertices + j].weight1 = 1.0f - newBone.mWeights[j];
+                auto* vertexToModify = &vertices[skipVertices + j];
+                vertexToModify->indexes = {(float)i, (float)newBone.mBoneID };
+                vertexToModify->weights = { newBone.mWeights[j], 1.0f - newBone.mWeights[j]};
             }
 
             skipVertices += newBone.mWeights.size();

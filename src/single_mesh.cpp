@@ -3,30 +3,23 @@
 #include "logger.hpp"
 
 void SingleMesh::render() {
+    // forEach<Joint>([&](Joint* joint) {
+    //     for(auto& bone : mBones) {
+    //         if(bone.mBoneID == joint->getBoneId()) {
+    //             bones[joint->getBoneId()] = joint->getMatrix();
+    //             break;
+    //         }
+    //     }        
+    // }, this);
 
     std::vector<glm::mat4> bones{};
-    bones.resize(mBones.size());
-
-    forEach<Joint>([&](Joint* joint) {
-        for(auto& bone : mBones) {
-            if(bone.mBoneID == joint->getBoneId()) {
-                bones[joint->getBoneId()] = joint->getMatrix();
-                break;
-            }
-            
-        }
-
-      
-        
-    }, this);
+    for(const auto& boneDef : mBones) {
+        glm::mat4 inverseTransformMatrix = glm::inverse(boneDef.mInverseTransform);
+        bones.push_back(glm::mat3(inverseTransformMatrix));
+    }
 
     
-
-    Logger::get().info("pog {}", bones.size());
-
     Renderer::setBones(bones);
     Mesh::render();
-
-    bones.clear();
-    Renderer::setBones(bones);
+    Renderer::setBones({});
 }

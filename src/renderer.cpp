@@ -169,10 +169,8 @@ void Renderer::init() {
     layoutDesc.attrs[ATTR_universal_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
     layoutDesc.attrs[ATTR_universal_vs_aNormal].format      = SG_VERTEXFORMAT_FLOAT3;
     layoutDesc.attrs[ATTR_universal_vs_aTexCoord].format    = SG_VERTEXFORMAT_FLOAT2;
-    layoutDesc.attrs[ATTR_universal_vs_index0].format       = SG_VERTEXFORMAT_FLOAT;
-    layoutDesc.attrs[ATTR_universal_vs_index1].format       = SG_VERTEXFORMAT_FLOAT;
-    layoutDesc.attrs[ATTR_universal_vs_weight0].format      = SG_VERTEXFORMAT_FLOAT;
-    layoutDesc.attrs[ATTR_universal_vs_weight1].format      = SG_VERTEXFORMAT_FLOAT;
+    layoutDesc.attrs[ATTR_universal_vs_aIndexes].format     = SG_VERTEXFORMAT_FLOAT2;
+    layoutDesc.attrs[ATTR_universal_vs_aWeights].format     = SG_VERTEXFORMAT_FLOAT2;
 
     constexpr int OFFSCREEN_SAMPLE_COUNT = 4;
 
@@ -456,7 +454,7 @@ void Renderer::applyUniforms() {
         vertexUniforms.bonesCount = (float)state.bones.size();
         
         //NOTE: set bones
-        memset(&vertexUniforms.bones, 0, sizeof(glm::mat4) * MaxBones);
+        memset(vertexUniforms.bones, 0, sizeof(glm::mat4) * MaxBones);
         for(size_t i = 0; i < state.bones.size(); i++) {
             vertexUniforms.bones[i] = state.bones[i];
         }

@@ -1,5 +1,6 @@
 @module universal
 @ctype mat4 glm::mat4
+@ctype vec2 glm::vec2
 @ctype vec3 glm::vec3
 @ctype vec4 glm::vec4
 
@@ -7,10 +8,8 @@
 in vec3 aPos;
 in vec3 aNormal;
 in vec2 aTexCoord;
-in float index0;
-in float index1;
-in float weight0;
-in float weight1;
+in vec2 aIndexes;
+in vec2 aWeights;
 
 out vec3 FragPos;
 out vec3 Norm;  
@@ -87,10 +86,26 @@ uniform vs_params {
 };
 
 void main() {
-    FragPos = vec3(model * vec4(aPos, 1.0));
+    vec3 newVertex = aPos;
+    vec3 newNormal = aNormal;
+
+    if(int(bonesCount) > 0) {
+        newVertex = vec3(0.0, 0.0, 0.0);
+        mat4 bone1 = bones[int(aIndexes.x)];
+        mat4 bone2 = bones[int(aIndexes.y)];
+
+        newVertex += (bone1 * vec4(aPos, 1.0)).xyz * aWeights.x;
+        newVertex += (bone2 * vec4(aPos, 1.0)).xyz * aWeights.y;
+
+        newNormal = vec3(0.0, 0.0, 0.0);
+        newNormal += (bone1 * vec4(aNormal, 0.0)).xyz * aWeights.x;
+        newNormal += (bone2 * vec4(aNormal, 0.0)).xyz * aWeights.y;
+    }
+
+    FragPos = vec3(model * vec4(newVertex, 1.0));
     ViewDir = normalize(FragPos - viewPos);
-    Env = reflect(ViewDir, normalize(aNormal)) * vec3(1.0, -1.0, 1.0);
-    Norm = normalize(mat3(transpose(inverse(model))) * aNormal);  
+    Env = reflect(ViewDir, normalize(newNormal)) * vec3(1.0, -1.0, 1.0);
+    Norm = normalize(mat3(transpose(inverse(model))) * newNormal);  
     TexCoord = aTexCoord;
 
     //NOTE: calculate light
@@ -122,20 +137,7 @@ void main() {
         modelView[2][2] = 1.0; 
     }
 
-    vec4 newVertex = vec4(aPos, 1.0);
-    if(int(bonesCount) > 0) {
-        //vec4 newNormal;
-        //int index;
-        // --------------------
-        //index=int(index0); // Cast to int
-        newVertex = (bones[int(index0)] * vec4(aPos, 1.0)) * weight0;
-        //newNormal = (bones[index] * vec4(Normal, 0.0)) * Weight.x;
-        //index=int(index1); //Cast to int
-        newVertex = (bones[int(index1)] * vec4(aPos, 1.0)) * weight1 + newVertex;
-        //newNormal = (bones[index] * vec4(Normal, 0.0)) * Weight.y + newNormal;
-    }
-
-    vec4 P = modelView * vec4(newVertex.xyz, 1.0);
+    vec4 P = modelView * vec4(newVertex, 1.0);
     gl_Position = projection * P;
 }
 
