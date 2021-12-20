@@ -27,7 +27,8 @@ void App::init() {
     //NOTE: create main camera
     auto mainCam = std::make_shared<Camera>();
     mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
-    mainCam->update(0.01f);
+    mainCam->Position = {0.1f, 0.1f, 0.1f};
+    mainCam->updateCameraVectors();
     mScene->setActiveCamera(mainCam);
 
     //NOTE: init audio

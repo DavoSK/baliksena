@@ -317,9 +317,9 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
     return newMesh;
 }
 
-[[nodiscard]] std::shared_ptr<Frame> loadJoint(MFFormat::DataFormat4DS::Mesh& mesh) {
+[[nodiscard]] std::shared_ptr<Joint> loadJoint(MFFormat::DataFormat4DS::Mesh& mesh) {
     auto newMesh = std::make_shared<Joint>();
-    newMesh->setMatrix(*(const glm::mat4*)&mesh.mJoint.mTransform);
+    newMesh->setLocalMatrix(*(const glm::mat4*)&mesh.mJoint.mTransform);
     newMesh->setName(mesh.mMeshName);
     newMesh->setBoneId(mesh.mJoint.mJointID);
     return newMesh;

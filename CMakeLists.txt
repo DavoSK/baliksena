@@ -30,6 +30,7 @@ include_directories(vendors
 )
 
 add_executable(baliksena 
+    src/mafia/parser_5ds.cpp
     src/mafia/parser_4ds.cpp
     src/mafia/parser_cachebin.cpp
     src/mafia/parser_scene2bin.cpp
@@ -47,6 +48,7 @@ add_executable(baliksena
     src/sector.cpp
     src/mesh.cpp
     src/single_mesh.cpp
+    src/animator.cpp
     src/cutscene.cpp
     src/billboard.cpp
     src/model.cpp

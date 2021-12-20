@@ -62,8 +62,8 @@ public:
     void update(float deltaTime);
     void updateFrustum();
     void processInput();
-private:
     void updateCameraVectors();
+private:
     Frustum mFrustum;
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
