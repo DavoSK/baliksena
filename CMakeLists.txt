@@ -16,9 +16,11 @@ add_subdirectory(
     vendors/spdlog
 )
 
+if(MSVC)
 add_subdirectory(
-    vendors/openal-soft
+   vendors/openal-soft
 )
+endif()
 
 include_directories(vendors 
     src
@@ -77,7 +79,9 @@ add_executable(baliksena
     vendors/imguizmo/GraphEditor.cpp
  )
 
-#find_package(OpenAL REQUIRED)
+if (UNIX)
+    find_package(OpenAL REQUIRED)
+endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries(

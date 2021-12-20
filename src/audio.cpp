@@ -8,12 +8,13 @@
 #include "vfs.hpp"
 #include "sector.hpp"
 
-#include <AL/al.h>
+#include <AL/al.h>;
 #include <AL/alc.h>
 
 void Audio::init() {
     mDevice = alcOpenDevice(nullptr);
     if (!mDevice) {
+        Logger::get().info("alcOpenDevice {}", alGetError());
         Logger::get().error("unable to get default audio device :/ !");
         return;
     }

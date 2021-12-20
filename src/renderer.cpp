@@ -4,8 +4,8 @@
 #define SOKOL_LOG(X) Logger::get().warn(X);
 #define SOKOL_IMPL
 
-#define SOKOL_D3D11
-//#define SOKOL_GLCORE33
+//#define SOKOL_D3D11
+#define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
