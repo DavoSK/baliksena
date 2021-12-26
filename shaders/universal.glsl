@@ -96,7 +96,7 @@ void main() {
 
         newVertex += (bone1 * vec4(aPos, 1.0)).xyz * aWeights.x;
         newVertex += (bone2 * vec4(aPos, 1.0)).xyz * aWeights.y;
-
+        
         newNormal = vec3(0.0, 0.0, 0.0);
         newNormal += (bone1 * vec4(aNormal, 0.0)).xyz * aWeights.x;
         newNormal += (bone2 * vec4(aNormal, 0.0)).xyz * aWeights.y;
