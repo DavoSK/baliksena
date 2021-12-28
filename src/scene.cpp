@@ -471,17 +471,19 @@ void Scene::render() {
 
         Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
 
-        if(mPrimarySector != nullptr) {
-            mPrimarySector->render();
+        while(!mAlphaPassFrames.empty()) {
+            auto* frame = mAlphaPassFrames.front();
+            frame->render();
+            mAlphaPassFrames.pop();
         }
     }
 
-    Renderer::setPass(Renderer::RenderPass::DEBUG);
-    {
-        Renderer::debugBegin();
-        Gui::debugRender(this);
-        Renderer::debugEnd();
-    }
+    // Renderer::setPass(Renderer::RenderPass::DEBUG);
+    // {
+    //     Renderer::debugBegin();
+    //     Gui::debugRender(this);
+    //     Renderer::debugEnd();
+    // }
 }
 
 void Scene::initVertexBuffers() {

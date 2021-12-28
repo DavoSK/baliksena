@@ -8,6 +8,7 @@
 #include "stats.hpp"
 #include "vfs.hpp"
 #include "logger.hpp"
+#include "single_mesh.hpp"
 
 #include "imgui_ansi.hpp"
 #include "IconsFontAwesome5.h"
@@ -178,6 +179,8 @@ void renderInspectWidget(Frame* frame) {
     ImGui::InputFloat3("Rotation", matrixRotation);
     ImGui::InputFloat3("Scale", matrixScale);
     
+    ImGui::Separator();
+
     //NOTE: teleport button
     if(ImGui::Button("Teleport")) {
         if(auto* cam = App::get()->getScene()->getActiveCamera()) {
@@ -397,18 +400,25 @@ void renderImGuizmo(Scene* scene) {
 
 void Gui::debugRender(Scene* scene) {
     if(gSelectedNode != nullptr) {
-        auto bbox = gSelectedNode->getWorldBBOX();
-        float max_x = bbox.second.x;
-        float max_y = bbox.second.y;
-        float max_z = bbox.second.z;
-        float min_x = bbox.first.x;
-        float min_y = bbox.first.y;
-        float min_z = bbox.first.z;
+        auto* sphere = gSelectedNode->getSphere();
+        if(sphere) {
+            Renderer::debugSetRenderColor(glm::vec3(1.0f, 1.0f, 0.0f));
+            Renderer::debugRenderSphere(sphere->center, sphere->radius);
+        }
 
-        glm::vec3 size = glm::vec3(max_x-min_x, max_y-min_y, max_z-min_z);
-        glm::vec3 center = glm::vec3((min_x+max_x)/2, (min_y+max_y)/2, (min_z+max_z)/2);
-        Renderer::debugSetRenderColor(glm::vec3(1.0f, 1.0f, 1.0f));
-        Renderer::debugRenderBox(center, size * 0.5f);
+        // auto bbox = gSelectedNode->getWorldBBOX();
+        // float max_x = bbox.second.x;
+        // float max_y = bbox.second.y;
+        // float max_z = bbox.second.z;
+        // float min_x = bbox.first.x;
+        // float min_y = bbox.first.y;
+        // float min_z = bbox.first.z;
+
+        // glm::vec3 size = glm::vec3(max_x-min_x, max_y-min_y, max_z-min_z);
+        // glm::vec3 center = glm::vec3((min_x+max_x)/2, (min_y+max_y)/2, (min_z+max_z)/2);
+        // Renderer::debugSetRenderColor(glm::vec3(1.0f, 1.0f, 1.0f));
+        // Renderer::debugRenderSphere(center, 0.5f);
+        //Renderer::debugRenderBox(center, size * 0.5f);
     }
 }
 
@@ -522,22 +532,22 @@ void Gui::render() {
     ImGui::Separator();
 
     ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
-     ImGui::InputFloat3("Camera up", (float*)&cam->Up);
-    auto sector = scene->getCameraSector();
+    ImGui::InputFloat3("Camera up", (float*)&cam->Up);
+    /*auto sector = scene->getCameraSector();
     if(sector != nullptr) {
         ImGui::Text("Camera sector: %s", sector->getName().c_str());
-        // ImGui::Text("Sector lights:");
-        // for(const auto& sectorLight: sector->getLights()) {
-        //     if(sectorLight->getType() == LightType::Dir) {
-        //         ImGui::Text("Dir: %s", sectorLight->getName().c_str());
-        //     }else if(sectorLight->getType() == LightType::Ambient) {
-        //         ImGui::Text("Ambient: %s\n", sectorLight->getName().c_str());
-        //     }
-        //     else if(sectorLight->getType() == LightType::Point) {
-        //         ImGui::Text("Point: %s\n", sectorLight->getName().c_str());
-        //     }
-        // }
-    }
+        ImGui::Text("Sector lights:");
+        for(const auto& sectorLight: sector->getLights()) {
+            if(sectorLight->getType() == LightType::Dir) {
+                ImGui::Text("Dir: %s", sectorLight->getName().c_str());
+            }else if(sectorLight->getType() == LightType::Ambient) {
+                ImGui::Text("Ambient: %s\n", sectorLight->getName().c_str());
+            }
+            else if(sectorLight->getType() == LightType::Point) {
+                ImGui::Text("Point: %s\n", sectorLight->getName().c_str());
+            }
+        }
+    }*/
 
 
     ImGui::Separator();

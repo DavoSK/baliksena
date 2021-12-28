@@ -41,17 +41,19 @@ void Frame::invalidateTransformRecursively() {
     invalidateTransform(); 
     
     //NOTE: dunno about that
-    // glm::vec3 AABBmin = mAABB.first;
-	// glm::vec3 AABBmax = mAABB.second;
+    glm::vec3 AABBmin = mAABB.first;
+	glm::vec3 AABBmax = mAABB.second;
 
     for (const auto& frame : mChilds) {
         frame->invalidateTransformRecursively();
-        // auto childBbox = frame->getBBOX();
-        // AABBmin = glm::min(AABBmin, childBbox.first);
-        // AABBmax = glm::max(AABBmax, childBbox.second);
+        auto childBbox = frame->getBBOX();
+        AABBmin = glm::min(AABBmin, childBbox.first);
+        AABBmax = glm::max(AABBmax, childBbox.second);
     }
 
-    //setBBOX(mAABB);
+    if(getFrameType() != FrameType::Sector) {
+        setBBOX(mAABB);
+    }
 }
 
 void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
@@ -61,10 +63,10 @@ void Frame::setBBOX(const std::pair<glm::vec3, glm::vec3>& bbox) {
 
 void Frame::updateBoundingVolumes() {
     const auto mat = getWorldMatrix();
-    const auto min = glm::translate(mat, mAABB.first);
-    const auto max = glm::translate(mat, mAABB.second);
+    glm::vec3 min = glm::translate(mat, mAABB.first)[3];
+    glm::vec3 max = glm::translate(mat, mAABB.second)[3];
 
-    mABBBWorld = std::make_pair<glm::vec3, glm::vec3>(min[3], max[3]);
+    mABBBWorld = std::make_pair(min, max);
     mSphereBounding = std::make_unique<Sphere>((mABBBWorld.second + mABBBWorld.first) * 0.5f, glm::length(mABBBWorld.first - mABBBWorld.second));
 }
 
@@ -99,11 +101,16 @@ void Frame::setScale(const glm::vec3& scale) {
 }
 
 void Frame::updateTransform() {
-    const auto translation = glm::translate(glm::mat4(1.f), mPos);
-    const auto scale = glm::scale(glm::mat4(1.f), mScale);
-    const auto rot = glm::mat4(1.f) * glm::toMat4(mRot);
+    const auto translation = glm::translate(glm::mat4(1.0f), mPos);
+    const auto scale = glm::scale(glm::mat4(1.0f), mScale);
+    const auto rot = glm::toMat4(mRot);
     const auto world = translation * rot * scale;
     setMatrix(world);
+}
+
+void Frame::setMatrix(const glm::mat4& mat) {
+    mTransform = mat;
+    invalidateTransformRecursively();
 }
 
 bool Frame::isVisible() {

@@ -4,25 +4,34 @@
 #include "mafia/parser_5ds.hpp"
 #include "single_mesh.hpp"
 
+enum class Key 
+{
+    Trans,
+    Rot,
+    Scale,
+    Count
+};
+
 class Sequence {
 public:
     Sequence(Frame* frame) : 
         mFrame(frame) 
     {
         assert(mFrame != nullptr);
+        start();
     }
 
     void update() {
-        glm::mat4 translation(1.0f);
         if(!Translations.empty()) {
             const auto& mov = Translations.at(TranslationKeyId);
-            translation = glm::translate(glm::mat4(1.0f), { mov.x, mov.y, mov.z });
+            mFrame->setPos({ mov.x, mov.y, mov.z });
 
             if(TranslationKeyId + 1 < Translations.size())
                 TranslationKeyId++;
+            else 
+                Finished[0] = true;
         }
 
-        glm::mat4 rotationMat(1.0f);
         if(!Rotations.empty()) {
             const auto& rot = Rotations.at(RotationKeyId);
             glm::quat rotation{};
@@ -30,50 +39,48 @@ public:
             rotation.x = rot.x;
             rotation.y = rot.y;
             rotation.z = rot.z;
-            rotationMat = glm::toMat4(rotation);
+            mFrame->setRot(rotation);
 
             if(RotationKeyId + 1 < Rotations.size())
                 RotationKeyId++;
+            else 
+                Finished[1] = true;
         }
 
-        glm::mat4 scale(1.0f);
         if(!Scales.empty()) {
             const auto& scl = Scales.at(ScaleKeyId);
-            scale = glm::scale(glm::mat4(1.0f), { scl.x, scl.y, scl.z});
+            mFrame->setScale({ scl.x, scl.y, scl.z});
 
             if(ScaleKeyId + 1 < Scales.size())
                 ScaleKeyId++;
-        }
-
-        glm::mat4 trasnMatrix = translation * rotationMat * scale;
-        if(mFrame->getFrameType() == FrameType::Joint) {
-            ((Joint*)mFrame)->setLocalMatrix(trasnMatrix);
-        } else {
-            mFrame->setMatrix(trasnMatrix);
+            else 
+                Finished[2] = true;
         }
     }
 
-    bool isFinished() {
-        auto transformFinished =    TranslationKeyId    >=  Translations.size();
-        auto rotationFinished =     RotationKeyId       >=  Rotations.size();
-        auto scaleFinished =        ScaleKeyId          >=  Scales.size();
-        return (transformFinished && rotationFinished && scaleFinished);
+    bool isFinished() const {
+        return (Finished[0] && Finished[1] && Finished[2]);
     }
 
     void start() {
         TranslationKeyId = 0;
         RotationKeyId = 0;
         ScaleKeyId = 0;
+
+        Finished[0] = Translations.empty();
+        Finished[1] = Rotations.empty();
+        Finished[2] = Scales.empty();
     }
 
     Frame* mFrame;
-    std::vector<glm::vec3> Translations;
-    std::vector<glm::quat> Rotations;
-    std::vector<glm::vec3> Scales;
+    std::vector<glm::vec3> Translations{};
+    std::vector<glm::quat> Rotations{};
+    std::vector<glm::vec3> Scales{};
 
     int32_t TranslationKeyId = 0;
     int32_t RotationKeyId = 0;
     int32_t ScaleKeyId = 0;
+    bool Finished[3];
 };
 
 class Animator {

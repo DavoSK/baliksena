@@ -3,6 +3,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include "renderer.hpp"
 #include "mesh.hpp"
@@ -17,23 +18,6 @@
 #include "vfs.hpp"
 
 #include <filesystem>
-
-/*void getMatrixFromMesh(MFFormat::DataFormat4DS::Mesh& mesh) {
-    glm::vec3 meshPos = { mesh.mPos.x, mesh.mPos.y, mesh.mPos.z };
-    glm::vec3 meshScale = { mesh.mScale.x, mesh.mScale.y, mesh.mScale.z };
-    glm::quat meshRot;
-
-    meshRot.w = mesh.mRot.w;
-    meshRot.x = mesh.mRot.x;
-    meshRot.y = mesh.mRot.y;
-    meshRot.z = mesh.mRot.z;
-
-    const auto translation = glm::translate(glm::mat4(1.f), meshPos);
-    const auto scale = glm::scale(glm::mat4(1.f), meshScale);
-    const auto rot = glm::mat4(1.f) * glm::toMat4(meshRot);
-    const auto world = translation * rot * scale;
-    return world;
-}*/
 
 [[nodiscard]] std::vector<std::string> makeAnimationNames(const std::string& baseFileName, unsigned int frames) {
     std::vector<std::string> result;
@@ -238,7 +222,8 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
         const auto& singleLOD = mesh.mSingleMorph.mSingleMesh.mLODs.at(0);
         
         std::vector<Bone> singleMeshBones;
-        size_t skipVertices = 0;
+    
+        size_t skipVertices = 0;   
         for(size_t i = 0; i < singleLOD.mBones.size(); i++) {
             const auto& lodBone = singleLOD.mBones[i];
 
@@ -251,25 +236,33 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
             newBone.mWeightedVertCount      = lodBone.mWeightedVertCount;
             newBone.mWeights                = lodBone.mWeights;
                 
+            //NOTE: append 1.0f weights
             for (uint32_t j = 0; j < newBone.mNoneWeightedVertCount; j++) {
-                auto* vertexToModify = &vertices[skipVertices + j];
-                vertexToModify->indexes = { (float)i, (float)newBone.mBoneID };
-                vertexToModify->weights = { 1.0f, 0.0f };
+                Renderer::Vertex& vertexToModify = vertices[skipVertices + j];
+                vertexToModify.indexes = { (float)i, (float)newBone.mBoneID };
+                vertexToModify.weights = { 1.0f, 0.0f };
             }
 
             skipVertices += newBone.mNoneWeightedVertCount;
 
+            //NOTE: append rest of weights
             for (uint32_t j = 0; j < newBone.mWeights.size(); j++) {
-                auto* vertexToModify = &vertices[skipVertices + j];
-                vertexToModify->indexes = {(float)i, (float)newBone.mBoneID };
-                vertexToModify->weights = { newBone.mWeights[j], 1.0f - newBone.mWeights[j]};
+                Renderer::Vertex& vertexToModify = vertices[skipVertices + j];
+                vertexToModify.indexes = { (float)i, (float)newBone.mBoneID };
+                vertexToModify.weights = { newBone.mWeights[j], 1.0f - newBone.mWeights[j] };
             }
 
             skipVertices += newBone.mWeights.size();
             singleMeshBones.push_back(newBone);
         }
+        
+        //NOTE: append rest of weights of 1.0f
+        for (uint32_t j = 0; j < singleLOD.mNonWeightedVertCount; j++) {
+            Renderer::Vertex& vertexToModify = vertices[skipVertices + j];
+            vertexToModify.indexes = { (float)0, (float)0 };
+            vertexToModify.weights = { 1.0f, 0.0f };
+        }
 
-        Logger::get().info("bones: {}", singleMeshBones.size());
         singleMesh->setBones(singleMeshBones);        
     }
 
@@ -319,7 +312,19 @@ std::shared_ptr<Mesh> loadStandard(MFFormat::DataFormat4DS::Mesh& mesh,
 
 [[nodiscard]] std::shared_ptr<Joint> loadJoint(MFFormat::DataFormat4DS::Mesh& mesh) {
     auto newMesh = std::make_shared<Joint>();
-    newMesh->setLocalMatrix(*(const glm::mat4*)&mesh.mJoint.mTransform);
+    
+    newMesh->setName(mesh.mMeshName);
+    newMesh->setPos({mesh.mPos.x, mesh.mPos.y, mesh.mPos.z});
+    newMesh->setScale({mesh.mScale.x, mesh.mScale.y, mesh.mScale.z});
+
+    //NOTE: flip quaterion ( ls3d retardness )
+    glm::quat meshRot;
+    meshRot.w = mesh.mRot.w;
+    meshRot.x = mesh.mRot.x;
+    meshRot.y = mesh.mRot.y;
+    meshRot.z = mesh.mRot.z;
+    newMesh->setRot(meshRot);
+
     newMesh->setName(mesh.mMeshName);
     newMesh->setBoneId(mesh.mJoint.mJointID);
     return newMesh;

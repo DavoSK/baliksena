@@ -5,6 +5,7 @@
 #define SOKOL_IMPL
 
 //#define SOKOL_D3D11
+//#define SOKOL_WGPU
 #define SOKOL_GLCORE33
 #include <sokol/sokol_time.h>
 #include <sokol/sokol_gfx.h>
@@ -77,6 +78,10 @@ static struct {
     /* debug */
     sg_buffer debugCubeVertexBuffer;
     sg_buffer debugCubeIndexBuffer;
+
+    sg_buffer debugSphereVertexBuffer;
+    sg_buffer debugSphereIndexBuffer;
+    size_t debugSphereIndices;
 
     std::vector<Box> debugBoxes;
     std::vector<Sphere> debugSphers;
@@ -571,7 +576,87 @@ void Renderer::debugRenderBox(const glm::vec3& center, const glm::vec3& scale) {
 }
 
 void Renderer::debugRenderSphere(const glm::vec3& center, float radius) {
-    state.debugSphers.push_back({center, radius});
+    //state.debugSphers.push_back({center, radius});
+    state.offscreen.bindings.index_buffer = state.debugSphereIndexBuffer;
+    state.offscreen.bindings.vertex_buffers[0] = state.debugSphereVertexBuffer;
+
+    auto cubeBox = glm::translate(glm::mat4(1), center) * glm::scale(glm::mat4(1), glm::vec3(radius, radius, radius));
+    setModel(cubeBox);
+    bindBuffers();
+    applyUniforms();
+    draw(0, state.debugSphereIndices, 1);
+}
+
+void GenerateSphereSmooth(float radius, float latitudes, float longitudes, std::vector<glm::vec3>& verts, std::vector<uint16_t>& indices)
+{
+    #define M_PI 3.14159265358979323846264338327950288
+
+    if(longitudes < 3)
+        longitudes = 3;
+    
+    if(latitudes < 2)
+        latitudes = 2;
+
+    float deltaLatitude = M_PI / latitudes;
+    float deltaLongitude = 2 * M_PI / longitudes;
+    float latitudeAngle;
+    float longitudeAngle;
+
+    // Compute all vertices first except normals
+    for (int i = 0; i <= latitudes; ++i)
+    {
+        latitudeAngle = M_PI / 2 - i * deltaLatitude; /* Starting -pi/2 to pi/2 */
+        float xy = radius * cosf(latitudeAngle);    /* r * cos(phi) */
+        float z = radius * sinf(latitudeAngle);     /* r * sin(phi )*/
+
+        /*
+         * We add (latitudes + 1) vertices per longitude because of equator,
+         * the North pole and South pole are not counted here, as they overlap.
+         * The first and last vertices have same position and normal, but
+         * different tex coords.
+         */
+        for (int j = 0; j <= longitudes; ++j)
+        {
+            longitudeAngle = j * deltaLongitude;
+            verts.push_back({
+                xy * cosf(longitudeAngle),       /* x = r * cos(phi) * cos(theta)  */
+                xy * sinf(longitudeAngle),       /* y = r * cos(phi) * sin(theta) */
+                z                                /* z = r * sin(phi) */
+            });
+
+        }
+    }
+
+    /*
+     *  Indices
+     *  k1--k1+1
+     *  |  / |
+     *  | /  |
+     *  k2--k2+1
+     */
+    unsigned int k1, k2;
+    for(int i = 0; i < latitudes; ++i)
+    {
+        k1 = i * (longitudes + 1);
+        k2 = k1 + longitudes + 1;
+        // 2 Triangles per latitude block excluding the first and last longitudes blocks
+        for(int j = 0; j < longitudes; ++j, ++k1, ++k2)
+        {
+            if (i != 0)
+            {
+                indices.push_back(k1);
+                indices.push_back(k2);
+                indices.push_back(k1 + 1);
+            }
+
+            if (i != (latitudes - 1))
+            {
+                indices.push_back(k1 + 1);
+                indices.push_back(k2);
+                indices.push_back(k2 + 1);
+            }
+        }
+    }
 }
 
 void Renderer::debugInit() {
@@ -641,6 +726,44 @@ void Renderer::debugInit() {
 
         state.debugCubeIndexBuffer = sg_make_buffer(&bufferDesc);
         assert(state.debugCubeIndexBuffer.id != SG_INVALID_ID);
+    }
+
+    //NOTE: sphere buffers
+    {
+        std::vector<glm::vec3> vertices{};
+        std::vector<uint16_t> indices{};
+        GenerateSphereSmooth(1, 20, 20, vertices, indices);
+
+        //NOTE: vertex buffer
+        {
+            sg_range vertBufferRange{};
+            vertBufferRange.ptr = vertices.data();
+            vertBufferRange.size = sizeof(glm::vec3) * vertices.size();
+
+            sg_buffer_desc bufferDesc  = {};
+            bufferDesc.data            = vertBufferRange;
+            bufferDesc.label           = "debug-sphere-vertex-buffer";
+            //bufferDesc.usage           = sg_usage::SG_USAGE_DYNAMIC;
+            state.debugSphereVertexBuffer = sg_make_buffer(&bufferDesc);
+            assert(state.debugSphereVertexBuffer.id != SG_INVALID_ID);
+        }
+    
+        //NOTE: index buffer 
+        {
+            sg_range indicesBufferRange{};
+            indicesBufferRange.ptr = indices.data();
+            indicesBufferRange.size = sizeof(uint16_t) * indices.size();
+
+            sg_buffer_desc bufferDesc   = {};
+            bufferDesc.data             = indicesBufferRange;
+            bufferDesc.type             = sg_buffer_type::SG_BUFFERTYPE_INDEXBUFFER;
+            bufferDesc.label            = "debug-sphere-index-buffer";
+            //bufferDesc.usage            = sg_usage::SG_USAGE_DYNAMIC;
+
+            state.debugSphereIndexBuffer = sg_make_buffer(&bufferDesc);
+            assert(state.debugSphereIndexBuffer.id != SG_INVALID_ID);
+            state.debugSphereIndices = indices.size();
+        }
     }
 }
 

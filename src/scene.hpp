@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <queue>
 
 #include "mafia/parser_cachebin.hpp"
 #include "mafia/parser_scene2bin.hpp"
@@ -28,6 +29,8 @@ public:
     void load(const std::string& mission);
     void clear();
     void render();
+
+    void pushAlphaFrame(Frame* frameToPush) { mAlphaPassFrames.push(frameToPush); }
 private:
     void initVertexBuffers();
     void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector);
@@ -46,4 +49,5 @@ private:
     Renderer::BufferHandle mVertexBuffer{ 0 };
     Renderer::BufferHandle mIndexBuffer{ 0 };
     std::unique_ptr<Cutscene> mCutscene{ nullptr };
+    std::queue<Frame*> mAlphaPassFrames;
 };

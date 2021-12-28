@@ -29,6 +29,7 @@ include_directories(vendors
     vendors/openal-soft/include
     vendors/imgui
     vendors/imguizmo
+    vendors/dawn/inc
 )
 
 add_executable(baliksena 
@@ -77,7 +78,7 @@ add_executable(baliksena
     vendors/imguizmo/ImGradient.cpp
     vendors/imguizmo/ImCurveEdit.cpp
     vendors/imguizmo/GraphEditor.cpp
- )
+)
 
 if (UNIX)
     find_package(OpenAL REQUIRED)

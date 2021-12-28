@@ -100,7 +100,7 @@ void Audio::update() {
     //NOTE: update listener
     if(auto* scene = App::get()->getScene()) {
         auto* cam = scene->getActiveCamera();
-        auto* camSector = scene->getCameraSector();
+        //auto* camSector = scene->getCameraSector();
         
         ALfloat listenerOri[] = { cam->Front.x  * -1.0f, cam->Front.y * -1.0f, cam->Front.z * -1.0f, cam->Up.x, cam->Up.y, cam->Up.z };
         alListener3f(AL_POSITION, cam->Position.x, cam->Position.y, cam->Position.z);
@@ -114,12 +114,12 @@ void Audio::update() {
         //     Logger::get().info("Sector sound trasition start");
         // }
 
-        if(camSector != mCurrentSector) {
-            mPrevSector = mCurrentSector;
-            mCurrentSector = camSector;
-            mSectorTransition = true;
-            //Logger::get().info("Sector sound trasition start");
-        }
+        //if(camSector != mCurrentSector) {
+        //    mPrevSector = mCurrentSector;
+        //    mCurrentSector = camSector;
+        //    mSectorTransition = true;
+        //    //Logger::get().info("Sector sound trasition start");
+        //}
 
         if(mSectorTransition) {
             doSectorTransition();

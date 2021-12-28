@@ -39,9 +39,8 @@ void Camera::update(float deltaTime) {
     updateFrustum();
 }
 
-void Camera::updateFrustum()
-{
-	/*const float halfVSide = Far * tanf(glm::radians(Fov) * .5f);
+void Camera::updateFrustum() {
+	const float halfVSide = Far * tanf(glm::radians(Fov) * .5f);
 	const float halfHSide = halfVSide * Aspect;
 	const glm::vec3 frontMultFar = Far * Front;
 
@@ -50,7 +49,7 @@ void Camera::updateFrustum()
 	mFrustum.rightFace = { Position, glm::cross(Up, frontMultFar + Right * halfHSide) };
 	mFrustum.leftFace = { Position, glm::cross(frontMultFar - Right * halfHSide, Up) };
 	mFrustum.topFace = { Position, glm::cross(Right, frontMultFar - Up * halfVSide) };
-	mFrustum.bottomFace = { Position, glm::cross(frontMultFar + Up * halfVSide, Right) };*/
+	mFrustum.bottomFace = { Position, glm::cross(frontMultFar + Up * halfVSide, Right) };
 }
 
 void Camera::updateCameraVectors() {

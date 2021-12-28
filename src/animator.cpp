@@ -69,14 +69,21 @@ void Animator::update() {
     }
 
     uint64_t diff = stm_ms(stm_diff(stm_now(), mLastFrameTime));
-    if(diff > 100) {
+    if(diff > 33) {
+        size_t finishedCnt = 0;
         for(auto& seq : mSequences) {
-            if(seq.isFinished()) {
-                seq.start();
-            }
+            if(seq.isFinished())
+                finishedCnt++;
 
             seq.update();
+        }
 
+        //NOTE: if all sequences are done entire animation is finished
+        //we cam start again then :)
+        if(finishedCnt == mSequences.size()) {
+            for(auto& seq : mSequences) {
+                seq.start();
+            }
         }
 
         mLastFrameTime = stm_now();

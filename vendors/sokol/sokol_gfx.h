@@ -2555,6 +2555,7 @@ inline int sg_append_buffer(sg_buffer buf_id, const sg_range& data) { return sg_
         #include <webgpu/webgpu.h>
     #else
         #include <dawn/webgpu.h>
+        #define WGPUInputStepMode int
     #endif
 #elif defined(SOKOL_GLCORE33) || defined(SOKOL_GLES2) || defined(SOKOL_GLES3)
     #define _SOKOL_ANY_GL (1)
@@ -11167,20 +11168,20 @@ _SOKOL_PRIVATE WGPUInputStepMode _sg_wgpu_stepmode(sg_vertex_step s) {
 
 _SOKOL_PRIVATE WGPUVertexFormat _sg_wgpu_vertexformat(sg_vertex_format f) {
     switch (f) {
-        case SG_VERTEXFORMAT_FLOAT:         return WGPUVertexFormat_Float;
-        case SG_VERTEXFORMAT_FLOAT2:        return WGPUVertexFormat_Float2;
-        case SG_VERTEXFORMAT_FLOAT3:        return WGPUVertexFormat_Float3;
-        case SG_VERTEXFORMAT_FLOAT4:        return WGPUVertexFormat_Float4;
-        case SG_VERTEXFORMAT_BYTE4:         return WGPUVertexFormat_Char4;
-        case SG_VERTEXFORMAT_BYTE4N:        return WGPUVertexFormat_Char4Norm;
-        case SG_VERTEXFORMAT_UBYTE4:        return WGPUVertexFormat_UChar4;
-        case SG_VERTEXFORMAT_UBYTE4N:       return WGPUVertexFormat_UChar4Norm;
-        case SG_VERTEXFORMAT_SHORT2:        return WGPUVertexFormat_Short2;
-        case SG_VERTEXFORMAT_SHORT2N:       return WGPUVertexFormat_Short2Norm;
-        case SG_VERTEXFORMAT_USHORT2N:      return WGPUVertexFormat_UShort2Norm;
-        case SG_VERTEXFORMAT_SHORT4:        return WGPUVertexFormat_Short4;
-        case SG_VERTEXFORMAT_SHORT4N:       return WGPUVertexFormat_Short4Norm;
-        case SG_VERTEXFORMAT_USHORT4N:      return WGPUVertexFormat_UShort4Norm;
+        case SG_VERTEXFORMAT_FLOAT:         return WGPUVertexFormat_Float32;
+        case SG_VERTEXFORMAT_FLOAT2:        return WGPUVertexFormat_Float32x2;
+        case SG_VERTEXFORMAT_FLOAT3:        return WGPUVertexFormat_Float32x3;
+        case SG_VERTEXFORMAT_FLOAT4:        return WGPUVertexFormat_Float32x4;
+        case SG_VERTEXFORMAT_BYTE4:         return WGPUVertexFormat_Sint8x4;
+        case SG_VERTEXFORMAT_BYTE4N:        return WGPUVertexFormat_Snorm8x4;
+        case SG_VERTEXFORMAT_UBYTE4:        return WGPUVertexFormat_Uint8x4;
+        case SG_VERTEXFORMAT_UBYTE4N:       return WGPUVertexFormat_Unorm8x4;
+        case SG_VERTEXFORMAT_SHORT2:        return WGPUVertexFormat_Sint16x2;
+        case SG_VERTEXFORMAT_SHORT2N:       return WGPUVertexFormat_Snorm16x2;
+        case SG_VERTEXFORMAT_USHORT2N:      return WGPUVertexFormat_Unorm16x2;
+        case SG_VERTEXFORMAT_SHORT4:        return WGPUVertexFormat_Sint16x4;
+        case SG_VERTEXFORMAT_SHORT4N:       return WGPUVertexFormat_Snorm16x4;
+        case SG_VERTEXFORMAT_USHORT4N:      return WGPUVertexFormat_Uint16x4;
         /* FIXME! UINT10_N2 */
         case SG_VERTEXFORMAT_UINT10_N2:
         default:
@@ -11239,7 +11240,7 @@ _SOKOL_PRIVATE WGPUTextureFormat _sg_wgpu_textureformat(sg_pixel_format p) {
         case SG_PIXELFORMAT_RGBA8SI:        return WGPUTextureFormat_RGBA8Sint;
         case SG_PIXELFORMAT_BGRA8:          return WGPUTextureFormat_BGRA8Unorm;
         case SG_PIXELFORMAT_RGB10A2:        return WGPUTextureFormat_RGB10A2Unorm;
-        case SG_PIXELFORMAT_RG11B10F:       return WGPUTextureFormat_RG11B10Float;
+        //case SG_PIXELFORMAT_RG11B10F:       return WGPUTextureFormat_RG11B10Float;
         case SG_PIXELFORMAT_RG32UI:         return WGPUTextureFormat_RG32Uint;
         case SG_PIXELFORMAT_RG32SI:         return WGPUTextureFormat_RG32Sint;
         case SG_PIXELFORMAT_RG32F:          return WGPUTextureFormat_RG32Float;
@@ -11337,20 +11338,20 @@ _SOKOL_PRIVATE WGPUBlendFactor _sg_wgpu_blendfactor(sg_blend_factor f) {
     switch (f) {
         case SG_BLENDFACTOR_ZERO:                   return WGPUBlendFactor_Zero;
         case SG_BLENDFACTOR_ONE:                    return WGPUBlendFactor_One;
-        case SG_BLENDFACTOR_SRC_COLOR:              return WGPUBlendFactor_SrcColor;
-        case SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR:    return WGPUBlendFactor_OneMinusSrcColor;
+        case SG_BLENDFACTOR_SRC_COLOR:              return WGPUBlendFactor_Src;
+        case SG_BLENDFACTOR_ONE_MINUS_SRC_COLOR:    return WGPUBlendFactor_OneMinusSrc;
         case SG_BLENDFACTOR_SRC_ALPHA:              return WGPUBlendFactor_SrcAlpha;
         case SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA:    return WGPUBlendFactor_OneMinusSrcAlpha;
-        case SG_BLENDFACTOR_DST_COLOR:              return WGPUBlendFactor_DstColor;
-        case SG_BLENDFACTOR_ONE_MINUS_DST_COLOR:    return WGPUBlendFactor_OneMinusDstColor;
+        case SG_BLENDFACTOR_DST_COLOR:              return WGPUBlendFactor_Dst;
+        case SG_BLENDFACTOR_ONE_MINUS_DST_COLOR:    return WGPUBlendFactor_OneMinusDst;
         case SG_BLENDFACTOR_DST_ALPHA:              return WGPUBlendFactor_DstAlpha;
         case SG_BLENDFACTOR_ONE_MINUS_DST_ALPHA:    return WGPUBlendFactor_OneMinusDstAlpha;
         case SG_BLENDFACTOR_SRC_ALPHA_SATURATED:    return WGPUBlendFactor_SrcAlphaSaturated;
-        case SG_BLENDFACTOR_BLEND_COLOR:            return WGPUBlendFactor_BlendColor;
-        case SG_BLENDFACTOR_ONE_MINUS_BLEND_COLOR:  return WGPUBlendFactor_OneMinusBlendColor;
+        case SG_BLENDFACTOR_BLEND_COLOR:            return WGPUBlendFactor_Blend;
+        case SG_BLENDFACTOR_ONE_MINUS_BLEND_COLOR:  return WGPUBlendFactor_OneMinusBlend;
         /* FIXME: separate blend alpha value not supported? */
-        case SG_BLENDFACTOR_BLEND_ALPHA:            return WGPUBlendFactor_BlendColor;
-        case SG_BLENDFACTOR_ONE_MINUS_BLEND_ALPHA:  return WGPUBlendFactor_OneMinusBlendColor;
+        case SG_BLENDFACTOR_BLEND_ALPHA:            return WGPUBlendFactor_Blend;
+        case SG_BLENDFACTOR_ONE_MINUS_BLEND_ALPHA:  return WGPUBlendFactor_OneMinusBlend;
         default:
             SOKOL_UNREACHABLE; return WGPUBlendFactor_Force32;
     }

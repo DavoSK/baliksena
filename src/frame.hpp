@@ -32,6 +32,9 @@ class Frame {
 public:
     Frame() :
         mTransform(glm::mat4(1.0f)),
+        mPos(0.0f, 0.0f, 0.0f),
+        mScale(1.0f, 1.0f, 1.0f),
+        mRot(glm::identity<glm::quat>()),
         mCachedTransform(mTransform),
         mName("empty"),
         mOn(true),
@@ -61,10 +64,7 @@ public:
     
     const glm::mat4& getWorldMatrix();
     const glm::mat4& getMatrix() { return mTransform; }
-    void setMatrix(const glm::mat4& mat) {
-        mTransform = mat;
-        invalidateTransformRecursively();
-    }
+    void setMatrix(const glm::mat4& mat);
 
     const std::pair<glm::vec3, glm::vec3>& getWorldBBOX() const { return mABBBWorld; }
 
@@ -125,6 +125,8 @@ public:
     }
 
     bool isVisible();
+
+    Sphere* getSphere() { return mSphereBounding.get(); }
 protected:
     void updateTransform();
     void updateBoundingVolumes();
