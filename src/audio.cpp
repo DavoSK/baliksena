@@ -3,7 +3,7 @@
 
 #include "app.hpp"
 #include "scene.hpp"
-#include "camera.h"
+#include "camera.hpp"
 #include "sound.hpp"
 #include "vfs.hpp"
 #include "sector.hpp"
@@ -100,10 +100,12 @@ void Audio::update() {
     //NOTE: update listener
     if(auto* scene = App::get()->getScene()) {
         auto* cam = scene->getActiveCamera();
+        if(!cam) return;
         //auto* camSector = scene->getCameraSector();
         
         ALfloat listenerOri[] = { cam->Front.x  * -1.0f, cam->Front.y * -1.0f, cam->Front.z * -1.0f, cam->Up.x, cam->Up.y, cam->Up.z };
-        alListener3f(AL_POSITION, cam->Position.x, cam->Position.y, cam->Position.z);
+        const auto& pos = cam->getPos();
+        alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
         alListener3f(AL_VELOCITY, 0.0f, 0.0f, 0.0f);
         alListenerfv(AL_ORIENTATION, listenerOri);
     

@@ -4,7 +4,7 @@
 #include "sector.hpp"
 #include "app.hpp"
 #include "scene.hpp"
-#include "camera.h"
+#include "camera.hpp"
 #include "stats.hpp"
 #include "vfs.hpp"
 #include "logger.hpp"
@@ -84,7 +84,7 @@ bool doesContainChildNode(Frame* frame, const char* frameName) {
     return false;
 }
 
-void renderNodeRecursively(Frame* frame) {
+void renderNodeRecursively(Frame* frame, Scene* scene) {
     if (frame == nullptr)
         return;
 
@@ -94,12 +94,20 @@ void renderNodeRecursively(Frame* frame) {
         if (ImGui::Button(ICON_FA_EYE)) {
             gSelectedNode = frame;
         }
+
+        if(frame->getFrameType() == FrameType::Camera) {
+            ImGui::SameLine();
+            if(ImGui::Button(ICON_FA_CAMERA)) {
+                scene->setActiveCamera(reinterpret_cast<Camera*>(frame));
+            }
+        }
+
         ImGui::PopID();
         ImGui::SameLine();
 
         if (ImGui::TreeNodeEx(frame->getName().c_str(), ImGuiTreeNodeFlags_AllowItemOverlap)) {
             for (const auto& child : frame->getChilds()) {
-                renderNodeRecursively(child.get());
+                renderNodeRecursively(child.get(), scene);
             }
             ImGui::TreePop();
         }
@@ -153,7 +161,7 @@ void renderInspectWidget(Frame* frame) {
 
     ImGui::Text("Frame name: %s", frame->getName().c_str());
     ImGui::Text("Frame owner: %s", frame->getOwner() != nullptr ? frame->getOwner()->getName().c_str() : nullptr);
-    ImGui::Text("Frame type: %d", frame->getFrameType());
+    ImGui::Text("Frame type: %s", frame->getFrameTypeString());
 
     bool isFrameOn = frame->isOn();
     if(ImGui::Checkbox("Frame ON", &isFrameOn)) {
@@ -180,13 +188,26 @@ void renderInspectWidget(Frame* frame) {
     ImGui::InputFloat3("Scale", matrixScale);
     
     ImGui::Separator();
+    const auto& bbox = gSelectedNode->getBBOX();
+    ImGui::Text("Bounding box");
+    ImGui::InputFloat3("Local min", (float*)&bbox.first);
+    ImGui::InputFloat3("Local max", (float*)&bbox.second);
+    ImGui::Separator();
+    const auto& bboxWorld = gSelectedNode->getWorldBBOX();
+    ImGui::InputFloat3("World min", (float*)&bboxWorld.first);
+    ImGui::InputFloat3("World max", (float*)&bboxWorld.second);
+    ImGui::Separator();
 
     //NOTE: teleport button
     if(ImGui::Button("Teleport")) {
         if(auto* cam = App::get()->getScene()->getActiveCamera()) {
             auto worldMat = gSelectedNode->getWorldMatrix();
-            cam->Position = glm::vec3(worldMat[3]);
+            cam->setPos(glm::vec3(worldMat[3]));
         }
+    }
+
+    if(ImGui::Button("Invalidate transform")) {
+        gSelectedNode->invalidateTransformRecursively();
     }
 
     switch(gSelectedNode->getFrameType()) {
@@ -267,7 +288,7 @@ void renderSceneWidget(Scene* scene) {
     ImGui::Separator();
 
     gButtonIdCnt = 0;
-    renderNodeRecursively(scene);
+    renderNodeRecursively(scene, scene);
 }
 
 void editTransform(float* cameraView, float* cameraProjection, float* matrix, float* deltaMat) {
@@ -311,7 +332,7 @@ glm::vec3 createRay(Camera* cam) {
     auto normalizedCoords = getNormalizedCoords();
     glm::vec4 clipCoords = glm::vec4(normalizedCoords.x, normalizedCoords.y, -1.0f, 1.0f);
     glm::vec4 eyeCoords = toEyeCoords(clipCoords, cam->getProjMatrix());
-    glm::vec3 worldRay = toWorldCoords(eyeCoords, cam->getViewMatrix());
+    glm::vec3 worldRay = toWorldCoords(eyeCoords, cam->getMatrix());
     return worldRay;
 }
 
@@ -367,7 +388,7 @@ void renderImGuizmo(Scene* scene) {
         if(wasClickedInViewport()) {
             constexpr float toAdd  = 0.15f;
             auto rayDir = createRay(cam);
-            auto rayStart = cam->Position;
+            auto rayStart = cam->getPos();
 
             float someDistance = toAdd;
             std::optional<Frame*> pickedFrame;
@@ -384,7 +405,7 @@ void renderImGuizmo(Scene* scene) {
         }
 
         if(gSelectedNode == nullptr) return;
-        glm::mat4 view = cam->getViewMatrix();
+        glm::mat4 view = cam->getMatrix();
         glm::mat4 proj = cam->getProjMatrix();
         glm::mat4 nodeWorld = gSelectedNode->getMatrix();
         glm::mat4 deltaMat = glm::mat4(1.0f);
@@ -402,10 +423,9 @@ void Gui::debugRender(Scene* scene) {
     if(gSelectedNode != nullptr) {
         auto* sphere = gSelectedNode->getSphere();
         if(sphere) {
-            Renderer::debugSetRenderColor(glm::vec3(1.0f, 1.0f, 0.0f));
-            Renderer::debugRenderSphere(sphere->center, sphere->radius);
+            //Renderer::debugSetRenderColor(glm::vec3(1.0f, 1.0f, 0.0f));
+            Renderer::immRenderSphere(sphere->center, sphere->radius);
         }
-
         // auto bbox = gSelectedNode->getWorldBBOX();
         // float max_x = bbox.second.x;
         // float max_y = bbox.second.y;
@@ -529,27 +549,6 @@ void Gui::render() {
     ImGui::Text("Models in use: %d", gStats.modelsInUse);
     ImGui::Text("Billboards in use: %d", gStats.billboardsInUse);
     ImGui::Text("Textures in use: %d", gStats.texturesInUse);
-    ImGui::Separator();
-
-    ImGui::InputFloat3("Camera pos", (float*)&cam->Position);
-    ImGui::InputFloat3("Camera up", (float*)&cam->Up);
-    /*auto sector = scene->getCameraSector();
-    if(sector != nullptr) {
-        ImGui::Text("Camera sector: %s", sector->getName().c_str());
-        ImGui::Text("Sector lights:");
-        for(const auto& sectorLight: sector->getLights()) {
-            if(sectorLight->getType() == LightType::Dir) {
-                ImGui::Text("Dir: %s", sectorLight->getName().c_str());
-            }else if(sectorLight->getType() == LightType::Ambient) {
-                ImGui::Text("Ambient: %s\n", sectorLight->getName().c_str());
-            }
-            else if(sectorLight->getType() == LightType::Point) {
-                ImGui::Text("Point: %s\n", sectorLight->getName().c_str());
-            }
-        }
-    }*/
-
-
     ImGui::Separator();
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();

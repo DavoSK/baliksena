@@ -11,6 +11,7 @@
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_app.h>
 #include <sokol/sokol_glue.h>
+#include <sokol/sokol_gl.h>
 
 #include "imgui/imgui.h"
 
@@ -20,10 +21,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
-//NOTE: shaders
 #include "shader_universal.h"
-#include "shader_debug.h"
-
 #include "renderer.hpp"
 #include "gui.hpp"
 
@@ -73,19 +71,7 @@ static struct {
     Renderer::Material material;
     Renderer::RenderPass pass;
     std::vector<Renderer::Light> lights;
-    std::vector<glm::mat4> bones;
-
-    /* debug */
-    sg_buffer debugCubeVertexBuffer;
-    sg_buffer debugCubeIndexBuffer;
-
-    sg_buffer debugSphereVertexBuffer;
-    sg_buffer debugSphereIndexBuffer;
-    size_t debugSphereIndices;
-
-    std::vector<Box> debugBoxes;
-    std::vector<Sphere> debugSphers;
-    glm::vec3 debugColor;
+    std::vector<glm::mat4> bones; 
 } state;
 
 void Renderer::createRenderTarget(int width, int height) {
@@ -126,6 +112,11 @@ void Renderer::init() {
     sg_desc desc = { .context = sapp_sgcontext() };
     sg_setup(&desc);
     stm_setup();
+    
+    /* setup sokol-gl for fast debug rendering */
+    sgl_desc_t sgldesc = {};
+    sgldesc.sample_count = sapp_sample_count();
+    sgl_setup(sgldesc);
 
     /* a pass action to clear offscreen framebuffer */
     state.display.passAction = {};
@@ -232,25 +223,6 @@ void Renderer::init() {
         }
     }
 
-    //NOTE: debug shader
-    {
-        sg_layout_desc layoutDesc{};
-        layoutDesc.attrs[ATTR_debug_vs_aPos].format         = SG_VERTEXFORMAT_FLOAT3;
-        state.offscreen.debugShader = sg_make_shader(debug_debug_shader_desc(sg_query_backend()));
-
-        sg_pipeline_desc pipelineDesc   = {};
-        pipelineDesc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
-        pipelineDesc.sample_count       = OFFSCREEN_SAMPLE_COUNT;
-        pipelineDesc.shader             = state.offscreen.debugShader;
-        pipelineDesc.layout             = layoutDesc;
-        pipelineDesc.depth              = depthState;
-        pipelineDesc.index_type         = sg_index_type::SG_INDEXTYPE_UINT16;
-        pipelineDesc.cull_mode          = sg_cull_mode::SG_CULLMODE_NONE;
-        pipelineDesc.label              = "debug-pipeline";
-        state.offscreen.debugPip        = sg_make_pipeline(&pipelineDesc);
-    }
-
-    debugInit();
     Gui::init();
 }
 
@@ -263,9 +235,8 @@ void Renderer::destroy() {
         sg_destroy_pipeline(state.offscreen.alphaPip[i]);
     }
 
-    /* debug */
-    sg_destroy_shader(state.offscreen.debugShader);
-    sg_destroy_pipeline(state.offscreen.debugPip);
+    simgui_shutdown();
+    sgl_shutdown();
     sg_shutdown();
 }
 
@@ -280,7 +251,7 @@ void Renderer::setPass(RenderPass pass) {
 
 Renderer::RenderPass Renderer::getPass() { return state.pass; }
 
-void Renderer::end()  { sg_end_pass(); }
+void Renderer::end()  {  sgl_draw(); sg_end_pass(); }
 
 void Renderer::commit() { 
     //NOTE: begin default pass for GUI
@@ -292,7 +263,8 @@ void Renderer::commit() {
         const auto deltaTime = stm_sec(stm_laptime(&lastTime));
         simgui_new_frame(width, height, deltaTime);
         sg_begin_default_pass(&state.display.passAction, width, height);
-    
+        
+
         Gui::render();
         simgui_render();
         sg_end_pass();
@@ -402,9 +374,7 @@ void Renderer::setIndexBuffer(BufferHandle handle) {
 }
 
 void Renderer::bindBuffers() {
-    if(state.pass ==Renderer::RenderPass::DEBUG) {
-        sg_apply_pipeline(state.offscreen.debugPip);
-    } else if (state.pass == Renderer::RenderPass::ALPHA) {
+    if (state.pass == Renderer::RenderPass::ALPHA) {
         sg_apply_pipeline(state.offscreen.alphaPip[state.material.isDoubleSided ? 0 : 1]);
     } else {
         sg_apply_pipeline(state.offscreen.pip[state.material.isDoubleSided ? 0 : 1]);
@@ -426,23 +396,6 @@ void Renderer::setBones(const std::vector<glm::mat4>& bones) {
 }
 
 void Renderer::applyUniforms() {
-    if(state.pass == Renderer::RenderPass::DEBUG) {
-        debug_vs_params_t vertexUniforms{
-            state.model,
-            state.view,
-            state.proj,
-            state.debugColor
-        };
-
-        sg_range uniformsRange{
-            &vertexUniforms,
-            sizeof(debug_vs_params_t)
-        };
-
-        sg_apply_uniforms(SG_SHADERSTAGE_VS, SLOT_debug_vs_params, &uniformsRange);
-        return;
-    }
-
     //NOTE: apply vertex stage uniforms
     {
         //NOTE since sokol uses only floating point uniforms
@@ -557,36 +510,6 @@ void Renderer::guiHandleSokolInput(const sapp_event* e) {
 int Renderer::getWidth() { return sapp_width(); }
 int Renderer::getHeight() { return sapp_height(); }
 
-/* debug */
-void Renderer::debugSetRenderColor(const glm::vec3& color) {
-    state.debugColor = color;
-}
-
-void Renderer::debugRenderBox(const glm::vec3& center, const glm::vec3& scale) {
-    //state.debugBoxes.push_back({center, scale});
-
-    state.offscreen.bindings.index_buffer = state.debugCubeIndexBuffer;
-    state.offscreen.bindings.vertex_buffers[0] = state.debugCubeVertexBuffer;
-
-    auto cubeBox = glm::translate(glm::mat4(1), center) * glm::scale(glm::mat4(1), scale);
-    setModel(cubeBox);
-    bindBuffers();
-    applyUniforms();
-    draw(0, 36, 1);
-}
-
-void Renderer::debugRenderSphere(const glm::vec3& center, float radius) {
-    //state.debugSphers.push_back({center, radius});
-    state.offscreen.bindings.index_buffer = state.debugSphereIndexBuffer;
-    state.offscreen.bindings.vertex_buffers[0] = state.debugSphereVertexBuffer;
-
-    auto cubeBox = glm::translate(glm::mat4(1), center) * glm::scale(glm::mat4(1), glm::vec3(radius, radius, radius));
-    setModel(cubeBox);
-    bindBuffers();
-    applyUniforms();
-    draw(0, state.debugSphereIndices, 1);
-}
-
 void GenerateSphereSmooth(float radius, float latitudes, float longitudes, std::vector<glm::vec3>& verts, std::vector<uint16_t>& indices)
 {
     #define M_PI 3.14159265358979323846264338327950288
@@ -659,118 +582,55 @@ void GenerateSphereSmooth(float radius, float latitudes, float longitudes, std::
     }
 }
 
-void Renderer::debugInit() {
-    //NOTE: init vertex buffer for simple cube rendering
-    {
-        float vertices[] = {
-            // Front face
-            -1.0, -1.0,  1.0,
-            1.0, -1.0,  1.0,
-            1.0,  1.0,  1.0,
-            -1.0,  1.0,  1.0,
-
-            // Back face
-            -1.0, -1.0, -1.0,
-            -1.0,  1.0, -1.0,
-            1.0,  1.0, -1.0,
-            1.0, -1.0, -1.0,
-
-            // Top face
-            -1.0,  1.0, -1.0,
-            -1.0,  1.0,  1.0,
-            1.0,  1.0,  1.0,
-            1.0,  1.0, -1.0,
-
-            // Bottom face
-            -1.0, -1.0, -1.0,
-            1.0, -1.0, -1.0,
-            1.0, -1.0,  1.0,
-            -1.0, -1.0,  1.0,
-
-            // Right face
-            1.0, -1.0, -1.0,
-            1.0,  1.0, -1.0,
-            1.0,  1.0,  1.0,
-            1.0, -1.0,  1.0,
-
-            // Left face
-            -1.0, -1.0, -1.0,
-            -1.0, -1.0,  1.0,
-            -1.0,  1.0,  1.0,
-            -1.0,  1.0, -1.0,
-        };
-
-        sg_buffer_desc bufferDesc  = {};
-        bufferDesc.data            = SG_RANGE(vertices);
-        bufferDesc.label           = "debug-cube-vertex-buffer";
-
-        state.debugCubeVertexBuffer = sg_make_buffer(&bufferDesc);
-        assert(state.debugCubeVertexBuffer.id != SG_INVALID_ID);
-    }
-
-    //NOTE: debug cube index buffer
-    {
-        uint16_t indices[] = {
-            0,  1,  2,      0,  2,  3,    // front
-            4,  5,  6,      4,  6,  7,    // back
-            8,  9,  10,     8,  10, 11,   // top
-            12, 13, 14,     12, 14, 15,   // bottom
-            16, 17, 18,     16, 18, 19,   // right
-            20, 21, 22,     20, 22, 23,   // left
-        };
-
-        sg_buffer_desc bufferDesc = {};
-        bufferDesc.data     = SG_RANGE(indices);
-        bufferDesc.type     = sg_buffer_type::SG_BUFFERTYPE_INDEXBUFFER;
-        bufferDesc.label    = "debug-cube-index-buffer";
-
-        state.debugCubeIndexBuffer = sg_make_buffer(&bufferDesc);
-        assert(state.debugCubeIndexBuffer.id != SG_INVALID_ID);
-    }
-
-    //NOTE: sphere buffers
-    {
-        std::vector<glm::vec3> vertices{};
-        std::vector<uint16_t> indices{};
-        GenerateSphereSmooth(1, 20, 20, vertices, indices);
-
-        //NOTE: vertex buffer
-        {
-            sg_range vertBufferRange{};
-            vertBufferRange.ptr = vertices.data();
-            vertBufferRange.size = sizeof(glm::vec3) * vertices.size();
-
-            sg_buffer_desc bufferDesc  = {};
-            bufferDesc.data            = vertBufferRange;
-            bufferDesc.label           = "debug-sphere-vertex-buffer";
-            //bufferDesc.usage           = sg_usage::SG_USAGE_DYNAMIC;
-            state.debugSphereVertexBuffer = sg_make_buffer(&bufferDesc);
-            assert(state.debugSphereVertexBuffer.id != SG_INVALID_ID);
-        }
-    
-        //NOTE: index buffer 
-        {
-            sg_range indicesBufferRange{};
-            indicesBufferRange.ptr = indices.data();
-            indicesBufferRange.size = sizeof(uint16_t) * indices.size();
-
-            sg_buffer_desc bufferDesc   = {};
-            bufferDesc.data             = indicesBufferRange;
-            bufferDesc.type             = sg_buffer_type::SG_BUFFERTYPE_INDEXBUFFER;
-            bufferDesc.label            = "debug-sphere-index-buffer";
-            //bufferDesc.usage            = sg_usage::SG_USAGE_DYNAMIC;
-
-            state.debugSphereIndexBuffer = sg_make_buffer(&bufferDesc);
-            assert(state.debugSphereIndexBuffer.id != SG_INVALID_ID);
-            state.debugSphereIndices = indices.size();
-        }
-    }
+void Renderer::immBegin() {
+    sgl_defaults();
+    sgl_matrix_mode_projection();
+    sgl_load_matrix((const float*)&state.proj);
+    sgl_matrix_mode_modelview();
+    sgl_load_matrix((const float*)&state.view);
+    sgl_begin_lines();
 }
 
-void Renderer::debugBegin() {
-
+void Renderer::immEnd() {
+    sgl_end();
 }
 
-void Renderer::debugEnd() {
+void Renderer::immSetColor(const glm::vec3& color) {
+    sgl_c3f(color.x, color.y, color.z);
+}
 
+void Renderer::immRenderLine(const glm::vec3& p0, const glm::vec3& p1) {
+    sgl_v3f(p0.x, p0.y, p0.z);
+    sgl_v3f(p1.x, p1.y, p1.z);
+}
+
+void Renderer::immRenderSphere(const glm::vec3& pos, float radius) {
+    sgl_defaults();
+    sgl_matrix_mode_projection();
+    sgl_load_matrix((const float*)&state.proj);
+    sgl_matrix_mode_modelview();
+    sgl_load_matrix((const float*)&state.view);
+    sgl_c3f(1.0f, 0.0f, 0.0f);
+
+    const float PI = 3.141592f;
+    GLfloat x, y, z, alpha, beta; // Storage for coordinates and angles        
+    int gradation = 20;
+
+    for (alpha = 0.0; alpha < PI; alpha += PI/gradation)
+    {        
+        sgl_begin_triangle_strip();
+        for (beta = 0.0; beta < 2.01*PI; beta += PI/gradation)            
+        {            
+            x = pos.x + radius*cos(beta)*sin(alpha);
+            y = pos.y + radius*sin(beta)*sin(alpha);
+            z = pos.z + radius*cos(alpha);
+            sgl_v3f(x, y, z);
+
+            x = pos.x + radius*cos(beta)*sin(alpha + PI/gradation);
+            y = pos.y + radius*sin(beta)*sin(alpha + PI/gradation);
+            z = pos.z + radius*cos(alpha + PI/gradation);            
+            sgl_v3f(x, y, z);            
+        }        
+        sgl_end();
+    }
 }

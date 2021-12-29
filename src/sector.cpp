@@ -5,7 +5,7 @@
 #include "sound.hpp"
 
 void Sector::render() {
-    if(!isVisible()) return;
+    //if(!isVisible()) return;
     if(!mOn) return;
     
     for(const auto& frame : mChilds) {

@@ -1,5 +1,5 @@
 #include "scene.hpp"
-#include "camera.h"
+#include "camera.hpp"
 #include "model.hpp"
 #include "mesh.hpp"
 #include "sound.hpp"
@@ -24,10 +24,33 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+void Scene::init() {
+
+}
+
+void Scene::createCameras() {
+    //NOTE: create main camera
+    auto mainCam = std::make_shared<Camera>();
+    mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight(), 1000.0f);
+    mainCam->setPos({0.1f, 0.1f, 0.1f});
+    mainCam->updateCameraVectors();
+    mainCam->setName("Default Camera");
+    setActiveCamera(mainCam.get());
+    this->addChild(mainCam);
+
+    auto debugCam = std::make_shared<Camera>();
+    debugCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
+    debugCam->setPos({0.1f, 0.1f, 0.1f});
+    debugCam->updateCameraVectors();
+    debugCam->setName("Debug Camera");
+    mDebugCamera = debugCam.get();
+    this->addChild(debugCam);
+}
+
 Sector* Scene::getCameraSector() {
     if(mActiveCamera != nullptr) {
         std::optional<Sector*> foundSector;
-        getSectorOfPoint(mActiveCamera->Position, this, foundSector);
+        getSectorOfPoint(mActiveCamera->getPos(), this, foundSector);
         return foundSector.value_or(mPrimarySector.get());
     }
     return nullptr;
@@ -58,7 +81,6 @@ void Scene::getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Se
 
 std::unordered_map<std::string, std::vector<std::shared_ptr<Light>>> gLightsParenting;
 std::unordered_map<std::string, std::vector<std::shared_ptr<Sound>>> gSoundsParenting;
-
 
 std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Object& object) {
     auto light = std::make_shared<Light>();
@@ -390,10 +412,7 @@ void Scene::load(const std::string& missionName) {
 
     invalidateTransformRecursively();
     initVertexBuffers();
-
-    //NOTE: load rep file
-    // mCutscene = std::make_unique<Cutscene>();
-    // mCutscene->start("record00.rep");
+    createCameras();
 }
 
 void Scene::clear() {
@@ -409,29 +428,37 @@ void Scene::clear() {
         Renderer::destroyBuffer(mIndexBuffer);
         Renderer::destroyBuffer(mVertexBuffer);
     }
+
+    //NOTE: just weak pointers
+    mDebugCamera = nullptr;
+    mActiveCamera = nullptr;
+}
+
+void Scene::updateActiveCamera(float deltaTime) {
+    auto input = App::get()->getInput();
+    if(input->isMouseLocked()) {
+        if(input->isKeyDown(sapp_keycode::SAPP_KEYCODE_F)) { 
+            mDebugCamera->setDirDelta(input->getMouseDelta());
+            mDebugCamera->setPosDelta(input->getMoveDir());
+            mDebugCamera->update(deltaTime);
+        } else {
+            mActiveCamera->setDirDelta(input->getMouseDelta());
+            mActiveCamera->setPosDelta(input->getMoveDir());
+            mActiveCamera->update(deltaTime);
+        }
+    }
+
+    input->clearDeltas();
+
+    Renderer::setViewMatrix(mActiveCamera->getMatrix());
+    Renderer::setViewPos(mActiveCamera->getPos());
 }
 
 void Scene::render() {
     const auto deltaTime = 16.0f;
-
-    //NOTE: update camera & render
-    if(auto* cam = getActiveCamera()) {
-        auto input = App::get()->getInput();
-        if(input->isMouseLocked()) {
-            cam->setDirDelta(input->getMouseDelta());
-            cam->setPosDelta(input->getMoveDir());
-            cam->update(deltaTime);
-        }
-
-        input->clearDeltas();
-        Renderer::setViewMatrix(cam->getViewMatrix());
-        Renderer::setViewPos(cam->Position);
-    }
-
-    //NOTE: if we have cutscene we need to tick it
-    if(mCutscene != nullptr) {
-        mCutscene->tick();
-    }
+    
+    if(!mActiveCamera) return;    
+    updateActiveCamera(deltaTime);
 
     //NOTE: normal pass -> render normal objects
     Renderer::setPass(Renderer::RenderPass::NORMAL);
@@ -471,19 +498,17 @@ void Scene::render() {
 
         Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
 
-        while(!mAlphaPassFrames.empty()) {
+        while(!mAlphaPassFrames.empty()) 
+        {
             auto* frame = mAlphaPassFrames.front();
             frame->render();
             mAlphaPassFrames.pop();
         }
     }
 
-    // Renderer::setPass(Renderer::RenderPass::DEBUG);
-    // {
-    //     Renderer::debugBegin();
-    //     Gui::debugRender(this);
-    //     Renderer::debugEnd();
-    // }
+    //NOTE: debug render
+    this->debugRender();
+    Gui::debugRender(this);
 }
 
 void Scene::initVertexBuffers() {

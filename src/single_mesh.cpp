@@ -7,11 +7,11 @@
 
 SingleMesh::SingleMesh() {
     mAnimator = std::make_shared<Animator>(this);
-    mAnimator->open("!!!Skakani.5DS");
+    //mAnimator->open("!!!Skakani.5DS");
 }
 
 void SingleMesh::render() {
-    mAnimator->update();
+    //mAnimator->update();
 
     std::vector<glm::mat4> bones{};
     for(auto& boneDef : mBones) {

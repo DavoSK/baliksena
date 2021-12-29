@@ -52,7 +52,6 @@ add_executable(baliksena
     src/mesh.cpp
     src/single_mesh.cpp
     src/animator.cpp
-    src/cutscene.cpp
     src/billboard.cpp
     src/model.cpp
     src/light.cpp

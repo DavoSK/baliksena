@@ -2,15 +2,15 @@
 // Created by david on 24. 4. 2021.
 //
 
-#include "camera.h"
+#include "camera.hpp"
 #include "input.hpp"
 
-glm::mat4 Camera::createProjMatrix(int width, int height) {
+glm::mat4 Camera::createProjMatrix(int width, int height, float far) {
     Aspect = (float)width / (float)height;
-    Near = 0.1f;
-    Far = 1000.0f;
+    Near = 0.01f;
+    Far = far;
     mProjMatrix = glm::perspectiveLH(glm::radians(getFOV()), Aspect, Near, Far);
-    mProjSkyboxMatrix = glm::perspectiveLH(glm::radians(Fov), (float)width / (float)height, 0.1f, 2000.0f);
+    mProjSkyboxMatrix = glm::perspectiveLH(glm::radians(Fov), (float)width / (float)height, 0.01f, 2000.0f);
 
     updateCameraVectors();
     updateFrustum();
@@ -18,16 +18,66 @@ glm::mat4 Camera::createProjMatrix(int width, int height) {
     return mProjMatrix;
 }
 
-glm::mat4 Camera::getViewMatrix() {
-    mViewMatrix = glm::lookAtLH(Position, Position + Front, Up);
-    return mViewMatrix;
+void Camera::debugRender() {
+    Renderer::immBegin();
+    Renderer::immSetColor({1.0f, 1.0f, 1.0f});
+  
+    glm::mat4 inv = glm::inverse(getMatrix());
+    float halfHeight = tanf(glm::radians(Fov / 2.f));
+    float halfWidth = halfHeight * Aspect;
+
+    float xn = halfWidth * Near;
+    float xf = halfWidth * Far;
+    float yn = halfHeight * Near;
+    float yf = halfHeight * Far;
+
+    glm::vec4 f[8u] =
+    {
+        // near face
+        {xn, yn,    Near, 1.f},
+        {-xn, yn,   Near, 1.f},
+        {xn, -yn,   Near, 1.f},
+        {-xn, -yn,  Near, 1.f},
+
+        // far face
+        {xf, yf,    Far, 1.f},
+        {-xf, yf,   Far, 1.f},
+        {xf, -yf,   Far, 1.f},
+        {-xf, -yf,  Far, 1.f},
+    };
+
+    glm::vec3 v[8];
+    for (int i = 0; i < 8; i++)
+    {
+        glm::vec4 ff = inv * f[i];
+        v[i].x = ff.x / ff.w;
+        v[i].y = ff.y / ff.w;
+        v[i].z = ff.z / ff.w;
+    }
+
+    Renderer::immRenderLine(v[0], v[1]);
+    Renderer::immRenderLine(v[0], v[2]);
+    Renderer::immRenderLine(v[3], v[1]);
+    Renderer::immRenderLine(v[3], v[2]);
+
+    Renderer::immRenderLine(v[4], v[5]);
+    Renderer::immRenderLine(v[4], v[6]);
+    Renderer::immRenderLine(v[7], v[5]);
+    Renderer::immRenderLine(v[7], v[6]);
+
+    Renderer::immRenderLine(v[0], v[4]);
+    Renderer::immRenderLine(v[1], v[5]);
+    Renderer::immRenderLine(v[3], v[7]);
+    Renderer::immRenderLine(v[2], v[6]);
+    
+    Renderer::immEnd();
 }
 
 void Camera::update(float deltaTime) {
     const auto velocity = MovementSpeed * deltaTime;
-    Position += mPosDelta.x * (Front * velocity);
-    Position += mPosDelta.y * (Up * velocity);
-    Position += mPosDelta.z * (Right * velocity);
+    mPos += mPosDelta.x * (Front * velocity);
+    mPos += mPosDelta.y * (Up * velocity);
+    mPos += mPosDelta.z * (Right * velocity);
 
     Yaw -= mDirDelta.x * MouseSensitivity;
     Pitch -= mDirDelta.y * MouseSensitivity;
@@ -37,19 +87,11 @@ void Camera::update(float deltaTime) {
 
     updateCameraVectors();
     updateFrustum();
+    setMatrix(glm::lookAtLH(mPos, mPos + Front, Up));
 }
 
 void Camera::updateFrustum() {
-	const float halfVSide = Far * tanf(glm::radians(Fov) * .5f);
-	const float halfHSide = halfVSide * Aspect;
-	const glm::vec3 frontMultFar = Far * Front;
-
-	mFrustum.nearFace = { Position + Near * Front, Front };
-	mFrustum.farFace = { Position + frontMultFar, -Front };
-	mFrustum.rightFace = { Position, glm::cross(Up, frontMultFar + Right * halfHSide) };
-	mFrustum.leftFace = { Position, glm::cross(frontMultFar - Right * halfHSide, Up) };
-	mFrustum.topFace = { Position, glm::cross(Right, frontMultFar - Up * halfVSide) };
-	mFrustum.bottomFace = { Position, glm::cross(frontMultFar + Up * halfVSide, Right) };
+    mFrustum.update(mProjMatrix * mTransform);
 }
 
 void Camera::updateCameraVectors() {

@@ -19,6 +19,7 @@ public:
     constexpr FrameType getFrameType() const override { return FrameType::Model; }
 
     void render() override;
+    void debugRender() override;
     void init();
 protected:
     Material* mMat = nullptr;

@@ -1,7 +1,7 @@
 #include "app.hpp"
 #include "input.hpp"
 #include "renderer.hpp"
-#include "camera.h"
+#include "camera.hpp"
 #include "scene.hpp"
 #include "texture.hpp"
 #include "stats.hpp"
@@ -17,21 +17,17 @@ App::App() {
 }
 
 void App::init() {
+    //NOTE: debug different mount points
+    //only for now :)
     #ifdef __linux__
     Vfs::init("/home/david/dev/Mafia/");
     #else 
     Vfs::init("C:\\Mafia\\");
     #endif
+
     Renderer::init();
 
-    //NOTE: create main camera
-    auto mainCam = std::make_shared<Camera>();
-    mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
-    mainCam->Position = {0.1f, 0.1f, 0.1f};
-    mainCam->updateCameraVectors();
-    mScene->setActiveCamera(mainCam);
-
-    //NOTE: init audio
+    mScene->init();
     mAudio->init();
 }
 
@@ -42,10 +38,10 @@ void App::render() {
     mScene->render();
     Renderer::end();
     Renderer::commit();
-    
 }
 
 void App::event(const sapp_event* e) {
+    
     //NOTE: update camera proj matrix
     if(e->type == sapp_event_type::SAPP_EVENTTYPE_RESIZED) {
         if(auto* cam = mScene->getActiveCamera()) {

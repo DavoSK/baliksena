@@ -16,11 +16,14 @@ constexpr float SENSITIVITY = 0.4f;
 constexpr float FOV = 65.0f;
 
 #include "bounding_volumes.hpp"
+#include "frame.hpp"
+#include "frustum_culling.h"
 
-class Camera {
+class Camera : public Frame {
 public:
+    [[nodiscard]] constexpr FrameType getFrameType() const override { return FrameType::Camera; }
+
     // NOTE: camera attributes
-    glm::vec3 Position = {0.0f, 0.0f, 0.0f};
     glm::vec3 Front = {0.0f, 0.0f, 0.0f};
     glm::vec3 Up = {0.0f, 0.0f, 0.0f};
     glm::vec3 Right = {0.0f, 0.0f, 0.0f};
@@ -38,20 +41,16 @@ public:
     float Near = 0.0f;
     float Far = 0.0f;
 
-    Camera() {
+    Camera() 
+    {
         updateCameraVectors();
     }
 
-    glm::mat4 createProjMatrix(int width, int height);
-    glm::mat4 getViewMatrix();
-
-    void setViewMatrix(const glm::mat4& view) { mViewMatrix = view; }
+    glm::mat4 createProjMatrix(int width, int height, float far = 500.0f);
     void setProjMatrix(const glm::mat4& proj) { mProjMatrix = proj; }
 
     [[nodiscard]] const glm::mat4& getProjMatrix() const { return mProjMatrix; }
     [[nodiscard]] const glm::mat4& getSkyboxProjMatrix() const { return mProjSkyboxMatrix; }
-    [[nodiscard]] const glm::vec3& getPos() const { return Position; }
-    [[nodiscard]] const glm::vec3& getRight() const { return Right; }
     [[nodiscard]] float getFOV() const { return Fov; }
     [[nodiscard]] float getPitch() const { return Pitch; }
     [[nodiscard]] float getYaw() const { return Yaw; }
@@ -60,11 +59,12 @@ public:
     void setPosDelta(const glm::vec3& posDelta) { mPosDelta = posDelta; }
     void setDirDelta(const glm::vec2& dirDelta) { mDirDelta = dirDelta; }
     void update(float deltaTime);
+    void debugRender() override;
     void updateFrustum();
     void processInput();
     void updateCameraVectors();
 private:
-    Frustum mFrustum;
+    Frustum mFrustum{};
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
     glm::mat4 mProjSkyboxMatrix;

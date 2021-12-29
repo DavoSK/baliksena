@@ -3,12 +3,19 @@
 
 #include "app.hpp"
 #include "scene.hpp"
-#include "camera.h"
+#include "camera.hpp"
 
 void Frame::render() {
     if (!mOn) return;
     for (auto& child : mChilds) {
         child->render();
+    }
+}
+
+void Frame::debugRender() {
+    if(!mOn) return;
+    for (auto& child : mChilds) {
+        child->debugRender();
     }
 }
 
@@ -40,19 +47,22 @@ const glm::mat4& Frame::getWorldMatrix() {
 void Frame::invalidateTransformRecursively() {
     invalidateTransform(); 
     
-    //NOTE: dunno about that
     glm::vec3 AABBmin = mAABB.first;
 	glm::vec3 AABBmax = mAABB.second;
 
-    for (const auto& frame : mChilds) {
+    for (auto frame : mChilds) {
         frame->invalidateTransformRecursively();
         auto childBbox = frame->getBBOX();
+        
         AABBmin = glm::min(AABBmin, childBbox.first);
         AABBmax = glm::max(AABBmax, childBbox.second);
     }
 
-    if(getFrameType() != FrameType::Sector) {
-        setBBOX(mAABB);
+    if(getFrameType() == FrameType::Model || 
+       getFrameType() == FrameType::Mesh) {
+        setBBOX(std::make_pair(AABBmin, AABBmax));
+    } else {
+        updateBoundingVolumes();   
     }
 }
 
@@ -114,11 +124,12 @@ void Frame::setMatrix(const glm::mat4& mat) {
 }
 
 bool Frame::isVisible() {
+    if(Renderer::isCamRelative()) return true;
     if(auto* cam = App::get()->getScene()->getActiveCamera()) {
-        if(!Renderer::isCamRelative() && mSphereBounding != nullptr) {
-            if(!cam->getFrustum().isSphereInFrustum(*mSphereBounding)) 
-                return false;
+        if(mSphereBounding != nullptr) {
+           return cam->getFrustum().checkSphere(mSphereBounding->center, mSphereBounding->radius);
         }
     }
-    return true;
+
+    return false;
 }

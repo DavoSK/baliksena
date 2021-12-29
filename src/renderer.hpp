@@ -10,7 +10,6 @@ public:
     enum class RenderPass : uint64_t {
         NORMAL,
         ALPHA,
-        DEBUG
     };
 
     enum class MaterialKind {
@@ -108,12 +107,10 @@ public:
     static int getWidth();
     static int getHeight();
 
-    /* debug */
-    static void debugSetRenderColor(const glm::vec3& color = glm::vec3(1.0f, 1.0f, 1.0f));
-    static void debugRenderBox(const glm::vec3& center, const glm::vec3& scale);
-    static void debugRenderSphere(const glm::vec3& center, float radius);
-    static void debugBegin();
-    static void debugEnd();
-private:
-    static void debugInit();
+    /* immediate mode for debug */
+    static void immBegin();
+    static void immEnd();
+    static void immRenderSphere(const glm::vec3& pos, float radius);
+    static void immSetColor(const glm::vec3& color = glm::vec3(1.0f, 1.0f, 1.0f));
+    static void immRenderLine(const glm::vec3& p0, const glm::vec3& p1);
 };

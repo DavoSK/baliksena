@@ -23,9 +23,24 @@ enum class FrameType
     Model,
     Dummy,
     Light,
+    Camera,
     Sector,
     Billboard,
     Sound
+};
+
+constexpr const char* gFrameNames[] = {
+    "Frame",
+    "Mesh",
+    "SingleMesh",
+    "Joint",
+    "Model",
+    "Dummy",
+    "Light",
+    "Camera",
+    "Sector",
+    "Billboard",
+    "Sound"
 };
 
 class Frame {
@@ -48,7 +63,10 @@ public:
     }
 
     virtual constexpr FrameType getFrameType() const { return FrameType::Frame; }
+    const char* getFrameTypeString() const { return gFrameNames[(int)getFrameType()]; }
+
     virtual void render();
+    virtual void debugRender();
 
     void setOwner(Frame* frame) { mOwner = frame; }
     Frame* getOwner() { return mOwner; }
@@ -58,6 +76,7 @@ public:
 
     void addChild(std::shared_ptr<Frame> frame);
     void removeChild(std::shared_ptr<Frame> frame);
+
     const std::vector<std::shared_ptr<Frame>>& getChilds() { return mChilds; };
 
     void removeChilds() { mChilds.clear(); }
@@ -87,27 +106,6 @@ public:
 
     void setScale(const glm::vec3& scale);
     [[nodiscard]] const glm::vec3& getScale() const { return mScale; }
-
-
-    glm::vec3 getRight() const {
-		return mCachedTransform[0];
-	}
-
-	glm::vec3 getUp() const {
-		return mCachedTransform[1];
-	}
-
-	glm::vec3 getBackward() const {
-		return mCachedTransform[2];
-	}
-
-	glm::vec3 getForward() const {
-		return -mCachedTransform[2];
-	}
-
-    glm::vec3 getGlobalScale() const{
-		return { glm::length(getRight()), glm::length(getUp()), glm::length(getBackward()) };
-	}
 
     template<typename T>
     void forEach(std::function<void(T*)> callback, Frame* owner) {

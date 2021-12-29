@@ -3,7 +3,7 @@
 #include "scene.hpp"
 #include "sector.hpp"
 #include "app.hpp"
-#include "camera.h"
+#include "camera.hpp"
 #include "light.hpp"
 
 /*
