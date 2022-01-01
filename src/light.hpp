@@ -7,7 +7,8 @@ enum class LightType {
     Dir,
     Point,
     Ambient,
-    Spot
+    Spot,
+    Fog
 };
 
 class Light : public Frame {

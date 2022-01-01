@@ -28,10 +28,10 @@ void Scene::init() {
 
 }
 
-void Scene::createCameras() {
+void Scene::createCameras(float fov, float nearPlane, float farPlane) {
     //NOTE: create main camera
     auto mainCam = std::make_shared<Camera>();
-    mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight(), 1000.0f);
+    mainCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight(), fov, nearPlane, farPlane);
     mainCam->setPos({0.1f, 0.1f, 0.1f});
     mainCam->updateCameraVectors();
     mainCam->setName("Default Camera");
@@ -39,7 +39,7 @@ void Scene::createCameras() {
     this->addChild(mainCam);
 
     auto debugCam = std::make_shared<Camera>();
-    debugCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight());
+    debugCam->createProjMatrix(Renderer::getWidth(), Renderer::getHeight(), fov, nearPlane, farPlane);
     debugCam->setPos({0.1f, 0.1f, 0.1f});
     debugCam->updateCameraVectors();
     debugCam->setName("Debug Camera");
@@ -131,6 +131,18 @@ std::shared_ptr<Light> Scene::loadLight(const MFFormat::DataFormatScene2BIN::Obj
             light->setAmbient(color);
         } break;
         
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_FOG: {
+            auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) /** object.mLightPower*/;
+            light->setType(LightType::Fog);
+            light->setDiffuse(color);
+            light->setRange({object.mLightNear, object.mLightFar});
+        } break;
+
+        case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_LAYERED_FOG: {
+            Logger::get().warn("layered fog is not implemented !: {}", object.mName);
+            return light;
+        } break;
+
         case MFFormat::DataFormatScene2BIN::LightType::LIGHT_TYPE_POINT: {
             auto color = glm::vec3(object.mLightColour.x, object.mLightColour.y, object.mLightColour.z) * object.mLightPower;
             light->setType(LightType::Point);
@@ -279,11 +291,11 @@ void Scene::load(const std::string& missionName) {
     };
 
     std::vector<MFFormat::DataFormatScene2BIN::Object> patchObjects;
+    MFFormat::DataFormatScene2BIN sceneBin;
 
     std::string sceneBinPath = missionFolder + "\\scene2.bin";
     auto sceneBinFile = Vfs::getFile(sceneBinPath);
     if (sceneBinFile.has_value()) {
-        MFFormat::DataFormatScene2BIN sceneBin;
         if (sceneBin.load(sceneBinFile.value())) {
             for (auto& [objName, obj] : sceneBin.getObjects()) {
                 //NOTE: check if node is patch
@@ -309,7 +321,7 @@ void Scene::load(const std::string& missionName) {
             }
 
             //NOTE: multiple times cuz nodes are not sorted by dependecies of parents
-            for(size_t i = 0; i < 5; i++) {
+            for(size_t i = 0; i < 3; i++) {
                 for (auto& [parentName, nodes] : parentingGroup) {
                     auto parent = this->findFrame(parentName);
                     if (parent != nullptr) {
@@ -318,7 +330,7 @@ void Scene::load(const std::string& missionName) {
                         }
                         nodes.clear();
                     } else {
-                        if(i == 4) {
+                        if(i == 2) {
                             for (auto node : nodes) {
                                 Logger::get().error("unable to get parrent: {} for: {}", parentName, node->getName());
                             }
@@ -412,7 +424,10 @@ void Scene::load(const std::string& missionName) {
 
     invalidateTransformRecursively();
     initVertexBuffers();
-    createCameras();
+
+    auto clippingPlanes = sceneBin.getClippingPlanes();
+    auto fov = glm::degrees(sceneBin.getFov());
+    createCameras(fov, clippingPlanes.x, clippingPlanes.y);
 }
 
 void Scene::clear() {

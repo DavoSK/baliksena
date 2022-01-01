@@ -47,7 +47,7 @@ public:
         bool hasTransparencyKey;
     };
 
-    enum class LightType { Dir, Point, Ambient, Spot };
+    enum class LightType { Dir, Point, Ambient, Spot, Fog };
     struct Light {
         LightType type;
         glm::vec3 position;

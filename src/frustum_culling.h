@@ -1,5 +1,7 @@
 #include <glm/matrix.hpp>
 #include <array>
+ 
+#include "bounding_volumes.hpp"
 
 class Frustum {
 public:
@@ -43,9 +45,9 @@ public:
         }
     }
     
-    bool checkSphere(glm::vec3 pos, float radius) {
+    bool checkSphere(Sphere* sphere) {
         for (auto i = 0; i < planes.size(); i++) {
-            if ((planes[i].x * pos.x) + (planes[i].y * pos.y) + (planes[i].z * pos.z) + planes[i].w <= -radius) {
+            if ((planes[i].x * sphere->center.x) + (planes[i].y * sphere->center.y) + (planes[i].z * sphere->center.z) + planes[i].w <= -sphere->radius) {
                 return false;
             }
         }

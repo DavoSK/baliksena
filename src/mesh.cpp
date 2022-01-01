@@ -67,6 +67,7 @@ void Mesh::updateLights() {
     //NOTE: if any dir light will be in sector it will be replaced
     //in following lopp
     mLights.clear();
+    
     for(const auto& light : App::get()->getScene()->getCurrentSector()->getLights()) {
          switch(light->getType()) {
             case LightType::Dir: {
@@ -95,6 +96,14 @@ void Mesh::updateLights() {
                 mLights.push_back(rLight);
             } break;
 
+            case LightType::Fog: {
+                Renderer::Light rLight {};
+                rLight.type     = Renderer::LightType::Fog;
+                rLight.diffuse  = light->getDiffuse();
+                rLight.range    = light->getRange();
+                mLights.push_back(rLight);
+            } break;
+
             case LightType::Spot: {
                 Renderer::Light rLight {};
                 rLight.type         = Renderer::LightType::Spot;
@@ -115,12 +124,14 @@ void Mesh::updateLights() {
     auto rankFromLighType = [this, &meshPos](const Renderer::Light& light) -> float {
         switch(light.type) {
             case Renderer::LightType::Ambient:
-                return 1;
+                return 1.0f;
             case Renderer::LightType::Dir:
-                return 2;
+                return 2.0f;
+            case Renderer::LightType::Fog:
+                return 3.0f;
             case Renderer::LightType::Spot:
             case Renderer::LightType::Point:
-                return 3.0f + glm::length2(meshPos - light.position);
+                return 4.0f + glm::length2(meshPos - light.position);
         }
     };
 

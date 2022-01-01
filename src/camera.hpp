@@ -46,7 +46,7 @@ public:
         updateCameraVectors();
     }
 
-    glm::mat4 createProjMatrix(int width, int height, float far = 500.0f);
+    glm::mat4 createProjMatrix(int width, int height, float fov = 65.0f, float near = 0.01f, float far = 500.0f);
     void setProjMatrix(const glm::mat4& proj) { mProjMatrix = proj; }
 
     [[nodiscard]] const glm::mat4& getProjMatrix() const { return mProjMatrix; }

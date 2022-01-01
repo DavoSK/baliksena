@@ -5,10 +5,11 @@
 #include "camera.hpp"
 #include "input.hpp"
 
-glm::mat4 Camera::createProjMatrix(int width, int height, float far) {
+glm::mat4 Camera::createProjMatrix(int width, int height, float fov, float near, float far) {
     Aspect = (float)width / (float)height;
-    Near = 0.01f;
+    Near = near;
     Far = far;
+    Fov = fov;
     mProjMatrix = glm::perspectiveLH(glm::radians(getFOV()), Aspect, Near, Far);
     mProjSkyboxMatrix = glm::perspectiveLH(glm::radians(Fov), (float)width / (float)height, 0.01f, 2000.0f);
 

@@ -127,7 +127,7 @@ bool Frame::isVisible() {
     if(Renderer::isCamRelative()) return true;
     if(auto* cam = App::get()->getScene()->getActiveCamera()) {
         if(mSphereBounding != nullptr) {
-           return cam->getFrustum().checkSphere(mSphereBounding->center, mSphereBounding->radius);
+           return cam->getFrustum().checkSphere(mSphereBounding.get());
         }
     }
 

@@ -34,7 +34,7 @@ public:
 
     void pushAlphaFrame(Frame* frameToPush) { mAlphaPassFrames.push(frameToPush); }
 private:
-    void createCameras();
+    void createCameras(float fov, float near, float far);
     void updateActiveCamera(float deltaTime);
     void initVertexBuffers();
     void getSectorOfPoint(const glm::vec3& pos, Frame* node, std::optional<Sector*>& foundSector);

@@ -16,7 +16,9 @@ out vec3 Norm;
 out vec2 TexCoord;
 out vec3 Env;
 out vec3 ViewDir;
+out vec4 ViewSpace;
 out vec3 Light;
+out vec4 Fog;
 
 /* material section */
 struct material_t {
@@ -38,11 +40,11 @@ material_t getMaterial();
 /* lights section */
 #define NUM_LIGHTS 15
 
-
 const uint LightType_Dir        = 0;
 const uint LightType_Point      = 1;
 const uint LightType_Ambient    = 2;
 const uint LightType_Spot       = 3;
+const uint LightType_Fog        = 4;
 
 struct light_t {
     int type;    
@@ -69,7 +71,6 @@ light_t getLight(int index);
 vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, material_t mat);
 
 /* --------------- */
-
 /* --------------- */
 #define NUM_BONES  20
 
@@ -109,6 +110,8 @@ void main() {
     TexCoord = aTexCoord;
 
     //NOTE: calculate light
+    Fog = vec4(0.0);
+
     vec3 light = vec3(0.0);
     material_t mat = getMaterial();
     for(int i = 0; i < int(lightsCount); i++) {
@@ -136,9 +139,9 @@ void main() {
         modelView[2][1] = 0.0; 
         modelView[2][2] = 1.0; 
     }
-
-    vec4 P = modelView * vec4(newVertex, 1.0);
-    gl_Position = projection * P;
+    
+    ViewSpace = modelView * vec4(newVertex, 1.0);
+    gl_Position = projection * modelView * vec4(newVertex, 1.0);
 }
 
 material_t getMaterial() {
@@ -159,6 +162,12 @@ light_t getLight(int index) {
         lights.range[index].xy,
         lights.cone[index].xy
     );
+}
+
+float getFogFactor(float d, float FogMin, float FogMax) {
+    if (d>=FogMax) return 1;
+    if (d<=FogMin) return 0;
+    return 1 - (FogMax - d) / (FogMax - FogMin);
 }
 
 vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, material_t mat) {
@@ -186,6 +195,12 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
         case LightType_Spot: {
             vec3 lightVec = (light.position - fragPos);
             float spot = acos(max(dot(lightVec, light.dir), 0.0));
+            break;
+        }
+        case LightType_Fog: {
+            float len = length(FragPos - viewPos);
+            Fog = vec4(light.diffuse, getFogFactor(len, light.range.x, light.range.y));
+            return vec3(0.0);
         }
         default:
             return vec3(0.0);
@@ -202,7 +217,9 @@ in vec3 Norm;
 in vec2 TexCoord;
 in vec3 Env;
 in vec3 ViewDir;
+in vec4 ViewSpace;
 in vec3 Light;
+in vec4 Fog;
 
 uniform fs_params {
     float envMode;
@@ -232,14 +249,24 @@ void main() {
 
     //NOTE: env mode blending type
     // 0 - ratio, 1 - mul, 2 - additiv, else disabled
+    vec4 envBlended;
+
     if(int(envMode) == 0) {
-        FragColor = mix(lightDiffuse, envTexture, envRatio);
+        envBlended = mix(lightDiffuse, envTexture, envRatio);
     } else if(int(envMode) == 1) {
-        FragColor = lightDiffuse * envTexture;
+        envBlended = lightDiffuse * envTexture;
     } else if(int(envMode) == 2) {
-        FragColor = lightDiffuse + envTexture;
+        envBlended = lightDiffuse + envTexture;
     } else {
-        FragColor = lightDiffuse;
+        envBlended = lightDiffuse;
+    }
+
+    //if you inverse color in glsl mix function you have to
+    //put 1.0 - fogFactor
+    if(length(Fog) > 0) {
+        FragColor = mix(envBlended, vec4(Fog.xyz, 1.0), Fog.w);
+    } else {
+        FragColor = envBlended;
     }
 }
 

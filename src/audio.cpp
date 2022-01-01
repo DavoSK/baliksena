@@ -156,6 +156,8 @@ void Audio::soundOpen(Sound* sound) {
 	alBufferData((ALuint)sound->mBufferHandle, wafHeader.NumOfChan == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16,
 			(ALvoid*)wavBuffer, wavBufferSize, wafHeader.SamplesPerSec);
     alSourcei((ALuint)sound->mSourceHandle, AL_BUFFER, (ALuint)sound->mBufferHandle);
+
+    soundPlay(sound);
 }
 
 void Audio::soundUpdate(Sound* sound) {
