@@ -12,12 +12,6 @@
 
 void FaceGroup::render() const {    
     if(mMaterial != nullptr) {
-        if(Renderer::getPass() != Renderer::RenderPass::ALPHA && mMaterial->isTransparent()) {
-            if(const auto& mesh = this->mMesh.lock()) {
-                App::get()->getScene()->pushAlphaFrame(mesh.get());
-            }
-            return;
-        }
         mMaterial->bind();
     }
 
@@ -45,22 +39,23 @@ void Mesh::setVertices(std::vector<Renderer::Vertex> vertices) {
 }
 
 void Mesh::render() {
-    if(!isVisible()) return;
-    
     Frame::render();
+    
     if (mVertices.empty() || !isOn()) return;
+    if(!isVisible()) return;
 
     if(mUpdateLights) {
         updateLights();
         mUpdateLights = false;
     }
 
-    Renderer::setLights(mLights);
+    App::get()->getScene()->addToRenderList(this);
+    /*Renderer::setLights(mLights);
     Renderer::setModel(getWorldMatrix());
 
     for (auto& faceGroup : mFaceGroups) {
         faceGroup->render();
-    }
+    }*/
 }
 
 void Mesh::updateLights() {

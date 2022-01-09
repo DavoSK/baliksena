@@ -197,11 +197,11 @@ vec3 computeLight(light_t light, vec3 normal, vec3 fragPos, vec3 viewDir, materi
             float spot = acos(max(dot(lightVec, light.dir), 0.0));
             break;
         }
-        case LightType_Fog: {
-            float len = length(FragPos - viewPos);
-            Fog = vec4(light.diffuse, getFogFactor(len, light.range.x, light.range.y));
-            return vec3(0.0);
-        }
+        // case LightType_Fog: {
+        //     float len = length(FragPos - viewPos);
+        //     Fog = vec4(light.diffuse, getFogFactor(len, light.range.x, light.range.y));
+        //     return vec3(0.0);
+        // }
         default:
             return vec3(0.0);
     }

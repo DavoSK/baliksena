@@ -46,20 +46,24 @@ const glm::mat4& Frame::getWorldMatrix() {
 
 void Frame::invalidateTransformRecursively() {
     invalidateTransform(); 
-    
+    const auto frameType = getFrameType();
     glm::vec3 AABBmin = mAABB.first;
 	glm::vec3 AABBmax = mAABB.second;
 
     for (auto frame : mChilds) {
         frame->invalidateTransformRecursively();
-        auto childBbox = frame->getBBOX();
         
-        AABBmin = glm::min(AABBmin, childBbox.first);
-        AABBmax = glm::max(AABBmax, childBbox.second);
+        auto childBbox = frame->getBBOX();
+        const auto mat = frame->getMatrix();
+        glm::vec3 min = glm::translate(mat, childBbox.first)[3];
+        glm::vec3 max = glm::translate(mat, childBbox.second)[3];
+
+        AABBmin = glm::min(AABBmin, min);
+        AABBmax = glm::max(AABBmax, max);
     }
 
-    if(getFrameType() == FrameType::Model || 
-       getFrameType() == FrameType::Mesh) {
+    if(frameType == FrameType::Model || 
+       frameType == FrameType::Mesh) {
         setBBOX(std::make_pair(AABBmin, AABBmax));
     } else {
         updateBoundingVolumes();   

@@ -43,6 +43,8 @@ public:
     void addFaceGroup(std::unique_ptr<FaceGroup> faceGroup) { mFaceGroups.push_back(std::move(faceGroup)); }
     [[nodiscard]] const std::vector<std::unique_ptr<FaceGroup>>& getFaceGroups() { return mFaceGroups; }
 
+    [[nodiscard]] const std::vector<Renderer::Light>& getLights() { return mLights; }
+
     virtual void render() override;
 private:
     //NOTE: batch ligts for this mesh from current sector

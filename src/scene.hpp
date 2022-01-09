@@ -15,6 +15,7 @@ class Model;
 class Camera;
 class Sector;
 class Sound;
+class Mesh;
 
 class Scene : public Model {
 public:
@@ -32,7 +33,7 @@ public:
     void clear();
     void render();
 
-    void pushAlphaFrame(Frame* frameToPush) { mAlphaPassFrames.push(frameToPush); }
+    void addToRenderList(Mesh* frameToPush) { mRenderList.push_back(frameToPush); }
 private:
     void createCameras(float fov, float near, float far);
     void updateActiveCamera(float deltaTime);
@@ -52,5 +53,5 @@ private:
 
     Renderer::BufferHandle mVertexBuffer{ 0 };
     Renderer::BufferHandle mIndexBuffer{ 0 };
-    std::queue<Frame*> mAlphaPassFrames;
+    std::vector<Mesh*> mRenderList;
 };

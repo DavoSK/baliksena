@@ -475,6 +475,20 @@ void Scene::render() {
     if(!mActiveCamera) return;    
     updateActiveCamera(deltaTime);
 
+    auto drawRenderList = [&]() 
+    {
+        for(Mesh* mesh : mRenderList)
+        {
+            Renderer::setLights(mesh->getLights());
+            Renderer::setModel(mesh->getWorldMatrix());
+
+            for(const auto& fgroup : mesh->getFaceGroups()) 
+            {
+                fgroup->render();   
+            }
+        }
+    };
+
     //NOTE: normal pass -> render normal objects
     Renderer::setPass(Renderer::RenderPass::NORMAL);
     {
@@ -493,12 +507,17 @@ void Scene::render() {
             mBackdropSector->render();
         }
 
+        drawRenderList();
+        mRenderList.clear();
+
         Renderer::setCamRelative(false);
         Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
 
         if(mPrimarySector != nullptr) {
             mPrimarySector->render();
         }
+
+        drawRenderList();
     }
 
     //NOTE: transparency pass, alpha blending, sorting, etc ...
@@ -512,14 +531,9 @@ void Scene::render() {
         }
 
         Renderer::setProjMatrix(mActiveCamera->getProjMatrix());
-
-        while(!mAlphaPassFrames.empty()) 
-        {
-            auto* frame = mAlphaPassFrames.front();
-            frame->render();
-            mAlphaPassFrames.pop();
-        }
     }
+
+    mRenderList.clear();
 
     //NOTE: debug render
     this->debugRender();

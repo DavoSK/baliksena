@@ -7,7 +7,7 @@
 
 void Model::render() {
     if(!isVisible()) return;
-    Renderer::setModel(getMatrix());
+    //Renderer::setModel(getMatrix());
     Frame::render();
 }
 
@@ -15,7 +15,7 @@ void Model::debugRender() {
     Frame::debugRender();
     // if(mSphereBounding != nullptr) {
     //     Renderer::immRenderSphere(mSphereBounding->center, mSphereBounding->radius);
-    // }
+// }
 }
 
 void Model::init() {    
